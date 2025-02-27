@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { log } from "./vite";
 import express from "express";
 import authRoutes from "./routes/auth";
+import syncRoutes from "./routes/sync";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 
 declare module 'express-session' {
@@ -23,10 +24,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Auth routes
     app.use('/api/auth', authRoutes);
 
-    // Initialize API sync service with the API key
-    const apiKey = process.env.SQ_INSIGHTS_API_KEY || '';
-    log(`Initializing API sync service with key: ${apiKey ? '[PROVIDED]' : '[MISSING]'}`, 'server');
-    const apiSyncService = new ApiSyncService(apiKey);
+    // Sync routes
+    app.use('/api/sync', isManagerOrAdmin, syncRoutes);
 
     // Protected routes
     app.get('/api/locations', isOperatorOrAbove, async (req, res) => {
@@ -39,14 +38,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    app.post('/api/sync/locations', isManagerOrAdmin, async (req, res) => {
+    app.get('/api/machines', isOperatorOrAbove, async (req, res) => {
       try {
-        log('Starting manual location sync', 'api');
-        const count = await apiSyncService.syncLocations();
-        res.json({ message: `Successfully synced ${count} locations` });
+        const machines = await storage.getMachines();
+        res.json({ machines });
       } catch (error) {
-        log(`Location sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-        res.status(500).json({ message: 'Failed to sync locations' });
+        log(`Error fetching machines: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to fetch machines' });
       }
     });
 

@@ -11,11 +11,13 @@ declare module 'express-session' {
 }
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 // Set trust proxy before session middleware
 app.set("trust proxy", 1);
+
+// Parse JSON and URL-encoded bodies
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Set up session middleware
 const SessionStore = MemoryStore(session);
@@ -76,8 +78,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Register API routes first
   const server = await registerRoutes(app);
 
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error('Error:', err);
     const status = err.status || err.statusCode || 500;
@@ -85,6 +89,7 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
+  // Setup Vite or serve static files last
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {

@@ -129,6 +129,7 @@ export const insertMachineSchema = createInsertSchema(machines).pick({
   model: true,
   serialNumber: true,
   status: true,
+  supportedPrograms: true,
 });
 
 // Alert related schemas
