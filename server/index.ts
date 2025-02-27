@@ -4,6 +4,12 @@ import MemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+  }
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -12,9 +18,12 @@ app.use(express.urlencoded({ extended: false }));
 const SessionStore = MemoryStore(session);
 app.use(
   session({
+    name: 'smartops.sid',
     cookie: {
       maxAge: 86400000, // 24 hours
       secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax',
+      path: '/',
     },
     store: new SessionStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -25,6 +34,7 @@ app.use(
   })
 );
 
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -35,6 +45,11 @@ app.use((req, res, next) => {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
+
+  // Add session debug logging
+  if (path.startsWith('/api/auth')) {
+    log(`Session ID: ${req.sessionID}, User ID: ${req.session.userId}`, 'session');
+  }
 
   res.on("finish", () => {
     const duration = Date.now() - start;
@@ -59,11 +74,10 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('Error:', err);
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
-    throw err;
   });
 
   if (app.get("env") === "development") {
