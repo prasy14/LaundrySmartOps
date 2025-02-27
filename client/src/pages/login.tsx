@@ -50,9 +50,17 @@ export default function Login() {
       // Update auth state in React Query
       queryClient.setQueryData(['/api/auth/me'], { user: data.user });
       // Invalidate the query to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      // Redirect to dashboard
-      setLocation("/");
+      await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+
+      toast({
+        title: "Success",
+        description: "Successfully logged in",
+      });
+
+      // Use a small timeout to ensure state updates are processed
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     } catch (error) {
       toast({
         variant: "destructive",

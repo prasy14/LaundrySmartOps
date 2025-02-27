@@ -25,7 +25,7 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
   });
 
   useEffect(() => {
-    if (!isLoading && !data && window.location.pathname !== '/login') {
+    if (!isLoading && !data) {
       setLocation('/login');
     }
   }, [data, isLoading, setLocation]);
