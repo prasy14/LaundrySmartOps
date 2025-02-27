@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, WashingMachine, FileBarChart, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, WashingMachine, FileBarChart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -7,6 +7,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Machines', href: '/machines', icon: WashingMachine },
   { name: 'Reports', href: '/reports', icon: FileBarChart },
+  { name: 'Admin', href: '/admin', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -17,7 +18,7 @@ export function Sidebar() {
       <div className="flex h-16 shrink-0 items-center">
         <h1 className="text-2xl font-bold text-sidebar-foreground">SmartOps</h1>
       </div>
-      
+
       <nav className="flex flex-1 flex-col">
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
