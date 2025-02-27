@@ -14,9 +14,9 @@ export function Sidebar() {
   const [location] = useLocation();
 
   return (
-    <div className="flex h-screen flex-col gap-y-5 bg-sidebar border-r border-sidebar-border p-6">
+    <div className="flex h-full w-64 flex-col gap-y-5 bg-background border-r border-border p-6">
       <div className="flex h-16 shrink-0 items-center">
-        <h1 className="text-2xl font-bold text-sidebar-foreground">SmartOps</h1>
+        <h1 className="text-2xl font-bold text-foreground">SmartOps</h1>
       </div>
 
       <nav className="flex flex-1 flex-col">
@@ -29,8 +29,8 @@ export function Sidebar() {
                     <a className={cn(
                       "group flex gap-x-3 rounded-md p-2 text-sm leading-6",
                       location === item.href
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
                     )}>
                       <item.icon className="h-6 w-6 shrink-0" />
                       {item.name}
