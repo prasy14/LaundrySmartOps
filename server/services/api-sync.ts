@@ -29,13 +29,14 @@ export class ApiSyncService {
         body: body ? JSON.stringify(body) : undefined
       });
 
+      const responseText = await response.text();
+      log(`API Response (${response.status}): ${responseText}`, 'api-sync');
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+        throw new Error(`API request failed: ${response.status} - ${responseText}`);
       }
 
-      const data = await response.json();
-      return data;
+      return responseText ? JSON.parse(responseText) : null;
     } catch (error) {
       log(`API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
@@ -44,7 +45,7 @@ export class ApiSyncService {
 
   async syncLocations(): Promise<number> {
     try {
-      log('Syncing locations', 'api-sync');
+      log('Starting location sync', 'api-sync');
       const data = await this.fetchWithAuth('/locations');
 
       if (!data?.locations) {
@@ -53,16 +54,22 @@ export class ApiSyncService {
 
       let count = 0;
       for (const location of data.locations) {
-        const locationData: InsertLocation = {
-          externalId: location.id.toString(),
-          name: location.name,
-          address: location.address,
-          type: location.type || 'store',
-          status: location.status || 'active',
-        };
+        try {
+          const locationData: InsertLocation = {
+            externalId: location.id.toString(),
+            name: location.name,
+            address: location.address,
+            type: location.type || 'store',
+            status: location.status || 'active',
+          };
 
-        await storage.createOrUpdateLocation(locationData);
-        count++;
+          await storage.createOrUpdateLocation(locationData);
+          count++;
+          log(`Synced location: ${locationData.name}`, 'api-sync');
+        } catch (error) {
+          log(`Failed to sync location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          // Continue with next location
+        }
       }
 
       log(`Successfully synced ${count} locations`, 'api-sync');
@@ -75,8 +82,8 @@ export class ApiSyncService {
 
   async syncMachinePrograms(): Promise<number> {
     try {
-      log('Syncing machine programs', 'api-sync');
-      const data = await this.fetchWithAuth('/machine-programs');
+      log('Starting machine programs sync', 'api-sync');
+      const data = await this.fetchWithAuth('/programs');
 
       if (!data?.programs) {
         throw new Error('No program data received from API');
@@ -84,16 +91,22 @@ export class ApiSyncService {
 
       let count = 0;
       for (const program of data.programs) {
-        const programData: InsertMachineProgram = {
-          externalId: program.id.toString(),
-          name: program.name,
-          description: program.description,
-          duration: program.duration,
-          type: program.type || 'wash',
-        };
+        try {
+          const programData: InsertMachineProgram = {
+            externalId: program.id.toString(),
+            name: program.name,
+            description: program.description,
+            duration: program.duration,
+            type: program.type || 'wash',
+          };
 
-        await storage.createOrUpdateMachineProgram(programData);
-        count++;
+          await storage.createOrUpdateMachineProgram(programData);
+          count++;
+          log(`Synced program: ${programData.name}`, 'api-sync');
+        } catch (error) {
+          log(`Failed to sync program ${program.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          // Continue with next program
+        }
       }
 
       log(`Successfully synced ${count} machine programs`, 'api-sync');
@@ -109,8 +122,20 @@ export class ApiSyncService {
       log('Starting full sync', 'api-sync');
 
       // First sync locations and programs
-      const locationCount = await this.syncLocations();
-      const programCount = await this.syncMachinePrograms();
+      let locationCount = 0;
+      let programCount = 0;
+
+      try {
+        locationCount = await this.syncLocations();
+      } catch (error) {
+        log(`Location sync failed but continuing: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      }
+
+      try {
+        programCount = await this.syncMachinePrograms();
+      } catch (error) {
+        log(`Program sync failed but continuing: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      }
 
       // Then sync machines
       const data = await this.fetchWithAuth('/machines');
@@ -121,23 +146,29 @@ export class ApiSyncService {
 
       let machineCount = 0;
       for (const machine of data.machines) {
-        const location = await storage.getLocationByExternalId(machine.locationId.toString());
-        if (!location) {
-          log(`Warning: Location not found for machine ${machine.id}`, 'api-sync');
-          continue;
+        try {
+          const location = await storage.getLocationByExternalId(machine.locationId.toString());
+          if (!location) {
+            log(`Warning: Location not found for machine ${machine.id}`, 'api-sync');
+            continue;
+          }
+
+          const machineData: InsertMachine = {
+            externalId: machine.id.toString(),
+            name: machine.name,
+            locationId: location.id,
+            model: machine.model,
+            serialNumber: machine.serialNumber,
+            status: machine.status || 'offline',
+          };
+
+          await storage.createOrUpdateMachine(machineData);
+          machineCount++;
+          log(`Synced machine: ${machineData.name}`, 'api-sync');
+        } catch (error) {
+          log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          // Continue with next machine
         }
-
-        const machineData: InsertMachine = {
-          externalId: machine.id.toString(),
-          name: machine.name,
-          locationId: location.id,
-          model: machine.model,
-          serialNumber: machine.serialNumber,
-          status: machine.status || 'offline',
-        };
-
-        await storage.createOrUpdateMachine(machineData);
-        machineCount++;
       }
 
       // Log the sync attempt
