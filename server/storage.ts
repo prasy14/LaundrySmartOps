@@ -1,10 +1,8 @@
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users, departments, schedules, machines, alerts } from "@shared/schema";
+import { users, machines, alerts } from "@shared/schema";
 import type { 
   User, InsertUser, 
-  Department, InsertDepartment,
-  Schedule, InsertSchedule,
   Machine, InsertMachine, 
   Alert, InsertAlert 
 } from "@shared/schema";
@@ -14,17 +12,6 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-
-  // Department operations
-  getDepartments(): Promise<Department[]>;
-  getDepartment(id: number): Promise<Department | undefined>;
-  createDepartment(department: InsertDepartment): Promise<Department>;
-  updateDepartmentSync(id: number): Promise<Department>;
-
-  // Schedule operations
-  getSchedules(departmentId?: number): Promise<Schedule[]>;
-  createSchedule(schedule: InsertSchedule): Promise<Schedule>;
-  updateScheduleSync(id: number): Promise<Schedule>;
 
   // Machine operations
   getMachines(): Promise<Machine[]>;
@@ -55,65 +42,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Department methods
-  async getDepartments(): Promise<Department[]> {
-    return await db.select().from(departments);
-  }
-
-  async getDepartment(id: number): Promise<Department | undefined> {
-    const [department] = await db.select().from(departments).where(eq(departments.id, id));
-    return department;
-  }
-
-  async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
-    const [department] = await db
-      .insert(departments)
-      .values({
-        ...insertDepartment,
-        lastSynced: new Date()
-      })
-      .returning();
-    return department;
-  }
-
-  async updateDepartmentSync(id: number): Promise<Department> {
-    const [department] = await db
-      .update(departments)
-      .set({ lastSynced: new Date() })
-      .where(eq(departments.id, id))
-      .returning();
-    return department;
-  }
-
-  // Schedule methods
-  async getSchedules(departmentId?: number): Promise<Schedule[]> {
-    let query = db.select().from(schedules);
-    if (departmentId) {
-      query = query.where(eq(schedules.departmentId, departmentId));
-    }
-    return await query;
-  }
-
-  async createSchedule(insertSchedule: InsertSchedule): Promise<Schedule> {
-    const [schedule] = await db
-      .insert(schedules)
-      .values({
-        ...insertSchedule,
-        lastSynced: new Date()
-      })
-      .returning();
-    return schedule;
-  }
-
-  async updateScheduleSync(id: number): Promise<Schedule> {
-    const [schedule] = await db
-      .update(schedules)
-      .set({ lastSynced: new Date() })
-      .where(eq(schedules.id, id))
-      .returning();
-    return schedule;
-  }
-
   // Machine methods
   async getMachines(): Promise<Machine[]> {
     return await db.select().from(machines);
@@ -130,7 +58,14 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...insertMachine,
         lastPing: new Date(),
-        metrics: { cycles: 0, uptime: 0, errors: 0 }
+        metrics: { 
+          cycles: 0, 
+          uptime: 0, 
+          errors: 0,
+          temperature: 0,
+          waterLevel: 100,
+          detergentLevel: 100
+        }
       })
       .returning();
     return machine;

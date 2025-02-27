@@ -18,44 +18,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
 });
 
-// API integration related schemas
-export const departments = pgTable("departments", {
-  id: serial("id").primaryKey(),
-  externalId: text("external_id").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  status: text("status").notNull(),
-  lastSynced: timestamp("last_synced").notNull(),
-});
-
-export const insertDepartmentSchema = createInsertSchema(departments).pick({
-  externalId: true,
-  name: true,
-  description: true,
-  status: true,
-});
-
-export const schedules = pgTable("schedules", {
-  id: serial("id").primaryKey(),
-  departmentId: integer("department_id").notNull(),
-  externalId: text("external_id").notNull(),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time").notNull(),
-  status: text("status").notNull(),
-  metadata: jsonb("metadata"),
-  lastSynced: timestamp("last_synced").notNull(),
-});
-
-export const insertScheduleSchema = createInsertSchema(schedules).pick({
-  departmentId: true,
-  externalId: true,
-  startTime: true,
-  endTime: true,
-  status: true,
-  metadata: true,
-});
-
-// Machine related schemas
+// Laundry operations related schemas
 export const machines = pgTable("machines", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -66,6 +29,9 @@ export const machines = pgTable("machines", {
     cycles: number;
     uptime: number;
     errors: number;
+    temperature: number;
+    waterLevel: number;
+    detergentLevel: number;
   }>(),
 });
 
@@ -97,10 +63,6 @@ export const insertAlertSchema = createInsertSchema(alerts).pick({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type Department = typeof departments.$inferSelect;
-export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
-export type Schedule = typeof schedules.$inferSelect;
-export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 export type Machine = typeof machines.$inferSelect;
 export type InsertMachine = z.infer<typeof insertMachineSchema>;
 export type Alert = typeof alerts.$inferSelect;

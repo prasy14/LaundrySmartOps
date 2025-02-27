@@ -105,48 +105,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // API Sync routes
-  app.post('/api/sync/departments', requireAuth, async (req, res) => {
+  app.post('/api/sync/machines', requireAuth, async (req, res) => {
     try {
-      const success = await apiSyncService.syncDepartments();
+      const success = await apiSyncService.syncAllMachines();
       if (success) {
-        res.json({ message: 'Departments synced successfully' });
+        res.json({ message: 'Machines synced successfully' });
       } else {
-        res.status(500).json({ message: 'Failed to sync departments' });
+        res.status(500).json({ message: 'Failed to sync machines' });
       }
     } catch (error) {
-      log(`Department sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      res.status(500).json({ message: 'Failed to sync departments' });
+      log(`Machine sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      res.status(500).json({ message: 'Failed to sync machines' });
     }
   });
 
-  app.post('/api/sync/schedules/:departmentId', requireAuth, async (req, res) => {
+  app.post('/api/sync/machines/:id/status', requireAuth, async (req, res) => {
     try {
-      const { departmentId } = req.params;
-      const success = await apiSyncService.syncSchedules(departmentId);
+      const { id } = req.params;
+      const success = await apiSyncService.syncMachineStatus(parseInt(id));
       if (success) {
-        res.json({ message: 'Schedules synced successfully' });
+        res.json({ message: 'Machine status synced successfully' });
       } else {
-        res.status(500).json({ message: 'Failed to sync schedules' });
+        res.status(500).json({ message: 'Failed to sync machine status' });
       }
     } catch (error) {
-      log(`Schedule sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      res.status(500).json({ message: 'Failed to sync schedules' });
+      log(`Machine status sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      res.status(500).json({ message: 'Failed to sync machine status' });
     }
   });
 
-
-  // Department routes
-  app.get('/api/departments', requireAuth, async (req, res) => {
-    const departments = await storage.getDepartments();
-    res.json({ departments });
-  });
-
-  app.get('/api/departments/:id/schedules', requireAuth, async (req, res) => {
-    const { id } = req.params;
-    const schedules = await storage.getSchedules(parseInt(id));
-    res.json({ schedules });
-  });
-
+  // Machine routes
   app.get('/api/machines', requireAuth, async (req, res) => {
     const machines = await storage.getMachines();
     res.json({ machines });
@@ -172,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ machine });
   });
 
-  // Alert routes - ensure authentication
+  // Alert routes
   app.get('/api/alerts', requireAuth, async (req, res) => {
     const { machineId } = req.query;
     const alerts = await storage.getAlerts(
@@ -188,13 +176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const alert = await storage.createAlert(parsed.data);
+    // Also report the alert to the external API
+    await apiSyncService.reportAlert(alert.machineId, parsed.data);
     broadcast({ type: 'new_alert', payload: alert });
     res.json({ alert });
   });
 
   app.post('/api/alerts/:id/clear', requireAuth, async (req, res) => {
     const { id } = req.params;
-    const alert = await storage.clearAlert(parseInt(id), req.session.userId);
+    const alert = await storage.clearAlert(parseInt(id), req.session.userId!);
     broadcast({ type: 'alert_cleared', payload: alert });
     res.json({ alert });
   });
