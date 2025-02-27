@@ -36,9 +36,12 @@ export default function Login() {
       setIsLoading(true);
       const res = await fetch("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(values),
-        credentials: "include"
+        credentials: "include",
+        cache: "no-cache",
       });
 
       if (!res.ok) {
@@ -55,8 +58,11 @@ export default function Login() {
         description: "Successfully logged in",
       });
 
+      // Add a small delay to ensure the session is properly set
+      await new Promise(resolve => setTimeout(resolve, 100));
       setLocation("/");
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -87,6 +93,7 @@ export default function Login() {
                         {...field} 
                         disabled={isLoading}
                         placeholder="Enter your username"
+                        autoComplete="username"
                       />
                     </FormControl>
                     <FormMessage />
@@ -105,6 +112,7 @@ export default function Login() {
                         {...field} 
                         disabled={isLoading}
                         placeholder="Enter your password"
+                        autoComplete="current-password"
                       />
                     </FormControl>
                     <FormMessage />
