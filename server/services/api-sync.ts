@@ -2,7 +2,7 @@ import { storage } from "../storage";
 import type { InsertMachine, InsertAlert } from "@shared/schema";
 import { log } from "../vite";
 
-const API_BASE_URL = "https://smartlaundry.azurewebsites.net/api"; // API endpoint from documentation
+const API_BASE_URL = "https://documenter.getpostman.com/view/1318407/2s9YkocgSL"; // API endpoint from documentation
 
 export class ApiSyncService {
   private apiKey: string;
@@ -13,29 +13,33 @@ export class ApiSyncService {
 
   private async fetchWithAuth(endpoint: string, method: string = 'GET', body?: any) {
     log(`Making API request to: ${endpoint}`, 'api-sync');
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      log(`API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      throw error;
     }
-
-    return await response.json();
   }
 
   async syncMachineStatus(machineId: number) {
     try {
       log(`Syncing status for machine ${machineId}`, 'api-sync');
       const data = await this.fetchWithAuth(`/machines/${machineId}/status`);
-
-      await storage.updateMachineStatus(machineId, data.status);
 
       // Update machine metrics
       const metrics = {
@@ -47,6 +51,8 @@ export class ApiSyncService {
         detergentLevel: data.detergentLevel || 100
       };
 
+      await storage.updateMachineStatus(machineId, data.status);
+
       return true;
     } catch (error) {
       log(`Failed to sync machine status: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
@@ -57,7 +63,8 @@ export class ApiSyncService {
   async syncAllMachines() {
     try {
       log('Starting machine sync', 'api-sync');
-      const machines = await this.fetchWithAuth('/machines');
+      const response = await this.fetchWithAuth('/machines');
+      const machines = Array.isArray(response) ? response : response.machines || [];
 
       // Clear existing machines
       await storage.clearAllMachines();
