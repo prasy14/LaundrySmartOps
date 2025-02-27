@@ -7,17 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
+type LoginFormData = z.infer<typeof loginSchema>;
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
-  const form = useForm<z.infer<typeof loginSchema>>({
+  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
@@ -25,16 +30,19 @@ export default function Login() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+  const onSubmit = async (values: LoginFormData) => {
     try {
+      setIsLoading(true);
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
+        credentials: "include"
       });
 
       if (!res.ok) {
-        throw new Error("Invalid credentials");
+        const error = await res.json();
+        throw new Error(error.message || "Invalid credentials");
       }
 
       setLocation("/");
@@ -42,8 +50,10 @@ export default function Login() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Invalid username or password",
+        description: error instanceof Error ? error.message : "Failed to login",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -63,7 +73,11 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input 
+                        {...field} 
+                        disabled={isLoading}
+                        placeholder="Enter your username"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -76,14 +90,30 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input 
+                        type="password" 
+                        {...field} 
+                        disabled={isLoading}
+                        placeholder="Enter your password"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Sign In
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </Button>
             </form>
           </Form>

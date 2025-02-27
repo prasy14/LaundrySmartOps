@@ -5,12 +5,18 @@ import { storage } from "./storage";
 import { insertUserSchema, insertMachineSchema, insertAlertSchema } from "@shared/schema";
 import type { WSMessage } from "@shared/schema";
 
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
-  
+
   // WebSocket setup
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
+
   // Broadcast to all clients
   const broadcast = (message: WSMessage) => {
     wss.clients.forEach((client) => {
@@ -22,24 +28,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.post('/api/auth/login', async (req, res) => {
-    const { username, password } = req.body;
-    const user = await storage.getUserByUsername(username);
-    
-    if (!user || user.password !== password) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    try {
+      const { username, password } = req.body;
+      const user = await storage.getUserByUsername(username);
+
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      req.session.userId = user.id;
+      res.json({ user });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
-    
-    req.session.userId = user.id;
-    res.json({ user });
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Logout error:', err);
+        return res.status(500).json({ message: 'Failed to logout' });
+      }
+      res.json({ message: 'Logged out successfully' });
+    });
   });
 
   app.get('/api/auth/me', async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      res.json({ user });
+    } catch (error) {
+      console.error('Auth check error:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
-    
-    const user = await storage.getUser(req.session.userId);
-    res.json({ user });
   });
 
   // Machine routes
@@ -53,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!parsed.success) {
       return res.status(400).json({ errors: parsed.error });
     }
-    
+
     const machine = await storage.createMachine(parsed.data);
     broadcast({ type: 'machine_update', payload: machine });
     res.json({ machine });
@@ -62,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/machines/:id/status', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
-    
+
     const machine = await storage.updateMachineStatus(parseInt(id), status);
     broadcast({ type: 'machine_update', payload: machine });
     res.json({ machine });
@@ -82,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!parsed.success) {
       return res.status(400).json({ errors: parsed.error });
     }
-    
+
     const alert = await storage.createAlert(parsed.data);
     broadcast({ type: 'new_alert', payload: alert });
     res.json({ alert });
@@ -92,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.userId) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
-    
+
     const { id } = req.params;
     const alert = await storage.clearAlert(parseInt(id), req.session.userId);
     broadcast({ type: 'alert_cleared', payload: alert });
