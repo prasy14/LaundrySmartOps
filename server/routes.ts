@@ -39,21 +39,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log(`Login attempt for user: ${username}`, 'auth');
 
       const user = await storage.getUserByUsername(username);
-
-      if (!user || user.password !== password) {
-        log(`Login failed for user: ${username}`, 'auth');
+      if (!user) {
+        log(`Login failed for user: ${username} - User not found`, 'auth');
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      // For now, simple password comparison
+      if (user.password !== password) {
+        log(`Login failed for user: ${username} - Invalid password`, 'auth');
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Set session
       req.session.userId = user.id;
-      req.session.save((err) => {
-        if (err) {
-          log(`Session save error: ${err.message}`, 'auth');
-          return res.status(500).json({ message: 'Failed to save session' });
-        }
-        log(`Login successful for user: ${username}`, 'auth');
-        res.json({ user });
+
+      // Ensure we save the session before responding
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            log(`Session save error: ${err.message}`, 'auth');
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
       });
+
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+
+      log(`Login successful for user: ${username}`, 'auth');
+      res.json({ user: userWithoutPassword });
     } catch (error) {
       log(`Login error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'auth');
       res.status(500).json({ message: 'Internal server error' });
@@ -88,8 +104,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'User not found' });
       }
 
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+
       log(`Auth check successful for user: ${user.username}`, 'auth');
-      res.json({ user });
+      res.json({ user: userWithoutPassword });
     } catch (error) {
       log(`Auth check error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'auth');
       res.status(500).json({ message: 'Internal server error' });
