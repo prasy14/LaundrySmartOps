@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { insertUserSchema, insertMachineSchema, insertAlertSchema } from "@shared/schema";
 import type { WSMessage } from "@shared/schema";
 import { log } from "./vite";
+import { ApiSyncService } from "./services/api-sync";
 
 declare module 'express-session' {
   interface SessionData {
@@ -14,6 +15,9 @@ declare module 'express-session' {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+
+  // Initialize API sync service
+  const apiSyncService = new ApiSyncService(process.env.API_KEY!);
 
   // WebSocket setup
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
@@ -99,6 +103,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   };
+
+  // API Sync routes
+  app.post('/api/sync/departments', requireAuth, async (req, res) => {
+    try {
+      const success = await apiSyncService.syncDepartments();
+      if (success) {
+        res.json({ message: 'Departments synced successfully' });
+      } else {
+        res.status(500).json({ message: 'Failed to sync departments' });
+      }
+    } catch (error) {
+      log(`Department sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      res.status(500).json({ message: 'Failed to sync departments' });
+    }
+  });
+
+  app.post('/api/sync/schedules/:departmentId', requireAuth, async (req, res) => {
+    try {
+      const { departmentId } = req.params;
+      const success = await apiSyncService.syncSchedules(departmentId);
+      if (success) {
+        res.json({ message: 'Schedules synced successfully' });
+      } else {
+        res.status(500).json({ message: 'Failed to sync schedules' });
+      }
+    } catch (error) {
+      log(`Schedule sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      res.status(500).json({ message: 'Failed to sync schedules' });
+    }
+  });
+
+
+  // Department routes
+  app.get('/api/departments', requireAuth, async (req, res) => {
+    const departments = await storage.getDepartments();
+    res.json({ departments });
+  });
+
+  app.get('/api/departments/:id/schedules', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const schedules = await storage.getSchedules(parseInt(id));
+    res.json({ schedules });
+  });
 
   app.get('/api/machines', requireAuth, async (req, res) => {
     const machines = await storage.getMachines();

@@ -1,127 +1,184 @@
-import { users, machines, alerts } from "@shared/schema";
-import type { User, InsertUser, Machine, InsertMachine, Alert, InsertAlert } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { users, departments, schedules, machines, alerts } from "@shared/schema";
+import type { 
+  User, InsertUser, 
+  Department, InsertDepartment,
+  Schedule, InsertSchedule,
+  Machine, InsertMachine, 
+  Alert, InsertAlert 
+} from "@shared/schema";
 
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
+  // Department operations
+  getDepartments(): Promise<Department[]>;
+  getDepartment(id: number): Promise<Department | undefined>;
+  createDepartment(department: InsertDepartment): Promise<Department>;
+  updateDepartmentSync(id: number): Promise<Department>;
+
+  // Schedule operations
+  getSchedules(departmentId?: number): Promise<Schedule[]>;
+  createSchedule(schedule: InsertSchedule): Promise<Schedule>;
+  updateScheduleSync(id: number): Promise<Schedule>;
+
   // Machine operations
   getMachines(): Promise<Machine[]>;
   getMachine(id: number): Promise<Machine | undefined>;
   createMachine(machine: InsertMachine): Promise<Machine>;
   updateMachineStatus(id: number, status: string): Promise<Machine>;
-  
+
   // Alert operations
   getAlerts(machineId?: number): Promise<Alert[]>;
   createAlert(alert: InsertAlert): Promise<Alert>;
   clearAlert(id: number, userId: number): Promise<Alert>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private machines: Map<number, Machine>;
-  private alerts: Map<number, Alert>;
-  private currentIds: { users: number; machines: number; alerts: number };
-
-  constructor() {
-    this.users = new Map();
-    this.machines = new Map();
-    this.alerts = new Map();
-    this.currentIds = { users: 1, machines: 1, alerts: 1 };
-    
-    // Add default admin user
-    this.createUser({
-      username: 'admin',
-      password: 'admin123',
-      role: 'admin',
-      name: 'Administrator'
-    });
-  }
-
+export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentIds.users++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  // Department methods
+  async getDepartments(): Promise<Department[]> {
+    return await db.select().from(departments);
+  }
+
+  async getDepartment(id: number): Promise<Department | undefined> {
+    const [department] = await db.select().from(departments).where(eq(departments.id, id));
+    return department;
+  }
+
+  async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
+    const [department] = await db
+      .insert(departments)
+      .values({
+        ...insertDepartment,
+        lastSynced: new Date()
+      })
+      .returning();
+    return department;
+  }
+
+  async updateDepartmentSync(id: number): Promise<Department> {
+    const [department] = await db
+      .update(departments)
+      .set({ lastSynced: new Date() })
+      .where(eq(departments.id, id))
+      .returning();
+    return department;
+  }
+
+  // Schedule methods
+  async getSchedules(departmentId?: number): Promise<Schedule[]> {
+    let query = db.select().from(schedules);
+    if (departmentId) {
+      query = query.where(eq(schedules.departmentId, departmentId));
+    }
+    return await query;
+  }
+
+  async createSchedule(insertSchedule: InsertSchedule): Promise<Schedule> {
+    const [schedule] = await db
+      .insert(schedules)
+      .values({
+        ...insertSchedule,
+        lastSynced: new Date()
+      })
+      .returning();
+    return schedule;
+  }
+
+  async updateScheduleSync(id: number): Promise<Schedule> {
+    const [schedule] = await db
+      .update(schedules)
+      .set({ lastSynced: new Date() })
+      .where(eq(schedules.id, id))
+      .returning();
+    return schedule;
   }
 
   // Machine methods
   async getMachines(): Promise<Machine[]> {
-    return Array.from(this.machines.values());
+    return await db.select().from(machines);
   }
 
   async getMachine(id: number): Promise<Machine | undefined> {
-    return this.machines.get(id);
+    const [machine] = await db.select().from(machines).where(eq(machines.id, id));
+    return machine;
   }
 
   async createMachine(insertMachine: InsertMachine): Promise<Machine> {
-    const id = this.currentIds.machines++;
-    const machine: Machine = {
-      ...insertMachine,
-      id,
-      lastPing: new Date(),
-      metrics: { cycles: 0, uptime: 0, errors: 0 }
-    };
-    this.machines.set(id, machine);
+    const [machine] = await db
+      .insert(machines)
+      .values({
+        ...insertMachine,
+        lastPing: new Date(),
+        metrics: { cycles: 0, uptime: 0, errors: 0 }
+      })
+      .returning();
     return machine;
   }
 
   async updateMachineStatus(id: number, status: string): Promise<Machine> {
-    const machine = await this.getMachine(id);
-    if (!machine) throw new Error('Machine not found');
-    
-    const updated = { ...machine, status, lastPing: new Date() };
-    this.machines.set(id, updated);
-    return updated;
+    const [machine] = await db
+      .update(machines)
+      .set({ status, lastPing: new Date() })
+      .where(eq(machines.id, id))
+      .returning();
+    return machine;
   }
 
   // Alert methods
   async getAlerts(machineId?: number): Promise<Alert[]> {
-    const alerts = Array.from(this.alerts.values());
-    return machineId 
-      ? alerts.filter(a => a.machineId === machineId)
-      : alerts;
+    let query = db.select().from(alerts);
+    if (machineId) {
+      query = query.where(eq(alerts.machineId, machineId));
+    }
+    return await query;
   }
 
   async createAlert(insertAlert: InsertAlert): Promise<Alert> {
-    const id = this.currentIds.alerts++;
-    const alert: Alert = {
-      ...insertAlert,
-      id,
-      createdAt: new Date(),
-      clearedAt: null,
-      clearedBy: null
-    };
-    this.alerts.set(id, alert);
+    const [alert] = await db
+      .insert(alerts)
+      .values({
+        ...insertAlert,
+        createdAt: new Date(),
+        clearedAt: null,
+        clearedBy: null
+      })
+      .returning();
     return alert;
   }
 
   async clearAlert(id: number, userId: number): Promise<Alert> {
-    const alert = this.alerts.get(id);
-    if (!alert) throw new Error('Alert not found');
-    
-    const updated = {
-      ...alert,
-      status: 'cleared',
-      clearedAt: new Date(),
-      clearedBy: userId
-    };
-    this.alerts.set(id, updated);
-    return updated;
+    const [alert] = await db
+      .update(alerts)
+      .set({
+        status: 'cleared',
+        clearedAt: new Date(),
+        clearedBy: userId
+      })
+      .where(eq(alerts.id, id))
+      .returning();
+    return alert;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
