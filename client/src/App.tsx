@@ -12,6 +12,8 @@ import { useEffect } from "react";
 import { initWebSocket } from "./lib/ws";
 import { Loader2 } from "lucide-react";
 import type { User } from "@shared/schema";
+import Admin from "@/pages/admin"; // Add Admin import
+
 
 // Initialize WebSocket connection
 initWebSocket();
@@ -72,6 +74,7 @@ function Router() {
       <Route path="/" component={() => <PrivateRoute component={Dashboard} />} />
       <Route path="/machines" component={() => <PrivateRoute component={Machines} />} />
       <Route path="/reports" component={() => <PrivateRoute component={Reports} />} />
+      <Route path="/admin" component={() => <PrivateRoute component={Admin} />} /> {/* Add admin route */}
       <Route component={NotFound} />
     </Switch>
   );

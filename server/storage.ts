@@ -1,10 +1,11 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
-import { users, machines, alerts } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
+import { users, machines, alerts, syncLogs } from "@shared/schema";
 import type { 
   User, InsertUser, 
   Machine, InsertMachine, 
-  Alert, InsertAlert 
+  Alert, InsertAlert,
+  SyncLog, InsertSyncLog
 } from "@shared/schema";
 
 export interface IStorage {
@@ -24,6 +25,10 @@ export interface IStorage {
   getAlerts(machineId?: number): Promise<Alert[]>;
   createAlert(alert: InsertAlert): Promise<Alert>;
   clearAlert(id: number, userId: number): Promise<Alert>;
+
+  // Sync log operations
+  getLastSyncLog(): Promise<SyncLog | undefined>;
+  createSyncLog(log: InsertSyncLog): Promise<SyncLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -121,6 +126,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.id, id))
       .returning();
     return alert;
+  }
+
+  async getLastSyncLog(): Promise<SyncLog | undefined> {
+    const [log] = await db
+      .select()
+      .from(syncLogs)
+      .orderBy(desc(syncLogs.timestamp))
+      .limit(1);
+    return log;
+  }
+
+  async createSyncLog(insertLog: InsertSyncLog): Promise<SyncLog> {
+    const [log] = await db
+      .insert(syncLogs)
+      .values(insertLog)
+      .returning();
+    return log;
   }
 }
 

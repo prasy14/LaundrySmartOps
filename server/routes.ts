@@ -127,12 +127,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/sync/machines', requireAuth, async (req, res) => {
     try {
       const success = await apiSyncService.syncAllMachines();
+      const machines = await storage.getMachines();
+
+      // Log the sync attempt
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success,
+        error: success ? null : 'Failed to sync with external API',
+        machineCount: machines.length
+      });
+
       if (success) {
         res.json({ message: 'Machines synced successfully' });
       } else {
         res.status(500).json({ message: 'Failed to sync machines' });
       }
     } catch (error) {
+      // Log the sync error
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        machineCount: 0
+      });
+
       log(`Machine sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       res.status(500).json({ message: 'Failed to sync machines' });
     }
@@ -284,6 +302,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to generate report' });
     }
   });
+
+  // Admin routes
+  app.get('/api/admin/sync-info', requireAuth, async (req, res) => {
+    try {
+      const lastSync = await storage.getLastSyncLog();
+      res.json({ lastSync });
+    } catch (error) {
+      log(`Failed to get sync info: ${error instanceof Error ? error.message : 'Unknown error'}`, 'admin');
+      res.status(500).json({ message: 'Failed to get sync info' });
+    }
+  });
+
 
   return httpServer;
 }

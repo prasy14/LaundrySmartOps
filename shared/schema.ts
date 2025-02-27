@@ -66,6 +66,22 @@ export const insertAlertSchema = createInsertSchema(alerts).pick({
   category: z.enum(['maintenance', 'operational', 'system']).optional(),
 });
 
+// API Sync related schemas
+export const syncLogs = pgTable("sync_logs", {
+  id: serial("id").primaryKey(),
+  timestamp: timestamp("timestamp").notNull(),
+  success: boolean("success").notNull(),
+  error: text("error"),
+  machineCount: integer("machine_count"),
+});
+
+export const insertSyncLogSchema = createInsertSchema(syncLogs).pick({
+  timestamp: true,
+  success: true,
+  error: true,
+  machineCount: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -73,6 +89,8 @@ export type Machine = typeof machines.$inferSelect;
 export type InsertMachine = z.infer<typeof insertMachineSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
+export type SyncLog = typeof syncLogs.$inferSelect;
+export type InsertSyncLog = z.infer<typeof insertSyncLogSchema>;
 
 // WebSocket message types
 export type WSMessage = {
