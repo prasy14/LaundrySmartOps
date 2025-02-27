@@ -42,7 +42,7 @@ export class ApiSyncService {
   async syncLocations(): Promise<number> {
     try {
       log('Starting location sync', 'api-sync');
-      const response = await this.fetchWithAuth('/locations?pageSize=10&page=1');
+      const response = await this.fetchWithAuth('/locations');
 
       if (!response?.data) {
         log('No data array in API response', 'api-sync');
@@ -53,8 +53,7 @@ export class ApiSyncService {
       for (const location of response.data) {
         try {
           log(`Processing location: ${JSON.stringify(location)}`, 'api-sync');
-
-          const locationData: InsertLocation = {
+          await storage.createOrUpdateLocation({
             externalId: location.id,
             name: location.name || 'Unnamed Location',
             address: location.address || null,
@@ -69,17 +68,12 @@ export class ApiSyncService {
             contactEmail: null,
             contactPhone: null,
             operatingHours: {},
-            metadata: {
-              coordinates: location.coordinates || null
-            }
-          };
-
-          await storage.createOrUpdateLocation(locationData);
+            metadata: {}
+          });
           count++;
-          log(`Synced location: ${locationData.name}`, 'api-sync');
+          log(`Synced location: ${location.name}`, 'api-sync');
         } catch (error) {
           log(`Failed to sync location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-          // Continue with next location
         }
       }
 
