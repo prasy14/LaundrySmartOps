@@ -208,5 +208,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ alert });
   });
 
+  // Report routes
+  app.get('/api/reports/machine-usage', requireAuth, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const machines = await storage.getMachines();
+
+      // Generate usage report data
+      const reportData = machines.map(machine => ({
+        name: machine.name,
+        location: machine.location,
+        cycles: machine.metrics?.cycles || 0,
+        uptime: machine.metrics?.uptime || 0,
+        errors: machine.metrics?.errors || 0,
+        temperature: machine.metrics?.temperature || 0,
+        waterLevel: machine.metrics?.waterLevel || 0,
+        detergentLevel: machine.metrics?.detergentLevel || 0,
+        lastPing: machine.lastPing
+      }));
+
+      res.json({ data: reportData });
+    } catch (error) {
+      log(`Failed to generate machine usage report: ${error instanceof Error ? error.message : 'Unknown error'}`, 'reports');
+      res.status(500).json({ message: 'Failed to generate report' });
+    }
+  });
+
+  app.get('/api/reports/maintenance', requireAuth, async (req, res) => {
+    try {
+      const alerts = await storage.getAlerts();
+      const machines = await storage.getMachines();
+
+      // Generate maintenance report data
+      const reportData = alerts
+        .filter(alert => alert.category === 'maintenance')
+        .map(alert => {
+          const machine = machines.find(m => m.id === alert.machineId);
+          return {
+            machineId: alert.machineId,
+            machineName: machine?.name || `Machine ${alert.machineId}`,
+            location: machine?.location || 'Unknown',
+            issue: alert.message,
+            status: alert.status,
+            priority: alert.priority || 'low',
+            createdAt: alert.createdAt,
+            resolvedAt: alert.clearedAt || null,
+            resolvedBy: alert.clearedBy || null
+          };
+        });
+
+      res.json({ data: reportData });
+    } catch (error) {
+      log(`Failed to generate maintenance report: ${error instanceof Error ? error.message : 'Unknown error'}`, 'reports');
+      res.status(500).json({ message: 'Failed to generate report' });
+    }
+  });
+
+  app.get('/api/reports/machine-uptime', requireAuth, async (req, res) => {
+    try {
+      const machines = await storage.getMachines();
+
+      // Generate uptime report data
+      const reportData = machines.map(machine => ({
+        name: machine.name,
+        location: machine.location,
+        status: machine.status,
+        uptime: machine.metrics?.uptime || 0,
+        lastPing: machine.lastPing,
+        totalCycles: machine.metrics?.cycles || 0
+      }));
+
+      res.json({ data: reportData });
+    } catch (error) {
+      log(`Failed to generate uptime report: ${error instanceof Error ? error.message : 'Unknown error'}`, 'reports');
+      res.status(500).json({ message: 'Failed to generate report' });
+    }
+  });
+
   return httpServer;
 }
