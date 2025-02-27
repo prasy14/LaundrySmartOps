@@ -4,8 +4,6 @@ import { ApiSyncService } from "./services/api-sync";
 import { storage } from "./storage";
 import { log } from "./vite";
 import express from "express";
-import session from "express-session";
-import memoryStore from "memorystore";
 import authRoutes from "./routes/auth";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 
@@ -21,23 +19,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Middleware to parse JSON bodies
     app.use(express.json());
-
-    // Setup session middleware
-    const MemoryStore = memoryStore(session);
-    app.use(session({
-      secret: process.env.SESSION_SECRET || 'development_secret',
-      resave: false,
-      saveUninitialized: false,
-      store: new MemoryStore({
-        checkPeriod: 86400000 // Prune expired entries every 24h
-      }),
-      cookie: { 
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      }
-    }));
 
     // Auth routes
     app.use('/api/auth', authRoutes);
