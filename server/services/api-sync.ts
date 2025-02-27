@@ -1,9 +1,8 @@
 import { storage } from "../storage";
-import type { InsertDepartment, InsertSchedule } from "@shared/schema";
-import { log } from "../vite";
 import type { InsertMachine, InsertAlert } from "@shared/schema";
+import { log } from "../vite";
 
-const API_BASE_URL = "https://api.example.com/v1"; // Replace with actual API URL from documentation
+const API_BASE_URL = "https://smartlaundry.azurewebsites.net/api"; // API endpoint from documentation
 
 export class ApiSyncService {
   private apiKey: string;
@@ -31,60 +30,6 @@ export class ApiSyncService {
     return await response.json();
   }
 
-  async syncDepartments() {
-    try {
-      log('Starting department sync', 'api-sync');
-      const { departments } = await this.fetchWithAuth('/departments');
-
-      for (const dept of departments) {
-        const departmentData: InsertDepartment = {
-          externalId: dept.id.toString(),
-          name: dept.name,
-          description: dept.description || null,
-          status: dept.active ? 'active' : 'inactive'
-        };
-
-        await storage.createDepartment(departmentData);
-        log(`Synced department: ${dept.name}`, 'api-sync');
-      }
-
-      return true;
-    } catch (error) {
-      log(`Failed to sync departments: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      return false;
-    }
-  }
-
-  async syncSchedules(departmentId: string) {
-    try {
-      log(`Starting schedule sync for department: ${departmentId}`, 'api-sync');
-      const { schedules } = await this.fetchWithAuth(`/departments/${departmentId}/schedules`);
-
-      for (const schedule of schedules) {
-        const scheduleData: InsertSchedule = {
-          departmentId: parseInt(departmentId),
-          externalId: schedule.id.toString(),
-          startTime: new Date(schedule.start_time),
-          endTime: new Date(schedule.end_time),
-          status: schedule.status,
-          metadata: {
-            machineCount: schedule.machine_count,
-            operatorName: schedule.operator_name,
-            notes: schedule.notes
-          }
-        };
-
-        await storage.createSchedule(scheduleData);
-        log(`Synced schedule: ${schedule.id}`, 'api-sync');
-      }
-
-      return true;
-    } catch (error) {
-      log(`Failed to sync schedules: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      return false;
-    }
-  }
-
   async syncMachineStatus(machineId: number) {
     try {
       log(`Syncing status for machine ${machineId}`, 'api-sync');
@@ -94,12 +39,12 @@ export class ApiSyncService {
 
       // Update machine metrics
       const metrics = {
-        cycles: data.cycles,
-        uptime: data.uptime,
-        errors: data.errors,
-        temperature: data.temperature,
-        waterLevel: data.waterLevel,
-        detergentLevel: data.detergentLevel
+        cycles: data.cycles || 0,
+        uptime: data.uptime || 100,
+        errors: data.errors || 0,
+        temperature: data.temperature || 0,
+        waterLevel: data.waterLevel || 100,
+        detergentLevel: data.detergentLevel || 100
       };
 
       return true;
@@ -112,17 +57,23 @@ export class ApiSyncService {
   async syncAllMachines() {
     try {
       log('Starting machine sync', 'api-sync');
-      const { machines } = await this.fetchWithAuth('/machines');
+      const machines = await this.fetchWithAuth('/machines');
+
+      // Clear existing machines
+      await storage.clearAllMachines();
 
       for (const machine of machines) {
         const machineData: InsertMachine = {
-          name: machine.name,
-          location: machine.location,
-          status: machine.status,
+          name: machine.name || `Machine ${machine.id}`,
+          location: machine.location || 'Unknown',
+          status: machine.status || 'offline',
         };
 
-        await storage.createMachine(machineData);
+        const createdMachine = await storage.createMachine(machineData);
         log(`Synced machine: ${machine.name}`, 'api-sync');
+
+        // Fetch and update status for each machine
+        await this.syncMachineStatus(createdMachine.id);
       }
 
       return true;

@@ -18,6 +18,7 @@ export interface IStorage {
   getMachine(id: number): Promise<Machine | undefined>;
   createMachine(machine: InsertMachine): Promise<Machine>;
   updateMachineStatus(id: number, status: string): Promise<Machine>;
+  clearAllMachines(): Promise<void>;
 
   // Alert operations
   getAlerts(machineId?: number): Promise<Alert[]>;
@@ -60,7 +61,7 @@ export class DatabaseStorage implements IStorage {
         lastPing: new Date(),
         metrics: { 
           cycles: 0, 
-          uptime: 0, 
+          uptime: 100, 
           errors: 0,
           temperature: 0,
           waterLevel: 100,
@@ -74,10 +75,17 @@ export class DatabaseStorage implements IStorage {
   async updateMachineStatus(id: number, status: string): Promise<Machine> {
     const [machine] = await db
       .update(machines)
-      .set({ status, lastPing: new Date() })
+      .set({ 
+        status, 
+        lastPing: new Date()
+      })
       .where(eq(machines.id, id))
       .returning();
     return machine;
+  }
+
+  async clearAllMachines(): Promise<void> {
+    await db.delete(machines);
   }
 
   // Alert methods
