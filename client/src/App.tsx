@@ -3,6 +3,7 @@ import { queryClient, getQueryFn } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
 import Dashboard from "@/pages/dashboard";
 import Machines from "@/pages/machines";
 import Reports from "@/pages/reports";
@@ -12,11 +13,7 @@ import { useEffect } from "react";
 import { initWebSocket } from "./lib/ws";
 import { Loader2 } from "lucide-react";
 import type { User } from "@shared/schema";
-import Admin from "@/pages/admin"; // Add Admin import
-
-
-// Initialize WebSocket connection
-initWebSocket();
+import Admin from "@/pages/admin";
 
 function PrivateRoute({ component: Component }: { component: React.ComponentType }) {
   const [, setLocation] = useLocation();
@@ -28,6 +25,10 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
   useEffect(() => {
     if (!isLoading && !data) {
       setLocation('/login');
+    }
+    // Initialize WebSocket only after successful auth
+    if (data?.user) {
+      initWebSocket();
     }
   }, [data, isLoading, setLocation]);
 
@@ -42,11 +43,14 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
   if (!data) return null;
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <main className="flex-1">
-        <Component />
-      </main>
+    <div className="flex h-screen flex-col">
+      <Header />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">
+          <Component />
+        </main>
+      </div>
     </div>
   );
 }
@@ -62,9 +66,7 @@ function Router() {
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (!isLoading && auth && window.location.pathname === '/login') {
-      setTimeout(() => {
-        setLocation('/');
-      }, 100);
+      setLocation('/');
     }
   }, [auth, isLoading, setLocation]);
 
@@ -74,7 +76,7 @@ function Router() {
       <Route path="/" component={() => <PrivateRoute component={Dashboard} />} />
       <Route path="/machines" component={() => <PrivateRoute component={Machines} />} />
       <Route path="/reports" component={() => <PrivateRoute component={Reports} />} />
-      <Route path="/admin" component={() => <PrivateRoute component={Admin} />} /> {/* Add admin route */}
+      <Route path="/admin" component={() => <PrivateRoute component={Admin} />} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -59,13 +59,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        log(`Session ID found: ${sid}`, 'ws');
+        // Parse session ID from signed cookie
+        const sessionId = sid.split('.')[0].split(':')[1];
+        log(`Parsed session ID: ${sessionId}`, 'ws');
 
         // Get session data
         const sessionData = await new Promise((resolve) => {
-          sessionStore.get(sid.substring(2).split('.')[0], (err, session) => {
-            if (err || !session) {
-              log(`WebSocket session error: ${err?.message || 'Session not found'}`, 'ws');
+          sessionStore.get(sessionId, (err, session) => {
+            if (err) {
+              log(`WebSocket session error: ${err.message}`, 'ws');
               resolve(null);
             } else {
               log(`Session data found: ${JSON.stringify(session)}`, 'ws');

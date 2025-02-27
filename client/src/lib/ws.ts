@@ -7,29 +7,26 @@ export function initWebSocket() {
   const wsUrl = window.location.origin.replace(/^http/, 'ws') + '/ws';
   console.log('Connecting WebSocket to:', wsUrl);
 
-  // Get cookies for authentication
-  const cookies = document.cookie;
+  // Create WebSocket connection with credentials included
+  socket = new WebSocket(wsUrl);
 
-  // Create WebSocket connection with cookies
-  socket = new WebSocket(wsUrl, ['cookie', cookies]);
+  socket.onopen = () => {
+    console.log('WebSocket connection established');
+  };
 
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data) as WSMessage;
     messageHandlers.forEach(handler => handler(message));
   };
 
-  socket.onclose = () => {
-    console.log('WebSocket connection closed, attempting to reconnect...');
+  socket.onclose = (event) => {
+    console.log('WebSocket connection closed, attempting to reconnect...', event.code, event.reason);
     // Attempt to reconnect after a delay
     setTimeout(() => initWebSocket(), 1000);
   };
 
   socket.onerror = (error) => {
     console.error('WebSocket error:', error);
-  };
-
-  socket.onopen = () => {
-    console.log('WebSocket connection established');
   };
 }
 
