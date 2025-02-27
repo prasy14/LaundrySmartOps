@@ -22,7 +22,7 @@ export class ApiSyncService {
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${process.env.SQ_INSIGHTS_API_KEY}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -135,13 +135,14 @@ export class ApiSyncService {
     try {
       log('Starting full sync', 'api-sync');
       const locationCount = await this.syncLocations();
+      const machines = await storage.getMachines();
 
       // Log the sync attempt
       await storage.createSyncLog({
         timestamp: new Date(),
         success: true,
         error: null,
-        machineCount: 0, // This will be updated by individual location syncs
+        machineCount: machines.length,
         locationCount,
         programCount: 0
       });
@@ -161,43 +162,6 @@ export class ApiSyncService {
 
       log(`Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       return false;
-    }
-  }
-
-  async syncMachinePrograms(): Promise<number> {
-    try {
-      log('Starting machine programs sync', 'api-sync');
-      const data = await this.fetchWithAuth('/programs');
-
-      if (!data?.programs) {
-        throw new Error('No program data received from API');
-      }
-
-      let count = 0;
-      for (const program of data.programs) {
-        try {
-          const programData: InsertMachineProgram = {
-            externalId: program.id.toString(),
-            name: program.name,
-            description: program.description,
-            duration: program.duration,
-            type: program.type || 'wash',
-          };
-
-          await storage.createOrUpdateMachineProgram(programData);
-          count++;
-          log(`Synced program: ${programData.name}`, 'api-sync');
-        } catch (error) {
-          log(`Failed to sync program ${program.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-          // Continue with next program
-        }
-      }
-
-      log(`Successfully synced ${count} machine programs`, 'api-sync');
-      return count;
-    } catch (error) {
-      log(`Failed to sync machine programs: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      throw error;
     }
   }
 
