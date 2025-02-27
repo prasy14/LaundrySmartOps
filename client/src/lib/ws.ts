@@ -7,7 +7,11 @@ export function initWebSocket() {
   const wsUrl = window.location.origin.replace(/^http/, 'ws') + '/ws';
   console.log('Connecting WebSocket to:', wsUrl);
 
-  socket = new WebSocket(wsUrl);
+  // Get cookies for authentication
+  const cookies = document.cookie;
+
+  // Create WebSocket connection with cookies
+  socket = new WebSocket(wsUrl, ['cookie', cookies]);
 
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data) as WSMessage;

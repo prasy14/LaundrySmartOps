@@ -6,6 +6,15 @@ import { insertUserSchema, insertMachineSchema, insertAlertSchema } from "@share
 import type { WSMessage } from "@shared/schema";
 import { log } from "./vite";
 import { ApiSyncService } from "./services/api-sync";
+import { parse as parseCookie } from "cookie";
+import type { IncomingMessage } from "http";
+import session from "express-session";
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
+const sessionStore = new MemoryStore({
+  checkPeriod: 86400000 // Prune expired entries every 24h
+});
 
 declare module 'express-session' {
   interface SessionData {
@@ -17,20 +26,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // Initialize API sync service
-  const apiSyncService = new ApiSyncService(process.env.API_KEY!);
+  const apiSyncService = new ApiSyncService(process.env.SQ_INSIGHTS_API_KEY || '');
+
+  // Set up session middleware
+  app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: sessionStore,
+    name: 'connect.sid',
+    cookie: {
+      secure: false, // Set to false for development
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
 
   // WebSocket setup
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  log('WebSocket server initialized', 'ws');
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    verifyClient: async (info, done) => {
+      try {
+        log(`WebSocket connection attempt - Headers: ${JSON.stringify(info.req.headers)}`, 'ws');
+        const cookies = parseCookie(info.req.headers.cookie || '');
+        const sid = cookies['connect.sid'];
 
-  // Broadcast to all clients
-  const broadcast = (message: WSMessage) => {
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(message));
+        if (!sid) {
+          log('WebSocket connection rejected - No session ID found', 'ws');
+          done(false, 401, 'Unauthorized');
+          return;
+        }
+
+        log(`Session ID found: ${sid}`, 'ws');
+
+        // Get session data
+        const sessionData = await new Promise((resolve) => {
+          sessionStore.get(sid.substring(2).split('.')[0], (err, session) => {
+            if (err || !session) {
+              log(`WebSocket session error: ${err?.message || 'Session not found'}`, 'ws');
+              resolve(null);
+            } else {
+              log(`Session data found: ${JSON.stringify(session)}`, 'ws');
+              resolve(session);
+            }
+          });
+        });
+
+        if (!sessionData || !sessionData.userId) {
+          log('WebSocket connection rejected - Invalid session', 'ws');
+          done(false, 401, 'Unauthorized');
+          return;
+        }
+
+        log(`WebSocket connection authenticated for user ${sessionData.userId}`, 'ws');
+        done(true);
+      } catch (error) {
+        log(`WebSocket authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'ws');
+        done(false, 500, 'Internal Server Error');
       }
-    });
-  };
+    }
+  });
+
+  log('WebSocket server initialized', 'ws');
 
   // Auth routes
   app.post('/api/auth/login', async (req, res) => {
@@ -52,6 +111,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Set session
       req.session.userId = user.id;
+      log(`Session ID after login: ${req.sessionID}, User ID: ${user.id}`, 'auth');
+
+      // Log session store state
+      sessionStore.all((err, sessions) => {
+        if (err) {
+          log(`Error getting sessions: ${err.message}`, 'auth');
+        } else {
+          log(`Current sessions: ${JSON.stringify(sessions)}`, 'auth');
+        }
+      });
 
       // Ensure we save the session before responding
       await new Promise<void>((resolve, reject) => {
@@ -60,6 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log(`Session save error: ${err.message}`, 'auth');
             reject(err);
           } else {
+            log('Session saved successfully', 'auth');
             resolve();
           }
         });
@@ -314,6 +384,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  // Broadcast to all clients
+  const broadcast = (message: WSMessage) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  };
 
   return httpServer;
 }

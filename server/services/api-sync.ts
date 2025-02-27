@@ -8,7 +8,7 @@ import { log } from "../vite";
 
 export class ApiSyncService {
   private apiKey: string;
-  private baseUrl: string = 'https://partner.sqinsights.com/api/v1';
+  private baseUrl: string = 'https://partner.sqinsights.com/v1';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -22,7 +22,7 @@ export class ApiSyncService {
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${process.env.SQ_INSIGHTS_API_KEY}`,
+          'X-API-Key': this.apiKey,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -49,6 +49,8 @@ export class ApiSyncService {
       const data = await this.fetchWithAuth('/locations?pageSize=1000&page=1');
 
       if (!data?.locations) {
+        log('No location data in API response', 'api-sync');
+        log(`API Response data: ${JSON.stringify(data)}`, 'api-sync');
         throw new Error('No location data received from API');
       }
 
@@ -69,7 +71,7 @@ export class ApiSyncService {
             contactName: location.contactName,
             contactEmail: location.contactEmail,
             contactPhone: location.contactPhone,
-            operatingHours: location.operatingHours,
+            operatingHours: location.operatingHours || {},
             metadata: location.metadata || {}
           };
 
