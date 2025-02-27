@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { storage } from '../storage';
 import { insertUserSchema } from '@shared/schema';
 import { AuthenticatedRequest } from '../middleware/auth';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from '../utils/auth';
 import { log } from '../vite';
 
 const router = Router();
@@ -12,6 +12,7 @@ router.post('/login', async (req: AuthenticatedRequest, res) => {
     const { username, password } = req.body;
     log(`Login attempt for user: ${username}`, 'auth');
     log(`Session ID before login: ${req.sessionID}`, 'auth');
+    log(`Cookie Headers: ${req.headers.cookie}`, 'auth');
 
     const user = await storage.getUserByUsername(username);
     log(`User found: ${user ? 'yes' : 'no'}`, 'auth');
@@ -21,7 +22,7 @@ router.post('/login', async (req: AuthenticatedRequest, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await verifyPassword(password, user.password);
     log(`Password validation: ${isValidPassword ? 'success' : 'failed'}`, 'auth');
 
     if (!isValidPassword) {
