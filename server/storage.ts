@@ -1,11 +1,13 @@
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
-import { users, machines, alerts, syncLogs } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms } from "@shared/schema";
 import type { 
   User, InsertUser, 
   Machine, InsertMachine, 
   Alert, InsertAlert,
-  SyncLog, InsertSyncLog
+  SyncLog, InsertSyncLog,
+  Location, InsertLocation,
+  MachineProgram, InsertMachineProgram
 } from "@shared/schema";
 
 export interface IStorage {
@@ -14,12 +16,24 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  // Location operations
+  getLocations(): Promise<Location[]>;
+  getLocation(id: number): Promise<Location | undefined>;
+  getLocationByExternalId(externalId: string): Promise<Location | undefined>;
+  createOrUpdateLocation(location: InsertLocation): Promise<Location>;
+
+  // Machine Program operations
+  getMachinePrograms(): Promise<MachineProgram[]>;
+  getMachineProgram(id: number): Promise<MachineProgram | undefined>;
+  getMachineProgramByExternalId(externalId: string): Promise<MachineProgram | undefined>;
+  createOrUpdateMachineProgram(program: InsertMachineProgram): Promise<MachineProgram>;
+
   // Machine operations
   getMachines(): Promise<Machine[]>;
   getMachine(id: number): Promise<Machine | undefined>;
-  createMachine(machine: InsertMachine): Promise<Machine>;
+  getMachineByExternalId(externalId: string): Promise<Machine | undefined>;
+  createOrUpdateMachine(machine: InsertMachine): Promise<Machine>;
   updateMachineStatus(id: number, status: string): Promise<Machine>;
-  clearAllMachines(): Promise<void>;
 
   // Alert operations
   getAlerts(machineId?: number): Promise<Alert[]>;
@@ -48,6 +62,64 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  // Location methods
+  async getLocations(): Promise<Location[]> {
+    return await db.select().from(locations);
+  }
+
+  async getLocation(id: number): Promise<Location | undefined> {
+    const [location] = await db.select().from(locations).where(eq(locations.id, id));
+    return location;
+  }
+
+  async getLocationByExternalId(externalId: string): Promise<Location | undefined> {
+    const [location] = await db.select().from(locations).where(eq(locations.externalId, externalId));
+    return location;
+  }
+
+  async createOrUpdateLocation(insertLocation: InsertLocation): Promise<Location> {
+    const existing = await this.getLocationByExternalId(insertLocation.externalId);
+    if (existing) {
+      const [updated] = await db
+        .update(locations)
+        .set(insertLocation)
+        .where(eq(locations.externalId, insertLocation.externalId))
+        .returning();
+      return updated;
+    }
+    const [location] = await db.insert(locations).values(insertLocation).returning();
+    return location;
+  }
+
+  // Machine Program methods
+  async getMachinePrograms(): Promise<MachineProgram[]> {
+    return await db.select().from(machinePrograms);
+  }
+
+  async getMachineProgram(id: number): Promise<MachineProgram | undefined> {
+    const [program] = await db.select().from(machinePrograms).where(eq(machinePrograms.id, id));
+    return program;
+  }
+
+  async getMachineProgramByExternalId(externalId: string): Promise<MachineProgram | undefined> {
+    const [program] = await db.select().from(machinePrograms).where(eq(machinePrograms.externalId, externalId));
+    return program;
+  }
+
+  async createOrUpdateMachineProgram(insertProgram: InsertMachineProgram): Promise<MachineProgram> {
+    const existing = await this.getMachineProgramByExternalId(insertProgram.externalId);
+    if (existing) {
+      const [updated] = await db
+        .update(machinePrograms)
+        .set(insertProgram)
+        .where(eq(machinePrograms.externalId, insertProgram.externalId))
+        .returning();
+      return updated;
+    }
+    const [program] = await db.insert(machinePrograms).values(insertProgram).returning();
+    return program;
+  }
+
   // Machine methods
   async getMachines(): Promise<Machine[]> {
     return await db.select().from(machines);
@@ -58,15 +130,32 @@ export class DatabaseStorage implements IStorage {
     return machine;
   }
 
-  async createMachine(insertMachine: InsertMachine): Promise<Machine> {
+  async getMachineByExternalId(externalId: string): Promise<Machine | undefined> {
+    const [machine] = await db.select().from(machines).where(eq(machines.externalId, externalId));
+    return machine;
+  }
+
+  async createOrUpdateMachine(insertMachine: InsertMachine): Promise<Machine> {
+    const existing = await this.getMachineByExternalId(insertMachine.externalId);
+    if (existing) {
+      const [updated] = await db
+        .update(machines)
+        .set({
+          ...insertMachine,
+          lastPing: new Date()
+        })
+        .where(eq(machines.externalId, insertMachine.externalId))
+        .returning();
+      return updated;
+    }
     const [machine] = await db
       .insert(machines)
       .values({
         ...insertMachine,
         lastPing: new Date(),
-        metrics: { 
-          cycles: 0, 
-          uptime: 100, 
+        metrics: {
+          cycles: 0,
+          uptime: 100,
           errors: 0,
           temperature: 0,
           waterLevel: 100,
@@ -128,6 +217,7 @@ export class DatabaseStorage implements IStorage {
     return alert;
   }
 
+  // Sync log methods
   async getLastSyncLog(): Promise<SyncLog | undefined> {
     const [log] = await db
       .select()

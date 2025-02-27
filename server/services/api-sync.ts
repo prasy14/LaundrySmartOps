@@ -1,82 +1,21 @@
 import { storage } from "../storage";
-import type { InsertMachine, InsertAlert } from "@shared/schema";
+import type { 
+  InsertMachine, InsertAlert, 
+  InsertLocation, InsertMachineProgram,
+  InsertSyncLog 
+} from "@shared/schema";
 import { log } from "../vite";
-
-// For development, use mock data until API is available
-const MOCK_MACHINES = [
-  {
-    id: 1,
-    machineName: "Washer 101",
-    locationName: "Floor 1",
-    operationalStatus: "online",
-    metrics: {
-      totalCycles: 150,
-      uptimePercentage: 98.5,
-      errorCount: 2,
-      currentTemperature: 65,
-      waterLevel: 85,
-      detergentLevel: 75
-    }
-  },
-  {
-    id: 2,
-    machineName: "Washer 102",
-    locationName: "Floor 1",
-    operationalStatus: "offline",
-    metrics: {
-      totalCycles: 120,
-      uptimePercentage: 85.0,
-      errorCount: 5,
-      currentTemperature: 0,
-      waterLevel: 0,
-      detergentLevel: 50
-    }
-  },
-  {
-    id: 3,
-    machineName: "Washer 201",
-    locationName: "Floor 2",
-    operationalStatus: "maintenance",
-    metrics: {
-      totalCycles: 200,
-      uptimePercentage: 92.0,
-      errorCount: 3,
-      currentTemperature: 70,
-      waterLevel: 90,
-      detergentLevel: 60
-    }
-  }
-];
 
 export class ApiSyncService {
   private apiKey: string;
-  private useMockData: boolean = true; // Toggle for development
+  private baseUrl: string = 'https://partner.sqinsights.com/api/v1';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
   private async fetchWithAuth(endpoint: string, method: string = 'GET', body?: any) {
-    if (this.useMockData) {
-      log('Using mock data for development', 'api-sync');
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      switch (endpoint) {
-        case '/laundry/machines':
-          return { machines: MOCK_MACHINES };
-        case '/laundry/machines/1/status':
-        case '/laundry/machines/2/status':
-        case '/laundry/machines/3/status':
-          const machineId = parseInt(endpoint.split('/')[3]);
-          const machine = MOCK_MACHINES.find(m => m.id === machineId);
-          return machine?.metrics || null;
-        default:
-          throw new Error(`Mock endpoint not found: ${endpoint}`);
-      }
-    }
-
-    const url = `https://smartlaundry.azurewebsites.net/api/v1${endpoint}`;
+    const url = `${this.baseUrl}${endpoint}`;
     log(`Making API request to: ${url}`, 'api-sync');
 
     try {
@@ -90,96 +29,154 @@ export class ApiSyncService {
         body: body ? JSON.stringify(body) : undefined
       });
 
-      const responseText = await response.text();
-      log(`API Response: ${responseText}`, 'api-sync');
-
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} - ${responseText}`);
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.status} - ${errorText}`);
       }
 
-      return responseText ? JSON.parse(responseText) : null;
+      const data = await response.json();
+      return data;
     } catch (error) {
       log(`API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
     }
   }
 
-  async syncMachineStatus(machineId: number) {
+  async syncLocations(): Promise<number> {
     try {
-      log(`Syncing status for machine ${machineId}`, 'api-sync');
-      const data = await this.fetchWithAuth(`/laundry/machines/${machineId}/status`);
+      log('Syncing locations', 'api-sync');
+      const data = await this.fetchWithAuth('/locations');
 
-      if (!data) {
-        throw new Error('No data received from API');
+      if (!data?.locations) {
+        throw new Error('No location data received from API');
       }
 
-      // Map API response to our schema
-      const metrics = {
-        cycles: data.totalCycles || 0,
-        uptime: data.uptimePercentage || 100,
-        errors: data.errorCount || 0,
-        temperature: data.currentTemperature || 0,
-        waterLevel: data.waterLevel || 100,
-        detergentLevel: data.detergentLevel || 100
-      };
+      let count = 0;
+      for (const location of data.locations) {
+        const locationData: InsertLocation = {
+          externalId: location.id.toString(),
+          name: location.name,
+          address: location.address,
+          type: location.type || 'store',
+          status: location.status || 'active',
+        };
 
-      await storage.updateMachineStatus(machineId, data.operationalStatus || 'offline');
-      log(`Successfully updated machine ${machineId} status`, 'api-sync');
+        await storage.createOrUpdateLocation(locationData);
+        count++;
+      }
 
-      return true;
+      log(`Successfully synced ${count} locations`, 'api-sync');
+      return count;
     } catch (error) {
-      log(`Failed to sync machine status: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      return false;
+      log(`Failed to sync locations: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      throw error;
     }
   }
 
-  async syncAllMachines() {
+  async syncMachinePrograms(): Promise<number> {
     try {
-      log('Starting machine sync', 'api-sync');
-      const data = await this.fetchWithAuth('/laundry/machines');
+      log('Syncing machine programs', 'api-sync');
+      const data = await this.fetchWithAuth('/machine-programs');
+
+      if (!data?.programs) {
+        throw new Error('No program data received from API');
+      }
+
+      let count = 0;
+      for (const program of data.programs) {
+        const programData: InsertMachineProgram = {
+          externalId: program.id.toString(),
+          name: program.name,
+          description: program.description,
+          duration: program.duration,
+          type: program.type || 'wash',
+        };
+
+        await storage.createOrUpdateMachineProgram(programData);
+        count++;
+      }
+
+      log(`Successfully synced ${count} machine programs`, 'api-sync');
+      return count;
+    } catch (error) {
+      log(`Failed to sync machine programs: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      throw error;
+    }
+  }
+
+  async syncAllMachines(): Promise<boolean> {
+    try {
+      log('Starting full sync', 'api-sync');
+
+      // First sync locations and programs
+      const locationCount = await this.syncLocations();
+      const programCount = await this.syncMachinePrograms();
+
+      // Then sync machines
+      const data = await this.fetchWithAuth('/machines');
 
       if (!data?.machines) {
         throw new Error('No machine data received from API');
       }
 
-      // Clear existing machines
-      await storage.clearAllMachines();
-      log('Cleared existing machines from database', 'api-sync');
-
+      let machineCount = 0;
       for (const machine of data.machines) {
+        const location = await storage.getLocationByExternalId(machine.locationId.toString());
+        if (!location) {
+          log(`Warning: Location not found for machine ${machine.id}`, 'api-sync');
+          continue;
+        }
+
         const machineData: InsertMachine = {
-          name: machine.machineName || `Machine ${machine.id}`,
-          location: machine.locationName || 'Unknown',
-          status: machine.operationalStatus || 'offline',
+          externalId: machine.id.toString(),
+          name: machine.name,
+          locationId: location.id,
+          model: machine.model,
+          serialNumber: machine.serialNumber,
+          status: machine.status || 'offline',
         };
 
-        const createdMachine = await storage.createMachine(machineData);
-        log(`Created machine in database: ${machineData.name}`, 'api-sync');
-
-        // Fetch and update status for each machine
-        await this.syncMachineStatus(createdMachine.id);
+        await storage.createOrUpdateMachine(machineData);
+        machineCount++;
       }
+
+      // Log the sync attempt
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: true,
+        error: null,
+        machineCount,
+        locationCount,
+        programCount
+      });
 
       log('Machine sync completed successfully', 'api-sync');
       return true;
     } catch (error) {
+      // Log the sync error
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        machineCount: 0,
+        locationCount: 0,
+        programCount: 0
+      });
+
       log(`Failed to sync machines: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       return false;
     }
   }
 
-  async reportAlert(machineId: number, alert: InsertAlert) {
+  async reportAlert(machineId: number, alert: InsertAlert): Promise<boolean> {
     try {
-      if (this.useMockData) {
-        log(`[Mock] Reported alert for machine ${machineId}`, 'api-sync');
-        return true;
-      }
-
       log(`Reporting alert for machine ${machineId}`, 'api-sync');
-      await this.fetchWithAuth(`/laundry/machines/${machineId}/alerts`, 'POST', {
+      await this.fetchWithAuth(`/machines/${machineId}/alerts`, 'POST', {
         type: alert.type,
         message: alert.message,
-        status: alert.status
+        status: alert.status,
+        priority: alert.priority,
+        category: alert.category
       });
       return true;
     } catch (error) {
