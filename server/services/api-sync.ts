@@ -8,6 +8,7 @@ export class ApiSyncService {
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+    log(`API Service initialized with key: ${apiKey ? '[PROVIDED]' : '[MISSING]'}`, 'api-sync');
   }
 
   private async fetchWithAuth(endpoint: string) {
@@ -51,14 +52,16 @@ export class ApiSyncService {
       let count = 0;
       for (const location of response.data) {
         try {
+          log(`Processing location: ${JSON.stringify(location)}`, 'api-sync');
+
           const locationData: InsertLocation = {
             externalId: location.id,
-            name: location.name,
+            name: location.name || 'Unnamed Location',
             address: location.address || null,
-            city: null, 
-            state: null, 
-            country: null, 
-            postalCode: null, 
+            city: null,
+            state: null,
+            country: null,
+            postalCode: null,
             type: 'store',
             status: 'active',
             timezone: location.timezone || null,

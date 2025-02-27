@@ -13,7 +13,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.use(express.json());
 
     // Initialize API sync service with the API key
-    const apiSyncService = new ApiSyncService(process.env.SQ_INSIGHTS_API_KEY || '');
+    const apiKey = process.env.SQ_INSIGHTS_API_KEY || '';
+    log(`Initializing API sync service with key: ${apiKey ? '[PROVIDED]' : '[MISSING]'}`, 'server');
+    const apiSyncService = new ApiSyncService(apiKey);
 
     // Get locations
     app.get('/api/locations', async (req, res) => {
@@ -29,6 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Manual sync endpoint
     app.post('/api/sync/locations', async (req, res) => {
       try {
+        log('Starting manual location sync', 'api');
         const count = await apiSyncService.syncLocations();
         res.json({ message: `Successfully synced ${count} locations` });
       } catch (error) {
