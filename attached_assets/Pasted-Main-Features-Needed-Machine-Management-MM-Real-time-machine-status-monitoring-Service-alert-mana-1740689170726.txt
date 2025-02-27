@@ -1,0 +1,76 @@
+Main Features Needed
+Machine Management (MM)
+
+Real-time machine status monitoring
+Service alert management with auto-clearing reports
+Machine performance tracking by lease/location
+Automated service request creation for recurring issues
+Machine lifecycle tracking (installation, maintenance, end-of-life)
+Identification of underutilized machines
+Uptime tracking and proactive maintenance scheduling
+Role-based access control for different user types
+Reporting & Analysis (RA)
+
+KPI dashboards for machine performance and service trends
+Customizable reports on machine uptime, errors, and SLAs
+Historical data analysis for trend identification
+Environmental reporting (water & energy consumption)
+Data export in multiple formats (CSV, Excel, PDF)
+SLA compliance monitoring and tracking
+Real-time data visualization and report generation
+Real-Time Monitoring (RTM)
+
+Unresolved service alert tracking by location
+Alert notifications for recurring errors
+Machine availability tracking by time of day
+Machine cycle tracking and error reporting
+Performance comparisons across multiple locations
+Visualizations (VIS)
+
+Interactive dashboards with real-time insights
+Heat maps to track machine usage intensity
+Service response time and uptime visual reports
+Custom KPIs for executives and managers
+Auto vs. manual alert clearing differentiation
+User Roles/Types
+System Administrators – Manage service alerts, configure system settings, oversee API integrations
+Technicians – Troubleshoot machine issues, clear service alerts, perform maintenance
+Lease Managers – Monitor machine usage by lease and location, analyze performance trends
+Operations Managers – Track alert resolution times, oversee maintenance schedules
+Performance Analysts – Assess machine uptime, error trends, and recurring maintenance issues
+Compliance Officers – Verify SLAs, generate compliance reports
+Facilities Managers – Track machine availability and optimize coverage
+Service Coordinators – Schedule proactive maintenance based on error patterns
+Data Analysts – Process machine performance data, generate insights
+Executives – View high-level business KPIs and strategic reports
+Key Functionality
+Machine Monitoring & Alerts
+
+Track real-time machine health
+Monitor uptime, usage, and service alerts
+Filter alerts by campus, service type, and date range
+Service Request Automation
+
+Auto-create service requests for repeated errors
+Alert operations managers on high-cycle machines
+Automated alert clearing for certain machine conditions
+Reporting & Compliance
+
+Generate SLA compliance reports
+View machine connectivity and uptime analytics
+Identify long-term trends in machine performance
+User Access & Security
+
+Role-based access control
+Multi-factor authentication (MFA)
+Audit logging for user actions
+Data Visualization & Insights
+
+Custom dashboards for each user role
+Interactive reports with export options
+Heat maps for high-demand machine locations
+Performance Optimization
+
+Identify underutilized machines
+Compare machine performance across locations
+Proactive maintenance alerts for recurring issues
