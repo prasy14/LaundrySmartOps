@@ -5,63 +5,99 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { Machine } from "@shared/schema";
+import { Loader2 } from "lucide-react";
 
 export default function Machines() {
-  const { data } = useQuery<{ machines: Machine[] }>({
+  const { data, isLoading } = useQuery<{ machines: Machine[] }>({
     queryKey: ['/api/machines']
   });
 
-  if (!data) return null;
+  const { data: locationsData } = useQuery<{ locations: { id: number; name: string }[] }>({
+    queryKey: ['/api/locations']
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  const getLocationName = (locationId: number) => {
+    const location = locationsData?.locations.find(loc => loc.id === locationId);
+    return location?.name || 'Unknown Location';
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'online':
+        return 'success';
+      case 'offline':
+        return 'destructive';
+      case 'maintenance':
+        return 'warning';
+      default:
+        return 'secondary';
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="container mx-auto p-6 space-y-6">
       <Header />
-      <main className="flex-1 p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Machine Management</h1>
-        
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Ping</TableHead>
-                  <TableHead>Cycles</TableHead>
-                  <TableHead>Uptime</TableHead>
-                  <TableHead>Errors</TableHead>
+      <h1 className="text-3xl font-bold">Machine Management</h1>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Ping</TableHead>
+                <TableHead>Cycles</TableHead>
+                <TableHead>Uptime</TableHead>
+                <TableHead>Errors</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.machines.map((machine) => (
+                <TableRow key={machine.id}>
+                  <TableCell className="font-medium">{machine.name}</TableCell>
+                  <TableCell>{getLocationName(machine.locationId)}</TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusVariant(machine.status)}>
+                      {machine.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {machine.lastPing ? 
+                      format(new Date(machine.lastPing), 'MMM d, h:mm a') : 
+                      'Never'
+                    }
+                  </TableCell>
+                  <TableCell>{machine.metrics?.cycles || 0}</TableCell>
+                  <TableCell>{machine.metrics?.uptime ? `${machine.metrics.uptime.toFixed(1)}%` : 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge variant={machine.metrics?.errors ? 'destructive' : 'secondary'}>
+                      {machine.metrics?.errors || 0}
+                    </Badge>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.machines.map((machine) => (
-                  <TableRow key={machine.id}>
-                    <TableCell className="font-medium">{machine.name}</TableCell>
-                    <TableCell>{machine.location}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={machine.status === 'online' ? 'default' : 
-                                machine.status === 'offline' ? 'destructive' : 'warning'}
-                      >
-                        {machine.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {machine.lastPing ? 
-                        format(new Date(machine.lastPing), 'MMM d, h:mm a') : 
-                        'Never'
-                      }
-                    </TableCell>
-                    <TableCell>{machine.metrics?.cycles || 0}</TableCell>
-                    <TableCell>{machine.metrics?.uptime.toFixed(1)}%</TableCell>
-                    <TableCell>{machine.metrics?.errors || 0}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </main>
+              ))}
+
+              {(!data?.machines || data.machines.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No machines found. Add machines or sync with the SQ Insights API.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
