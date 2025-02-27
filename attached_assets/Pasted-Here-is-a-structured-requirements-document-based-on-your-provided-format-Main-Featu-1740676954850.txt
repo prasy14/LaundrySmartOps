@@ -1,0 +1,116 @@
+Here is a structured requirements document based on your provided format:
+
+---
+
+### **Main Features Needed**
+1. **Machine Management (MM)**
+   - Real-time machine status monitoring
+   - Service alert management with auto-clearing reports
+   - Machine performance tracking by lease/location
+   - Automated service request creation for recurring issues
+   - Machine lifecycle tracking (installation, maintenance, end-of-life)
+   - Identification of underutilized machines
+   - Uptime tracking and proactive maintenance scheduling
+   - Role-based access control for different user types
+
+2. **Reporting & Analysis (RA)**
+   - KPI dashboards for machine performance and service trends
+   - Customizable reports on machine uptime, errors, and SLAs
+   - Historical data analysis for trend identification
+   - Environmental reporting (water & energy consumption)
+   - Data export in multiple formats (CSV, Excel, PDF)
+   - SLA compliance monitoring and tracking
+   - Real-time data visualization and report generation
+
+3. **Real-Time Monitoring (RTM)**
+   - Unresolved service alert tracking by location
+   - Alert notifications for recurring errors
+   - Machine availability tracking by time of day
+   - Machine cycle tracking and error reporting
+   - Performance comparisons across multiple locations
+
+4. **Visualizations (VIS)**
+   - Interactive dashboards with real-time insights
+   - Heat maps to track machine usage intensity
+   - Service response time and uptime visual reports
+   - Custom KPIs for executives and managers
+   - Auto vs. manual alert clearing differentiation
+
+---
+
+### **User Roles/Types**
+1. **System Administrators** – Manage service alerts, configure system settings, oversee API integrations
+2. **Technicians** – Troubleshoot machine issues, clear service alerts, perform maintenance
+3. **Lease Managers** – Monitor machine usage by lease and location, analyze performance trends
+4. **Operations Managers** – Track alert resolution times, oversee maintenance schedules
+5. **Performance Analysts** – Assess machine uptime, error trends, and recurring maintenance issues
+6. **Compliance Officers** – Verify SLAs, generate compliance reports
+7. **Facilities Managers** – Track machine availability and optimize coverage
+8. **Service Coordinators** – Schedule proactive maintenance based on error patterns
+9. **Data Analysts** – Process machine performance data, generate insights
+10. **Executives** – View high-level business KPIs and strategic reports
+
+---
+
+### **Key Functionality**
+1. **Machine Monitoring & Alerts**
+   - Track real-time machine health
+   - Monitor uptime, usage, and service alerts
+   - Filter alerts by campus, service type, and date range
+
+2. **Service Request Automation**
+   - Auto-create service requests for repeated errors
+   - Alert operations managers on high-cycle machines
+   - Automated alert clearing for certain machine conditions
+
+3. **Reporting & Compliance**
+   - Generate SLA compliance reports
+   - View machine connectivity and uptime analytics
+   - Identify long-term trends in machine performance
+
+4. **User Access & Security**
+   - Role-based access control
+   - Multi-factor authentication (MFA)
+   - Audit logging for user actions
+
+5. **Data Visualization & Insights**
+   - Custom dashboards for each user role
+   - Interactive reports with export options
+   - Heat maps for high-demand machine locations
+
+6. **Performance Optimization**
+   - Identify underutilized machines
+   - Compare machine performance across locations
+   - Proactive maintenance alerts for recurring issues
+
+---
+
+### **Specific Technical Requirements**
+1. **Database & Backend**
+   - SQL Server as primary data storage
+   - RESTful APIs for data retrieval and updates
+   - Support for high availability (99.9% uptime)
+
+2. **Security & Compliance**
+   - AES-256 encryption for data security
+   - Role-based access controls (RBAC)
+   - Audit logging for all critical actions
+
+3. **Scalability & Performance**
+   - Support for thousands of machines and service alerts
+   - Dashboards must load within 10 seconds
+   - Reports should be generated in under 5 seconds
+
+4. **API Integration**
+   - Fetch real-time machine data
+   - Support for asynchronous API calls
+   - API caching for improved performance
+
+5. **User Interface & Experience**
+   - Responsive UI for desktop, tablet, and mobile
+   - Customizable widgets for dashboards
+   - Dark mode and multilingual support
+
+---
+
+Would you like any additional details or modifications to this breakdown?
