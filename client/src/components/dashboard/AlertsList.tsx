@@ -52,15 +52,17 @@ export function AlertsList() {
 
   return (
     <Card>
-      <CardHeader className="space-y-2">
-        <div className="flex justify-between items-center">
-          <CardTitle>Active Alerts</CardTitle>
-          <div className="flex space-x-2">
+      <CardHeader>
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <CardTitle>Active Alerts</CardTitle>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
             <Select
               value={selectedLocation}
               onValueChange={setSelectedLocation}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <MapPin className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Filter by location" />
               </SelectTrigger>
@@ -77,7 +79,7 @@ export function AlertsList() {
               value={selectedCategory}
               onValueChange={setSelectedCategory}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <AlertCircle className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
@@ -89,12 +91,12 @@ export function AlertsList() {
               </SelectContent>
             </Select>
           </div>
+          <p className="text-sm text-muted-foreground">
+            {activeAlerts.length} active alerts 
+            {selectedLocation !== 'all' ? ` in ${selectedLocation}` : ''}
+            {selectedCategory !== 'all' ? ` (${selectedCategory})` : ''}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {activeAlerts.length} active alerts 
-          {selectedLocation !== 'all' ? ` in ${selectedLocation}` : ''}
-          {selectedCategory !== 'all' ? ` (${selectedCategory})` : ''}
-        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         {activeAlerts.map((alert) => {
