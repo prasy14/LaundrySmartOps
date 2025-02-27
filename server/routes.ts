@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertUserSchema, insertMachineSchema, insertAlertSchema } from "@shared/schema";
 import type { WSMessage } from "@shared/schema";
@@ -17,6 +17,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // WebSocket setup
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  log('WebSocket server initialized', 'ws');
 
   // Broadcast to all clients
   const broadcast = (message: WSMessage) => {
@@ -91,13 +92,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Machine routes
-  app.get('/api/machines', async (req, res) => {
+  // Machine routes - ensure authentication
+  const requireAuth = async (req: any, res: any, next: any) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    next();
+  };
+
+  app.get('/api/machines', requireAuth, async (req, res) => {
     const machines = await storage.getMachines();
     res.json({ machines });
   });
 
-  app.post('/api/machines', async (req, res) => {
+  app.post('/api/machines', requireAuth, async (req, res) => {
     const parsed = insertMachineSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ errors: parsed.error });
@@ -108,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ machine });
   });
 
-  app.patch('/api/machines/:id/status', async (req, res) => {
+  app.patch('/api/machines/:id/status', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
@@ -117,8 +125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ machine });
   });
 
-  // Alert routes
-  app.get('/api/alerts', async (req, res) => {
+  // Alert routes - ensure authentication
+  app.get('/api/alerts', requireAuth, async (req, res) => {
     const { machineId } = req.query;
     const alerts = await storage.getAlerts(
       machineId ? parseInt(machineId as string) : undefined
@@ -126,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ alerts });
   });
 
-  app.post('/api/alerts', async (req, res) => {
+  app.post('/api/alerts', requireAuth, async (req, res) => {
     const parsed = insertAlertSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ errors: parsed.error });
@@ -137,11 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ alert });
   });
 
-  app.post('/api/alerts/:id/clear', async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
+  app.post('/api/alerts/:id/clear', requireAuth, async (req, res) => {
     const { id } = req.params;
     const alert = await storage.clearAlert(parseInt(id), req.session.userId);
     broadcast({ type: 'alert_cleared', payload: alert });

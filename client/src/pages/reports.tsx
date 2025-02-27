@@ -1,6 +1,8 @@
 import { Header } from "@/components/layout/Header";
 import { KPICards } from "@/components/reports/KPICards";
 import { PerformanceChart } from "@/components/reports/PerformanceChart";
+import { UsageHeatmap } from "@/components/reports/UsageHeatmap";
+import { AdvancedKPICharts } from "@/components/reports/AdvancedKPICharts";
 
 export default function Reports() {
   return (
@@ -12,6 +14,8 @@ export default function Reports() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <PerformanceChart />
         </div>
+        <UsageHeatmap />
+        <AdvancedKPICharts />
       </main>
     </div>
   );

@@ -1,7 +1,6 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient, getQueryFn } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { useQuery } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Sidebar } from "@/components/layout/Sidebar";
 import Dashboard from "@/pages/dashboard";
@@ -61,7 +60,9 @@ function Router() {
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (!isLoading && auth && window.location.pathname === '/login') {
-      setLocation('/');
+      setTimeout(() => {
+        setLocation('/');
+      }, 100);
     }
   }, [auth, isLoading, setLocation]);
 
