@@ -7,16 +7,29 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull(),
+  role: text("role", { enum: ['admin', 'manager', 'operator'] }).notNull(),
   name: text("name").notNull(),
+  email: text("email"),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  locationId: integer("location_id").references(() => locations.id),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  role: true,
-  name: true,
-});
+export const insertUserSchema = createInsertSchema(users)
+  .pick({
+    username: true,
+    password: true,
+    role: true,
+    name: true,
+    email: true,
+    locationId: true,
+  })
+  .extend({
+    role: z.enum(['admin', 'manager', 'operator']),
+    email: z.string().email().optional(),
+    locationId: z.number().optional(),
+  });
 
 // Location schema updates
 export const locations = pgTable("locations", {

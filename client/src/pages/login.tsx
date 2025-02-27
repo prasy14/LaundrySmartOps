@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -33,11 +34,27 @@ export default function Login() {
   const onSubmit = async (values: LoginFormData) => {
     try {
       setIsLoading(true);
-      // For now, just redirect on any login attempt
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Invalid credentials");
+      }
+
+      const data = await res.json();
+      // Update auth state in React Query
+      queryClient.setQueryData(['/api/auth/me'], { user: data.user });
+
       toast({
         title: "Success",
         description: "Successfully logged in",
       });
+
       setLocation("/");
     } catch (error) {
       toast({

@@ -4,6 +4,16 @@ import { ApiSyncService } from "./services/api-sync";
 import { storage } from "./storage";
 import { log } from "./vite";
 import express from "express";
+import session from "express-session";
+import memoryStore from "memorystore";
+import authRoutes from "./routes/auth";
+import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
+
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   try {
@@ -12,13 +22,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Middleware to parse JSON bodies
     app.use(express.json());
 
+    // Setup session middleware
+    const MemoryStore = memoryStore(session);
+    app.use(session({
+      secret: process.env.SESSION_SECRET || 'development_secret',
+      resave: false,
+      saveUninitialized: false,
+      store: new MemoryStore({
+        checkPeriod: 86400000 // Prune expired entries every 24h
+      }),
+      cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      }
+    }));
+
+    // Auth routes
+    app.use('/api/auth', authRoutes);
+
     // Initialize API sync service with the API key
     const apiKey = process.env.SQ_INSIGHTS_API_KEY || '';
     log(`Initializing API sync service with key: ${apiKey ? '[PROVIDED]' : '[MISSING]'}`, 'server');
     const apiSyncService = new ApiSyncService(apiKey);
 
-    // Get locations
-    app.get('/api/locations', async (req, res) => {
+    // Protected routes
+    app.get('/api/locations', isOperatorOrAbove, async (req, res) => {
       try {
         const locations = await storage.getLocations();
         res.json({ locations });
@@ -28,8 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    // Manual sync endpoint
-    app.post('/api/sync/locations', async (req, res) => {
+    app.post('/api/sync/locations', isManagerOrAdmin, async (req, res) => {
       try {
         log('Starting manual location sync', 'api');
         const count = await apiSyncService.syncLocations();

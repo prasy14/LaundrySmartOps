@@ -1,9 +1,9 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { users, machines, alerts, syncLogs, locations, machinePrograms } from "@shared/schema";
-import type { 
-  User, InsertUser, 
-  Machine, InsertMachine, 
+import type {
+  User, InsertUser,
+  Machine, InsertMachine,
   Alert, InsertAlert,
   SyncLog, InsertSyncLog,
   Location, InsertLocation,
@@ -15,6 +15,9 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserLastLogin(id: number): Promise<User>;
+  listUsers(): Promise<User[]>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
 
   // Location operations
   getLocations(): Promise<Location[]>;
@@ -60,6 +63,28 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUserLastLogin(id: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async listUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async updateUser(id: number, updateData: Partial<InsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning();
     return user;
   }
 
@@ -169,8 +194,8 @@ export class DatabaseStorage implements IStorage {
   async updateMachineStatus(id: number, status: string): Promise<Machine> {
     const [machine] = await db
       .update(machines)
-      .set({ 
-        status, 
+      .set({
+        status,
         lastPing: new Date()
       })
       .where(eq(machines.id, id))
