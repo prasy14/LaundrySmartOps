@@ -18,17 +18,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     const httpServer = createServer(app);
 
-    // Middleware to parse JSON bodies
-    app.use(express.json());
+    // API Router to ensure all routes are properly prefixed
+    const apiRouter = express.Router();
 
     // Auth routes
-    app.use('/api/auth', authRoutes);
-
-    // Sync routes
-    app.use('/api/sync', isManagerOrAdmin, syncRoutes);
+    apiRouter.use('/auth', authRoutes);
 
     // Protected routes
-    app.get('/api/locations', isOperatorOrAbove, async (req, res) => {
+    apiRouter.use('/sync', isManagerOrAdmin, syncRoutes);
+
+    apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {
       try {
         const locations = await storage.getLocations();
         res.json({ locations });
@@ -38,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    app.get('/api/machines', isOperatorOrAbove, async (req, res) => {
+    apiRouter.get('/machines', isOperatorOrAbove, async (req, res) => {
       try {
         const machines = await storage.getMachines();
         res.json({ machines });
@@ -47,6 +46,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ message: 'Failed to fetch machines' });
       }
     });
+
+    // Mount the API router with /api prefix
+    app.use('/api', apiRouter);
 
     log('All routes registered successfully', 'server');
     return httpServer;
