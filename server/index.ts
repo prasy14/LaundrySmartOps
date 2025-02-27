@@ -14,6 +14,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Set trust proxy before session middleware
+app.set("trust proxy", 1);
+
 // Set up session middleware
 const SessionStore = MemoryStore(session);
 app.use(
@@ -24,6 +27,7 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       sameSite: 'lax',
       path: '/',
+      httpOnly: true
     },
     store: new SessionStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -49,6 +53,7 @@ app.use((req, res, next) => {
   // Add session debug logging
   if (path.startsWith('/api/auth')) {
     log(`Session ID: ${req.sessionID}, User ID: ${req.session.userId}`, 'session');
+    log(`Cookie Headers: ${req.headers.cookie}`, 'session');
   }
 
   res.on("finish", () => {

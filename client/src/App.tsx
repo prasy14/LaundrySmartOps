@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, getQueryFn } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,24 +11,34 @@ import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { initWebSocket } from "./lib/ws";
+import { Loader2 } from "lucide-react";
+import type { User } from "@shared/schema";
 
 // Initialize WebSocket connection
 initWebSocket();
 
 function PrivateRoute({ component: Component }: { component: React.ComponentType }) {
-  const [location, setLocation] = useLocation();
-  const { data: auth } = useQuery({
+  const [, setLocation] = useLocation();
+  const { data, isLoading } = useQuery<{ user: User }>({ 
     queryKey: ['/api/auth/me'],
-    retry: false
+    queryFn: getQueryFn({ on401: "returnNull" })
   });
 
   useEffect(() => {
-    if (!auth && location !== '/login') {
+    if (!isLoading && !data && window.location.pathname !== '/login') {
       setLocation('/login');
     }
-  }, [auth, location]);
+  }, [data, isLoading, setLocation]);
 
-  if (!auth) return null;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   return (
     <div className="flex">
@@ -41,6 +51,20 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
 }
 
 function Router() {
+  const [, setLocation] = useLocation();
+  const { data: auth, isLoading } = useQuery<{ user: User }>({
+    queryKey: ['/api/auth/me'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false
+  });
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!isLoading && auth && window.location.pathname === '/login') {
+      setLocation('/');
+    }
+  }, [auth, isLoading, setLocation]);
+
   return (
     <Switch>
       <Route path="/login" component={Login} />

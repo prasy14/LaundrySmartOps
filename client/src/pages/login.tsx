@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -45,6 +46,12 @@ export default function Login() {
         throw new Error(error.message || "Invalid credentials");
       }
 
+      const data = await res.json();
+      // Update auth state in React Query
+      queryClient.setQueryData(['/api/auth/me'], { user: data.user });
+      // Invalidate the query to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      // Redirect to dashboard
       setLocation("/");
     } catch (error) {
       toast({
