@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { users, machines, alerts, syncLogs, locations, machinePrograms } from "@shared/schema";
 import type { 
   User, InsertUser, 
@@ -34,6 +34,7 @@ export interface IStorage {
   getMachineByExternalId(externalId: string): Promise<Machine | undefined>;
   createOrUpdateMachine(machine: InsertMachine): Promise<Machine>;
   updateMachineStatus(id: number, status: string): Promise<Machine>;
+  clearAllMachines(): Promise<void>;
 
   // Alert operations
   getAlerts(machineId?: number): Promise<Alert[]>;
@@ -90,7 +91,6 @@ export class DatabaseStorage implements IStorage {
     const [location] = await db.insert(locations).values(insertLocation).returning();
     return location;
   }
-
   // Machine Program methods
   async getMachinePrograms(): Promise<MachineProgram[]> {
     return await db.select().from(machinePrograms);

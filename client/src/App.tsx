@@ -1,37 +1,24 @@
 import { Switch, Route, useLocation } from "wouter";
-import { queryClient, getQueryFn } from "./lib/queryClient";
+import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import Login from "@/pages/login";
+import { Loader2 } from "lucide-react";
+import type { User } from "@shared/schema";
+
 import Dashboard from "@/pages/dashboard";
 import Machines from "@/pages/machines";
 import Reports from "@/pages/reports";
-import Login from "@/pages/login";
-import NotFound from "@/pages/not-found";
-import { useEffect } from "react";
-import { initWebSocket } from "./lib/ws";
-import { Loader2 } from "lucide-react";
-import type { User } from "@shared/schema";
 import Admin from "@/pages/admin";
+import NotFound from "@/pages/not-found";
 
 function PrivateRoute({ component: Component }: { component: React.ComponentType }) {
   const [, setLocation] = useLocation();
   const { data, isLoading } = useQuery<{ user: User }>({ 
-    queryKey: ['/api/auth/me'],
-    queryFn: getQueryFn({ on401: "returnNull" })
+    queryKey: ['/api/auth/me']
   });
 
-  useEffect(() => {
-    if (!isLoading && !data) {
-      setLocation('/login');
-    }
-    // Initialize WebSocket only after successful auth
-    if (data?.user) {
-      initWebSocket();
-    }
-  }, [data, isLoading, setLocation]);
-
+  // Redirect to login if not authenticated
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -40,35 +27,24 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    setLocation('/login');
+    return null;
+  }
 
-  return (
-    <div className="flex h-screen flex-col">
-      <Header />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <Component />
-        </main>
-      </div>
-    </div>
-  );
+  return <Component />;
 }
 
 function Router() {
   const [, setLocation] = useLocation();
   const { data: auth, isLoading } = useQuery<{ user: User }>({
-    queryKey: ['/api/auth/me'],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    retry: false
+    queryKey: ['/api/auth/me']
   });
 
   // Redirect to dashboard if already logged in
-  useEffect(() => {
-    if (!isLoading && auth && window.location.pathname === '/login') {
-      setLocation('/');
-    }
-  }, [auth, isLoading, setLocation]);
+  if (!isLoading && auth && window.location.pathname === '/login') {
+    setLocation('/');
+  }
 
   return (
     <Switch>
