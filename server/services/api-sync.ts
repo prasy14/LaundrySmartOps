@@ -1,8 +1,8 @@
 import { storage } from "../storage";
-import type { 
-  InsertMachine, InsertAlert, 
+import type {
+  InsertMachine, InsertAlert,
   InsertLocation, InsertMachineProgram,
-  InsertSyncLog 
+  InsertSyncLog
 } from "@shared/schema";
 import { log } from "../vite";
 
@@ -46,7 +46,7 @@ export class ApiSyncService {
   async syncLocations(): Promise<number> {
     try {
       log('Starting location sync', 'api-sync');
-      const data = await this.fetchWithAuth('/locations');
+      const data = await this.fetchWithAuth('/locations?pageSize=1000&page=1');
 
       if (!data?.locations) {
         throw new Error('No location data received from API');
@@ -59,13 +59,26 @@ export class ApiSyncService {
             externalId: location.id.toString(),
             name: location.name,
             address: location.address,
+            city: location.city,
+            state: location.state,
+            country: location.country,
+            postalCode: location.postalCode,
             type: location.type || 'store',
             status: location.status || 'active',
+            timezone: location.timezone,
+            contactName: location.contactName,
+            contactEmail: location.contactEmail,
+            contactPhone: location.contactPhone,
+            operatingHours: location.operatingHours,
+            metadata: location.metadata || {}
           };
 
           await storage.createOrUpdateLocation(locationData);
           count++;
           log(`Synced location: ${locationData.name}`, 'api-sync');
+
+          // After each location is synced, sync its machines
+          await this.syncMachinesForLocation(location.id);
         } catch (error) {
           log(`Failed to sync location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
           // Continue with next location
@@ -77,6 +90,77 @@ export class ApiSyncService {
     } catch (error) {
       log(`Failed to sync locations: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
+    }
+  }
+
+  private async syncMachinesForLocation(locationId: string): Promise<number> {
+    try {
+      log(`Syncing machines for location ${locationId}`, 'api-sync');
+      const data = await this.fetchWithAuth(`/locations/${locationId}/machines`);
+
+      if (!data?.machines) {
+        log(`No machines found for location ${locationId}`, 'api-sync');
+        return 0;
+      }
+
+      let count = 0;
+      for (const machine of data.machines) {
+        try {
+          const machineData: InsertMachine = {
+            externalId: machine.id.toString(),
+            name: machine.name,
+            locationId: parseInt(locationId),
+            model: machine.model,
+            serialNumber: machine.serialNumber,
+            status: machine.status || 'offline',
+          };
+
+          await storage.createOrUpdateMachine(machineData);
+          count++;
+          log(`Synced machine: ${machineData.name} for location ${locationId}`, 'api-sync');
+        } catch (error) {
+          log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          // Continue with next machine
+        }
+      }
+
+      return count;
+    } catch (error) {
+      log(`Failed to sync machines for location ${locationId}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      return 0;
+    }
+  }
+
+  async syncAllMachines(): Promise<boolean> {
+    try {
+      log('Starting full sync', 'api-sync');
+      const locationCount = await this.syncLocations();
+
+      // Log the sync attempt
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: true,
+        error: null,
+        machineCount: 0, // This will be updated by individual location syncs
+        locationCount,
+        programCount: 0
+      });
+
+      log('Sync completed successfully', 'api-sync');
+      return true;
+    } catch (error) {
+      // Log the sync error
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        machineCount: 0,
+        locationCount: 0,
+        programCount: 0
+      });
+
+      log(`Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      return false;
     }
   }
 
@@ -114,88 +198,6 @@ export class ApiSyncService {
     } catch (error) {
       log(`Failed to sync machine programs: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
-    }
-  }
-
-  async syncAllMachines(): Promise<boolean> {
-    try {
-      log('Starting full sync', 'api-sync');
-
-      // First sync locations and programs
-      let locationCount = 0;
-      let programCount = 0;
-
-      try {
-        locationCount = await this.syncLocations();
-      } catch (error) {
-        log(`Location sync failed but continuing: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      }
-
-      try {
-        programCount = await this.syncMachinePrograms();
-      } catch (error) {
-        log(`Program sync failed but continuing: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      }
-
-      // Then sync machines
-      const data = await this.fetchWithAuth('/machines');
-
-      if (!data?.machines) {
-        throw new Error('No machine data received from API');
-      }
-
-      let machineCount = 0;
-      for (const machine of data.machines) {
-        try {
-          const location = await storage.getLocationByExternalId(machine.locationId.toString());
-          if (!location) {
-            log(`Warning: Location not found for machine ${machine.id}`, 'api-sync');
-            continue;
-          }
-
-          const machineData: InsertMachine = {
-            externalId: machine.id.toString(),
-            name: machine.name,
-            locationId: location.id,
-            model: machine.model,
-            serialNumber: machine.serialNumber,
-            status: machine.status || 'offline',
-          };
-
-          await storage.createOrUpdateMachine(machineData);
-          machineCount++;
-          log(`Synced machine: ${machineData.name}`, 'api-sync');
-        } catch (error) {
-          log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-          // Continue with next machine
-        }
-      }
-
-      // Log the sync attempt
-      await storage.createSyncLog({
-        timestamp: new Date(),
-        success: true,
-        error: null,
-        machineCount,
-        locationCount,
-        programCount
-      });
-
-      log('Machine sync completed successfully', 'api-sync');
-      return true;
-    } catch (error) {
-      // Log the sync error
-      await storage.createSyncLog({
-        timestamp: new Date(),
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        machineCount: 0,
-        locationCount: 0,
-        programCount: 0
-      });
-
-      log(`Failed to sync machines: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      return false;
     }
   }
 

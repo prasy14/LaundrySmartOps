@@ -18,28 +18,50 @@ export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
 });
 
-// Location schema
+// Location schema updates
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
   externalId: text("external_id").notNull().unique(),
   name: text("name").notNull(),
   address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  country: text("country"),
+  postalCode: text("postal_code"),
   type: text("type"), // store, facility, etc.
   status: text("status").notNull(), // active, inactive
-  metadata: jsonb("metadata").$type<{
-    timezone?: string;
-    phone?: string;
-    email?: string;
-    operatingHours?: string;
+  timezone: text("timezone"),
+  contactName: text("contact_name"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  operatingHours: jsonb("operating_hours").$type<{
+    monday?: string;
+    tuesday?: string;
+    wednesday?: string;
+    thursday?: string;
+    friday?: string;
+    saturday?: string;
+    sunday?: string;
   }>(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
 });
 
 export const insertLocationSchema = createInsertSchema(locations).pick({
   externalId: true,
   name: true,
   address: true,
+  city: true,
+  state: true,
+  country: true,
+  postalCode: true,
   type: true,
   status: true,
+  timezone: true,
+  contactName: true,
+  contactEmail: true,
+  contactPhone: true,
+  operatingHours: true,
+  metadata: true,
 });
 
 // Machine Program schema
