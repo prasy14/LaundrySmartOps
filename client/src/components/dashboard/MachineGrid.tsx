@@ -2,13 +2,17 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WashingMachine, AlertTriangle, Clock, RefreshCw, Loader2, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Machine, Location } from "@shared/schema";
+import { useState } from "react";
 
 export function MachineGrid() {
   const { toast } = useToast();
+  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+
   const { data: machineData, isLoading: isLoadingMachines } = useQuery<{ machines: Machine[] }>({
     queryKey: ['/api/machines']
   });
@@ -51,30 +55,53 @@ export function MachineGrid() {
     locationData?.locations.map(location => [location.id, location]) || []
   );
 
+  // Filter machines based on selected location
+  const filteredMachines = machineData?.machines.filter(machine => 
+    selectedLocation === "all" || machine.locationId.toString() === selectedLocation
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Machines</h2>
-        <Button 
-          onClick={() => syncMutation.mutate()} 
-          disabled={syncMutation.isPending}
-        >
-          {syncMutation.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Sync Machines
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-4">
+          <Select
+            value={selectedLocation}
+            onValueChange={setSelectedLocation}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {locationData?.locations.map((location) => (
+                <SelectItem key={location.id} value={location.id.toString()}>
+                  {location.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={() => syncMutation.mutate()} 
+            disabled={syncMutation.isPending}
+          >
+            {syncMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Sync Machines
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {machineData?.machines.map((machine) => {
+        {filteredMachines?.map((machine) => {
           const location = locationMap.get(machine.locationId);
 
           return (
