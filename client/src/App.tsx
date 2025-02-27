@@ -1,6 +1,7 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Sidebar } from "@/components/layout/Sidebar";
 import Dashboard from "@/pages/dashboard";
@@ -28,7 +29,7 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
   }, [auth, location]);
 
   if (!auth) return null;
-  
+
   return (
     <div className="flex">
       <Sidebar />
