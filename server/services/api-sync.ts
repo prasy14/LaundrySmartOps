@@ -72,6 +72,9 @@ export class ApiSyncService {
           });
           count++;
           log(`Synced location: ${location.name}`, 'api-sync');
+
+          // After syncing each location, sync its machines
+          await this.syncMachinesForLocation(location.id);
         } catch (error) {
           log(`Failed to sync location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
         }
@@ -85,40 +88,49 @@ export class ApiSyncService {
     }
   }
 
-  async syncMachines(): Promise<number> {
+  async syncMachinesForLocation(locationId: string, pageSize: number = 50): Promise<number> {
     try {
-      log('Starting machine sync', 'api-sync');
-      const response = await this.fetchWithAuth('/machines');
+      log(`Starting machine sync for location ${locationId}`, 'api-sync');
+      let page = 1;
+      let totalMachines = 0;
+      let hasMorePages = true;
 
-      if (!response?.data) {
-        log('No data array in API response', 'api-sync');
-        throw new Error('No machine data received from API');
-      }
+      while (hasMorePages) {
+        const response = await this.fetchWithAuth(`/locations/${locationId}/machines?pageSize=${pageSize}&page=${page}`);
 
-      let count = 0;
-      for (const machine of response.data) {
-        try {
-          log(`Processing machine: ${JSON.stringify(machine)}`, 'api-sync');
-          await storage.createOrUpdateMachine({
-            externalId: machine.id,
-            name: machine.name || `Machine ${machine.id}`,
-            locationId: machine.locationId,
-            model: machine.model || null,
-            serialNumber: machine.serialNumber || null,
-            status: machine.status || 'offline',
-            supportedPrograms: machine.supportedPrograms || [],
-          });
-          count++;
-          log(`Synced machine: ${machine.name}`, 'api-sync');
-        } catch (error) {
-          log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+        if (!response?.data) {
+          log('No data array in API response', 'api-sync');
+          break;
         }
+
+        for (const machine of response.data) {
+          try {
+            log(`Processing machine: ${JSON.stringify(machine)}`, 'api-sync');
+            await storage.createOrUpdateMachine({
+              externalId: machine.id,
+              name: machine.name || `Machine ${machine.id}`,
+              locationId: machine.locationId,
+              model: machine.model || null,
+              serialNumber: machine.serialNumber || null,
+              status: machine.status || 'offline',
+              supportedPrograms: machine.supportedPrograms || [],
+            });
+            totalMachines++;
+            log(`Synced machine: ${machine.name}`, 'api-sync');
+          } catch (error) {
+            log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          }
+        }
+
+        // Check if there are more pages
+        hasMorePages = response.data.length === pageSize;
+        page++;
       }
 
-      log(`Successfully synced ${count} machines`, 'api-sync');
-      return count;
+      log(`Successfully synced ${totalMachines} machines for location ${locationId}`, 'api-sync');
+      return totalMachines;
     } catch (error) {
-      log(`Failed to sync machines: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      log(`Failed to sync machines for location ${locationId}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
     }
   }
@@ -127,14 +139,14 @@ export class ApiSyncService {
     try {
       log('Starting full sync', 'api-sync');
       const locationCount = await this.syncLocations();
-      const machineCount = await this.syncMachines();
+      // We don't need to call syncMachinesForLocation here as it's now handled in syncLocations
 
       await storage.createSyncLog({
         timestamp: new Date(),
         success: true,
         error: null,
         locationCount,
-        machineCount,
+        machineCount: 0, // This will be updated by individual location syncs
         programCount: 0
       });
 
