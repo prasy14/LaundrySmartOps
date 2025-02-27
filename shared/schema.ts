@@ -51,6 +51,8 @@ export const alerts = pgTable("alerts", {
   createdAt: timestamp("created_at").notNull(),
   clearedAt: timestamp("cleared_at"),
   clearedBy: integer("cleared_by"),
+  priority: text("priority").notNull(), // high, medium, low
+  category: text("category").notNull(), // maintenance, operational, system
 });
 
 export const insertAlertSchema = createInsertSchema(alerts).pick({
@@ -58,6 +60,8 @@ export const insertAlertSchema = createInsertSchema(alerts).pick({
   type: true,
   message: true,
   status: true,
+  priority: true,
+  category: true,
 });
 
 // Types
