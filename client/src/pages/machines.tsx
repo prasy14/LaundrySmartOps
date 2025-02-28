@@ -64,7 +64,8 @@ export default function Machines() {
   };
 
   const filteredMachines = machinesData?.machines.filter(machine => 
-    selectedLocation === "all" || machine.locationId.toString() === selectedLocation
+    selectedLocation === "all" || 
+    (machine.locationId != null && machine.locationId.toString() === selectedLocation)
   );
 
   return (
