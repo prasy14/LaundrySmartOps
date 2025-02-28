@@ -39,6 +39,54 @@ export class ApiSyncService {
     }
   }
 
+  async syncMachinesForLocation(locationId: string): Promise<number> {
+    try {
+      log(`Starting machine sync for location ${locationId}`, 'api-sync');
+      const pageSize = 50;
+      let page = 1;
+      let totalMachines = 0;
+      let hasMorePages = true;
+
+      while (hasMorePages) {
+        log(`Fetching machines for location ${locationId} - page ${page}`, 'api-sync');
+        const response = await this.fetchWithAuth(`/v1/locations/${locationId}/machines?pageSize=${pageSize}&page=${page}`);
+
+        if (!response?.data) {
+          log('No data array in API response', 'api-sync');
+          break;
+        }
+
+        log(`Processing ${response.data.length} machines from page ${page}`, 'api-sync');
+        for (const machine of response.data) {
+          try {
+            await storage.createOrUpdateMachine({
+              externalId: machine.id,
+              name: machine.name || `Machine ${machine.id}`,
+              locationId: parseInt(locationId),
+              model: machine.model || null,
+              serialNumber: machine.serialNumber || null,
+              status: machine.status || 'offline',
+              supportedPrograms: machine.supportedPrograms || [],
+            });
+            totalMachines++;
+            log(`Synced machine: ${machine.name} (${machine.id})`, 'api-sync');
+          } catch (error) {
+            log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          }
+        }
+
+        hasMorePages = response.data.length === pageSize;
+        page++;
+      }
+
+      log(`Successfully synced ${totalMachines} machines for location ${locationId}`, 'api-sync');
+      return totalMachines;
+    } catch (error) {
+      log(`Failed to sync machines for location ${locationId}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      throw error;
+    }
+  }
+
   async syncLocations(): Promise<number> {
     try {
       log('Starting location sync', 'api-sync');
@@ -51,6 +99,7 @@ export class ApiSyncService {
 
       let totalMachines = 0;
       let locationCount = 0;
+
       for (const location of response.data) {
         try {
           log(`Processing location: ${JSON.stringify(location)}`, 'api-sync');
@@ -86,53 +135,6 @@ export class ApiSyncService {
       return locationCount;
     } catch (error) {
       log(`Failed to sync locations: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-      throw error;
-    }
-  }
-
-  async syncMachinesForLocation(locationId: string, pageSize: number = 50): Promise<number> {
-    try {
-      log(`Starting machine sync for location ${locationId}`, 'api-sync');
-      let page = 1;
-      let totalMachines = 0;
-      let hasMorePages = true;
-
-      while (hasMorePages) {
-        const response = await this.fetchWithAuth(`/locations/${locationId}/machines?pageSize=${pageSize}&page=${page}`);
-
-        if (!response?.data) {
-          log('No data array in API response', 'api-sync');
-          break;
-        }
-
-        for (const machine of response.data) {
-          try {
-            log(`Processing machine: ${JSON.stringify(machine)}`, 'api-sync');
-            await storage.createOrUpdateMachine({
-              externalId: machine.id,
-              name: machine.name || `Machine ${machine.id}`,
-              locationId: parseInt(locationId),
-              model: machine.model || null,
-              serialNumber: machine.serialNumber || null,
-              status: machine.status || 'offline',
-              supportedPrograms: machine.supportedPrograms || [],
-            });
-            totalMachines++;
-            log(`Synced machine: ${machine.name}`, 'api-sync');
-          } catch (error) {
-            log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-          }
-        }
-
-        // Check if there are more pages
-        hasMorePages = response.data.length === pageSize;
-        page++;
-      }
-
-      log(`Successfully synced ${totalMachines} machines for location ${locationId}`, 'api-sync');
-      return totalMachines;
-    } catch (error) {
-      log(`Failed to sync machines for location ${locationId}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
     }
   }
