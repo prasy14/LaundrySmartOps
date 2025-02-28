@@ -15,35 +15,31 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Route path="/login">
+      {location === '/login' ? (
         <Login />
-      </Route>
-
-      <Route path="*">
-        {!location.startsWith('/login') && (
-          <div className="flex h-screen">
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-auto p-6">
-                <Switch>
-                  <ProtectedRoute 
-                    path="/" 
-                    component={LocationsPage}
-                    allowedRoles={['admin', 'manager', 'operator']} 
-                  />
-                  <ProtectedRoute 
-                    path="/machines" 
-                    component={MachinesPage}
-                    allowedRoles={['admin', 'manager', 'operator']} 
-                  />
-                  <Route component={NotFound} />
-                </Switch>
-              </main>
-            </div>
+      ) : (
+        <div className="flex h-screen">
+          <Sidebar />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-auto p-6">
+              <Switch>
+                <ProtectedRoute 
+                  path="/" 
+                  component={LocationsPage}
+                  allowedRoles={['admin', 'manager', 'operator']} 
+                />
+                <ProtectedRoute 
+                  path="/machines" 
+                  component={MachinesPage}
+                  allowedRoles={['admin', 'manager', 'operator']} 
+                />
+                <Route component={NotFound} />
+              </Switch>
+            </main>
           </div>
-        )}
-      </Route>
+        </div>
+      )}
     </div>
   );
 }
