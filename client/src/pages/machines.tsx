@@ -5,7 +5,13 @@ import { format } from "date-fns";
 import type { Machine } from "@shared/schema";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,7 +22,7 @@ export default function Machines() {
   const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
 
-  const { data, isLoading } = useQuery<{ machines: Machine[] }>({
+  const { data: machinesData, isLoading } = useQuery<{ machines: Machine[] }>({
     queryKey: ['/api/machines'],
   });
 
@@ -57,7 +63,7 @@ export default function Machines() {
     return location?.name || 'Unknown Location';
   };
 
-  const filteredMachines = data?.machines.filter(machine => 
+  const filteredMachines = machinesData?.machines.filter(machine => 
     selectedLocation === "all" || machine.locationId.toString() === selectedLocation
   );
 
@@ -69,7 +75,7 @@ export default function Machines() {
         <div className="flex items-center gap-4">
           <Select
             value={selectedLocation}
-            onValueChange={setSelectedLocation}
+            onValueChange={(value: string) => setSelectedLocation(value)}
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Select Location" />
