@@ -49,8 +49,11 @@ export class ApiSyncService {
       // Get the numeric location ID from storage
       const location = await storage.getLocationByExternalId(locationId);
       if (!location) {
+        log(`Location with external ID ${locationId} not found in database`, 'api-sync');
         throw new Error(`Location with external ID ${locationId} not found`);
       }
+
+      log(`Found location in database: ${location.name} (ID: ${location.id})`, 'api-sync');
 
       while (hasMorePages) {
         log(`Fetching machines for location ${locationId} - page ${page}`, 'api-sync');
@@ -65,6 +68,11 @@ export class ApiSyncService {
         log(`Processing ${response.data.length} machines from page ${page}`, 'api-sync');
         for (const machine of response.data) {
           try {
+            if (!machine.id) {
+              log(`Skipping machine with missing ID`, 'api-sync');
+              continue;
+            }
+
             await storage.createOrUpdateMachine({
               externalId: machine.id,
               name: machine.name || `Machine ${machine.id}`,
