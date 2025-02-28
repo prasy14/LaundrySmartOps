@@ -11,7 +11,7 @@ if (!process.env.SQ_INSIGHTS_API_KEY) {
 const syncRouter = Router();
 const apiService = new ApiSyncService(process.env.SQ_INSIGHTS_API_KEY);
 
-// Apply the isManagerOrAdmin middleware to all routes in this router
+// Apply the isManagerOrAdmin middleware to protect all sync routes
 syncRouter.use(isManagerOrAdmin);
 
 syncRouter.post('/machines', async (req, res) => {
@@ -42,6 +42,27 @@ syncRouter.post('/machines', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to sync machines'
+    });
+  }
+});
+
+syncRouter.post('/locations', async (req, res) => {
+  try {
+    log('Starting location sync...', 'sync');
+    const locationCount = await apiService.syncLocations();
+    const locations = await storage.getLocations();
+
+    log('Location sync completed successfully', 'sync');
+    res.json({ 
+      success: true, 
+      locationCount,
+      locations 
+    });
+  } catch (error) {
+    log(`Location sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+    res.status(500).json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to sync locations'
     });
   }
 });

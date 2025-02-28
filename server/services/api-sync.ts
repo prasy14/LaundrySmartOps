@@ -31,7 +31,6 @@ export class ApiSyncService {
       }
 
       const data = await response.json();
-      log(`API Response: ${JSON.stringify(data)}`, 'api-sync');
       return data;
     } catch (error) {
       log(`API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
@@ -49,7 +48,8 @@ export class ApiSyncService {
 
       while (hasMorePages) {
         log(`Fetching machines for location ${locationId} - page ${page}`, 'api-sync');
-        const response = await this.fetchWithAuth(`/v1/locations/${locationId}/machines?pageSize=${pageSize}&page=${page}`);
+        const endpoint = `/locations/${locationId}/machines?pageSize=${pageSize}&page=${page}`;
+        const response = await this.fetchWithAuth(endpoint);
 
         if (!response?.data) {
           log('No data array in API response', 'api-sync');
@@ -102,7 +102,7 @@ export class ApiSyncService {
 
       for (const location of response.data) {
         try {
-          log(`Processing location: ${JSON.stringify(location)}`, 'api-sync');
+          log(`Processing location: ${location.name}`, 'api-sync');
           await storage.createOrUpdateLocation({
             externalId: location.id,
             name: location.name || 'Unnamed Location',
@@ -138,7 +138,6 @@ export class ApiSyncService {
       throw error;
     }
   }
-
   async syncAll(): Promise<void> {
     try {
       log('Starting full sync', 'api-sync');
