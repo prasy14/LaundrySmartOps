@@ -49,7 +49,8 @@ export class ApiSyncService {
         throw new Error('No location data received from API');
       }
 
-      let count = 0;
+      let totalMachines = 0;
+      let locationCount = 0;
       for (const location of response.data) {
         try {
           log(`Processing location: ${JSON.stringify(location)}`, 'api-sync');
@@ -70,18 +71,19 @@ export class ApiSyncService {
             operatingHours: location.operatingHours || {},
             metadata: location.metadata || {}
           });
-          count++;
+          locationCount++;
           log(`Synced location: ${location.name}`, 'api-sync');
 
           // After syncing each location, sync its machines
-          await this.syncMachinesForLocation(location.id);
+          const machineCount = await this.syncMachinesForLocation(location.id);
+          totalMachines += machineCount;
         } catch (error) {
           log(`Failed to sync location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
         }
       }
 
-      log(`Successfully synced ${count} locations`, 'api-sync');
-      return count;
+      log(`Successfully synced ${locationCount} locations and ${totalMachines} machines`, 'api-sync');
+      return locationCount;
     } catch (error) {
       log(`Failed to sync locations: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
@@ -109,7 +111,7 @@ export class ApiSyncService {
             await storage.createOrUpdateMachine({
               externalId: machine.id,
               name: machine.name || `Machine ${machine.id}`,
-              locationId: machine.locationId,
+              locationId: parseInt(locationId),
               model: machine.model || null,
               serialNumber: machine.serialNumber || null,
               status: machine.status || 'offline',
@@ -139,7 +141,6 @@ export class ApiSyncService {
     try {
       log('Starting full sync', 'api-sync');
       const locationCount = await this.syncLocations();
-      // We don't need to call syncMachinesForLocation here as it's now handled in syncLocations
 
       await storage.createSyncLog({
         timestamp: new Date(),
