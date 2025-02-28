@@ -46,6 +46,12 @@ export class ApiSyncService {
       let totalMachines = 0;
       let hasMorePages = true;
 
+      // Get the numeric location ID from storage
+      const location = await storage.getLocationByExternalId(locationId);
+      if (!location) {
+        throw new Error(`Location with external ID ${locationId} not found`);
+      }
+
       while (hasMorePages) {
         log(`Fetching machines for location ${locationId} - page ${page}`, 'api-sync');
         const endpoint = `/locations/${locationId}/machines?pageSize=${pageSize}&page=${page}`;
@@ -62,7 +68,7 @@ export class ApiSyncService {
             await storage.createOrUpdateMachine({
               externalId: machine.id,
               name: machine.name || `Machine ${machine.id}`,
-              locationId: parseInt(locationId),
+              locationId: location.id, // Use the numeric ID from our database
               model: machine.model || null,
               serialNumber: machine.serialNumber || null,
               status: machine.status || 'offline',
