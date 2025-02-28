@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, WashingMachine, FileBarChart, Settings } from "lucide-react";
+import { LayoutDashboard, WashingMachine, MapPin, FileBarChart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Locations', href: '/', icon: MapPin },
   { name: 'Machines', href: '/machines', icon: WashingMachine },
   { name: 'Reports', href: '/reports', icon: FileBarChart },
   { name: 'Admin', href: '/admin', icon: Settings },

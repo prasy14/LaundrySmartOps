@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import LocationsPage from "@/pages/locations";
 import MachinesPage from "@/pages/machines";
+import DashboardPage from "@/pages/dashboard";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { Header } from "@/components/layout/Header";
@@ -11,8 +12,6 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
-  const [location] = useLocation();
-
   return (
     <div className="min-h-screen bg-background">
       <Switch>
@@ -30,6 +29,11 @@ function Router() {
                   <ProtectedRoute 
                     path="/" 
                     component={LocationsPage}
+                    allowedRoles={['admin', 'manager', 'operator']} 
+                  />
+                  <ProtectedRoute 
+                    path="/dashboard" 
+                    component={DashboardPage}
                     allowedRoles={['admin', 'manager', 'operator']} 
                   />
                   <ProtectedRoute 
