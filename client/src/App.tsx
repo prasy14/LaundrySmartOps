@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import LocationsPage from "@/pages/locations";
 import MachinesPage from "@/pages/machines";
 import DashboardPage from "@/pages/dashboard";
+import AdminPage from "@/pages/admin";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { Header } from "@/components/layout/Header";
@@ -40,6 +41,11 @@ function Router() {
                     path="/machines" 
                     component={MachinesPage}
                     allowedRoles={['admin', 'manager', 'operator']} 
+                  />
+                  <ProtectedRoute 
+                    path="/admin" 
+                    component={AdminPage}
+                    allowedRoles={['admin']} 
                   />
                   <Route>
                     <NotFound />
