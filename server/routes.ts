@@ -6,6 +6,7 @@ import { log } from "./vite";
 import express from "express";
 import authRoutes from "./routes/auth";
 import syncRoutes from "./routes/sync";
+import reportsRoutes from "./routes/reports"; // Add reports routes
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 
 declare module 'express-session' {
@@ -26,6 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Protected routes
     apiRouter.use('/sync', isManagerOrAdmin, syncRoutes);
+    apiRouter.use('/reports', isManagerOrAdmin, reportsRoutes); // Add reports routes
 
     apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {
       try {

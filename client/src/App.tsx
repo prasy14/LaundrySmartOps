@@ -6,6 +6,7 @@ import LocationsPage from "@/pages/locations";
 import MachinesPage from "@/pages/machines";
 import DashboardPage from "@/pages/dashboard";
 import AdminPage from "@/pages/admin";
+import ReportsPage from "@/pages/reports";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { Header } from "@/components/layout/Header";
@@ -46,6 +47,11 @@ function Router() {
                     path="/admin" 
                     component={AdminPage}
                     allowedRoles={['admin']} 
+                  />
+                  <ProtectedRoute 
+                    path="/reports" 
+                    component={ReportsPage}
+                    allowedRoles={['admin', 'manager']} 
                   />
                   <Route>
                     <NotFound />

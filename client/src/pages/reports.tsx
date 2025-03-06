@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,26 +15,51 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import type { Alert, Location, Machine } from "@shared/schema";
+import type { Alert, Location } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Reports() {
+  const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedServiceType, setSelectedServiceType] = useState<string>("all");
 
-  // Fetch data
-  const { data: locationsData } = useQuery<{ locations: Location[] }>({
+  // Fetch data with error handling
+  const { data: locationsData, isLoading: locationsLoading } = useQuery<{ locations: Location[] }>({
     queryKey: ['/api/locations'],
+    onError: (error: Error) => {
+      toast({
+        title: "Error loading locations",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  const { data: serviceAlerts } = useQuery<{ alerts: Alert[] }>({
+  const { data: serviceAlerts, isLoading: alertsLoading } = useQuery<{ alerts: Alert[] }>({
     queryKey: ['/api/reports/service-alerts', selectedLocation],
+    enabled: !locationsLoading,
+    onError: (error: Error) => {
+      toast({
+        title: "Error loading service alerts",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  const { data: serviceIssues } = useQuery<{ alerts: Alert[] }>({
+  const { data: serviceIssues, isLoading: issuesLoading } = useQuery<{ alerts: Alert[] }>({
     queryKey: ['/api/reports/service-issues', selectedServiceType],
+    enabled: !locationsLoading,
+    onError: (error: Error) => {
+      toast({
+        title: "Error loading service issues",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  const { data: performanceMetrics } = useQuery<{
+  const { data: performanceMetrics, isLoading: metricsLoading } = useQuery<{
     machines: Array<{
       id: number;
       name: string;
@@ -45,11 +70,26 @@ export default function Reports() {
     averageUptime: number;
   }>({
     queryKey: ['/api/reports/performance-metrics'],
+    enabled: !locationsLoading,
+    onError: (error: Error) => {
+      toast({
+        title: "Error loading performance metrics",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  // Export functions
+  if (locationsLoading || alertsLoading || issuesLoading || metricsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // Export function
   const exportToCSV = (data: any[], filename: string) => {
-    // Implementation of CSV export
     const csvContent = "data:text/csv;charset=utf-8," + 
       data.map(row => Object.values(row).join(",")).join("\n");
     const link = document.createElement("a");
