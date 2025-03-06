@@ -38,8 +38,8 @@ export default function Machines() {
     return location?.name || 'Unknown Location';
   };
 
-  const filteredMachines = machinesData?.machines.filter(machine => 
-    selectedLocation === "all" || 
+  const filteredMachines = machinesData?.machines.filter(machine =>
+    selectedLocation === "all" ||
     (machine.locationId != null && machine.locationId.toString() === selectedLocation)
   );
 
@@ -47,7 +47,7 @@ export default function Machines() {
     <div className="container mx-auto p-6 space-y-6">
       <Header />
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Machine Management</h1>
+        <h1 className="text-3xl font-bold">Machines</h1>
         <div className="flex items-center gap-4">
           <Select
             value={selectedLocation}
@@ -93,8 +93,8 @@ export default function Machines() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {machine.lastPing ? 
-                      format(new Date(machine.lastPing), 'MMM d, h:mm a') : 
+                    {machine.lastPing ?
+                      format(new Date(machine.lastPing), 'MMM d, h:mm a') :
                       'Never'
                     }
                   </TableCell>

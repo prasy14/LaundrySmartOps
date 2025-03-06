@@ -81,8 +81,6 @@ export default function Admin() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Location Sync Card */}
           <Card>
