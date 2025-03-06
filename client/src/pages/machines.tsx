@@ -70,11 +70,11 @@ export default function Machines() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead>Serial Number</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last Ping</TableHead>
-                <TableHead>Cycles</TableHead>
-                <TableHead>Uptime</TableHead>
-                <TableHead>Errors</TableHead>
+                <TableHead>Last Active</TableHead>
+                <TableHead>Metrics</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,6 +82,8 @@ export default function Machines() {
                 <TableRow key={machine.id}>
                   <TableCell className="font-medium">{machine.name}</TableCell>
                   <TableCell>{getLocationName(machine.locationId)}</TableCell>
+                  <TableCell>{machine.model || 'N/A'}</TableCell>
+                  <TableCell>{machine.serialNumber || 'N/A'}</TableCell>
                   <TableCell>
                     <Badge variant={machine.status === 'online' ? 'success' : 'destructive'}>
                       {machine.status}
@@ -93,12 +95,17 @@ export default function Machines() {
                       'Never'
                     }
                   </TableCell>
-                  <TableCell>{machine.metrics?.cycles || 0}</TableCell>
-                  <TableCell>{machine.metrics?.uptime ? `${machine.metrics.uptime.toFixed(1)}%` : 'N/A'}</TableCell>
                   <TableCell>
-                    <Badge variant={machine.metrics?.errors ? 'destructive' : 'secondary'}>
-                      {machine.metrics?.errors || 0}
-                    </Badge>
+                    <div className="space-y-1 text-sm">
+                      <div>Cycles: {machine.metrics?.cycles || 0}</div>
+                      <div>Uptime: {machine.metrics?.uptime ? `${machine.metrics.uptime.toFixed(1)}%` : 'N/A'}</div>
+                      <div className="flex items-center gap-1">
+                        Errors: 
+                        <Badge variant={machine.metrics?.errors ? 'destructive' : 'secondary'}>
+                          {machine.metrics?.errors || 0}
+                        </Badge>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
