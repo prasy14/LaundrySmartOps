@@ -111,6 +111,9 @@ export const machines = pgTable("machines", {
   serialNumber: text("serial_number"),
   status: text("status").notNull(), // online, offline, maintenance
   lastPing: timestamp("last_ping"),
+  installationDate: timestamp("installation_date"),
+  lastMaintenanceDate: timestamp("last_maintenance_date"),
+  nextMaintenanceDate: timestamp("next_maintenance_date"),
   metrics: jsonb("metrics").$type<{
     cycles: number;
     uptime: number;
@@ -118,6 +121,11 @@ export const machines = pgTable("machines", {
     temperature: number;
     waterLevel: number;
     detergentLevel: number;
+    energyConsumption: number;
+    waterConsumption: number;
+    maintenanceCount: number;
+    avgCycleTime: number;
+    totalRuntime: number;
   }>(),
   supportedPrograms: jsonb("supported_programs").$type<string[]>(),
 });
@@ -137,23 +145,34 @@ export const alerts = pgTable("alerts", {
   id: serial("id").primaryKey(),
   machineId: integer("machine_id").notNull(),
   type: text("type").notNull(), // error, warning, info
+  serviceType: text("service_type"), // mechanical, electrical, software, etc.
   message: text("message").notNull(),
-  status: text("status").notNull(), // active, cleared
+  status: text("status").notNull(), // active, in_progress, resolved, cleared
   createdAt: timestamp("created_at").notNull(),
-  clearedAt: timestamp("cleared_at"),
-  clearedBy: integer("cleared_by"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: integer("resolved_by"),
+  assignedTo: integer("assigned_to"),
   priority: text("priority"), // high, medium, low
   category: text("category"), // maintenance, operational, system
+  location: text("location"), // physical location within the facility
+  resolutionDetails: text("resolution_details"),
+  responseTime: integer("response_time_minutes"), // time to first response
+  resolutionTime: integer("resolution_time_minutes"), // total time to resolution
 });
 
+// Add alert types for better categorization
 export const insertAlertSchema = createInsertSchema(alerts).pick({
   machineId: true,
   type: true,
+  serviceType: true,
   message: true,
   status: true,
+  priority: true,
+  category: true,
 }).extend({
   priority: z.enum(['high', 'medium', 'low']).optional(),
   category: z.enum(['maintenance', 'operational', 'system']).optional(),
+  serviceType: z.enum(['mechanical', 'electrical', 'software', 'general']).optional(),
 });
 
 // Sync Log schema

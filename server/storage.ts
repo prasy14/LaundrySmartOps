@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { users, machines, alerts, syncLogs, locations, machinePrograms } from "@shared/schema";
 import type {
   User, InsertUser,
@@ -47,6 +47,11 @@ export interface IStorage {
   // Sync log operations
   getLastSyncLog(): Promise<SyncLog | undefined>;
   createSyncLog(log: InsertSyncLog): Promise<SyncLog>;
+
+  // New analytics methods
+  getMachinesByLocation(locationId: number): Promise<Machine[]>;
+  getAlertsByMachines(machineIds: number[]): Promise<Alert[]>;
+  getAlertsByServiceType(serviceType: string): Promise<Alert[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -258,6 +263,28 @@ export class DatabaseStorage implements IStorage {
       .values(insertLog)
       .returning();
     return log;
+  }
+
+  // New analytics methods implementation
+  async getMachinesByLocation(locationId: number): Promise<Machine[]> {
+    return await db
+      .select()
+      .from(machines)
+      .where(eq(machines.locationId, locationId));
+  }
+
+  async getAlertsByMachines(machineIds: number[]): Promise<Alert[]> {
+    return await db
+      .select()
+      .from(alerts)
+      .where(inArray(alerts.machineId, machineIds));
+  }
+
+  async getAlertsByServiceType(serviceType: string): Promise<Alert[]> {
+    return await db
+      .select()
+      .from(alerts)
+      .where(eq(alerts.serviceType, serviceType));
   }
 }
 

@@ -1,0 +1,71 @@
+Machine Management (MM) Use Cases
+In the realm of Machine Management (MM), various user stories have been identified that encompass the specific needs of different roles interacting with the system. Each user story outlines distinct functionalities and the corresponding API requirements necessary to fulfill these roles effectively.
+System Administrator
+User Story: As a system administrator, I want to view service alerts by campus so that I can identify and address issues specific to a location.
+Functionality: This functionality allows the administrator to access and monitor service alerts across different campuses, facilitating targeted interventions.
+API Requirements:
+•	GET All Machines at a Location
+•	GET Machine Error Details
+Technician
+User Story: As a technician, I want to search for service issues by service type to streamline troubleshooting and task prioritization.
+Functionality: This feature enables technicians to filter service issues based on their type, allowing for more efficient problem-solving.
+API Requirements:
+•	Currently, there is no specific API for service types, but it may be possible to retrieve issues by other parameters.
+Lease Manager
+User Story: As a lease manager, I want to filter service alerts by date range at the lease level to analyze historical incidents.
+Functionality: This enables lease managers to view and analyze service alerts over specified timeframes, enhancing their ability to manage lease performance.
+API Requirements:
+•	GET Machine Error Details (with date range parameters)
+Operations Manager
+User Story: As an operations manager, I want to measure the time difference from alert to resolution to improve response and service efficiency.
+Functionality: This functionality helps in assessing the efficiency of the service response mechanism by tracking the time taken to resolve issues.
+API Requirements:
+•	GET Machine Reports - AUDIT_OPERATION
+•	GET Machine Error Details
+•	Combination of both API responses to generate time difference reports.
+Performance Analyst
+User Story: As a performance analyst, I want to see average machine uptime metrics at the lease level similar to AWS metrics for service reliability tracking.
+Functionality: This feature provides insights into machine uptime, contributing to overall service reliability analysis.
+API Requirements:
+•	GET Machine Reports - AUDIT_CYCLE_USAGE
+These user stories highlight the diverse needs across various roles within the Machine Management framework. By establishing clear API requirements, developers can ensure that the system meets the functional expectations of each user, thereby enhancing overall operational efficiency.
+Reporting & Analysis (RA) Use Cases
+The Reporting & Analysis (RA) functionalities are central to understanding system performance and operational efficiency across various roles in the Automatic Laundry Solutions system. User stories from roles such as sustainability officers, property managers, service managers, and others outline the specific reporting needs and the APIs required to derive actionable insights from the data collected.
+Sustainability Officer
+User Story: As a sustainability officer, I want to generate reports on water and energy consumption by location to promote environmental responsibility.
+Functionality: This feature allows the sustainability officer to monitor resource usage across different locations, aiding in identifying areas for improvement in sustainability practices.
+API Requirements:
+•	GET All Machines at a Location
+•	Note: Water and energy consumption details may need to be defined in a future API.
+Property Manager
+User Story: As a property manager, I want to receive monthly maintenance and sustainability reports via email to stay informed about site performance.
+Functionality: This functionality ensures that property managers are regularly updated on machine performance and sustainability metrics, enabling proactive management.
+API Requirements:
+•	GET Machine Reports - AUDIT_CYCLE_USAGE
+Service Manager
+User Story: As a service manager, I want to track unresolved service alerts by location to manage team productivity.
+Functionality: This feature helps service managers prioritize issues and allocate resources effectively by providing a clear view of outstanding service alerts.
+API Requirements:
+•	GET Unresolved Service Alerts (specific API may need to be created)
+System Analyst
+User Story: As a system analyst, I want to analyze error type trends to predict future maintenance needs.
+Functionality: This functionality allows analysts to identify patterns in machine errors over time, facilitating proactive maintenance planning.
+API Requirements:
+•	GET Machine Error Details
+Compliance Officer
+User Story: As a compliance officer, I want to review machine uptime reports to ensure service-level agreements are met.
+Functionality: This feature provides necessary documentation and insights required for compliance checks regarding machine uptime and performance.
+API Requirements:
+•	GET Machine Uptime Reports (specific API may need to be created)
+Facilities Manager
+User Story: As a facilities manager, I want to monitor machine availability by day and time to optimize service coverage during peak usage.
+Functionality: This functionality enables the facilities manager to ensure that machines are available when needed most, enhancing user satisfaction.
+API Requirements:
+•	GET Machine Details
+Executive
+User Story: As an executive, I want summary dashboards showing key performance indicators (KPIs) such as machine uptime, average cycles, and service response times.
+Functionality: This feature provides high-level insights into operational performance, supporting strategic decision-making.
+API Requirements:
+•	GET Machine Details
+•	GET Machine Cycle Programs
+These user stories highlight the critical role of Reporting & Analysis in enhancing operational effectiveness across the Automatic Laundry Solutions system. By specifying the required APIs, the development team can ensure that the system meets the reporting needs of various stakeholders, driving informed decision-making and operational improvements.
