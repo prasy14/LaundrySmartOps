@@ -15,7 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Location, Machine, SyncLog } from "@shared/schema";
+import type { Location, Machine, SyncLog, MachineProgram } from "@shared/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SyncInfo {
   lastLocationSync?: SyncLog;
@@ -34,8 +35,36 @@ export default function Admin() {
     queryKey: ['/api/machines'],
   });
 
+  const { data: programsData } = useQuery<{ programs: MachineProgram[] }>({
+    queryKey: ['/api/machine-programs'],
+  });
+
   const { data: syncInfo } = useQuery<SyncInfo>({
     queryKey: ['/api/admin/sync-info'],
+  });
+
+  // Sync all mutation
+  const syncAllMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('POST', '/api/sync/all');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/locations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/machines'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/machine-programs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/sync-info'] });
+      toast({
+        title: "Success",
+        description: "All data synced successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to sync data",
+      });
+    },
   });
 
   // Location sync mutation
@@ -85,6 +114,29 @@ export default function Admin() {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 p-6 space-y-6">
+        {/* Sync All Button */}
+        <div className="flex justify-end">
+          <Button 
+            onClick={() => syncAllMutation.mutate()} 
+            disabled={syncAllMutation.isPending}
+            size="lg"
+            className="mb-4"
+          >
+            {syncAllMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Syncing All Data...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-5 w-5" />
+                Sync All Data
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Sync Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Location Sync Card */}
           <Card>
@@ -130,44 +182,6 @@ export default function Admin() {
                     Last synced: {format(new Date(syncInfo.lastLocationSync.timestamp), 'MMM d, h:mm a')}
                   </p>
                 )}
-              </div>
-
-              {/* Locations Table */}
-              <div className="mt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Type</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {locationsData?.locations.map((location) => (
-                      <TableRow key={location.id}>
-                        <TableCell className="font-medium">{location.name}</TableCell>
-                        <TableCell>
-                          {location.address || 'N/A'}
-                          {location.city && `, ${location.city}`}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={location.status === 'active' ? 'success' : 'secondary'}>
-                            {location.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{location.type || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
-                    {(!locationsData?.locations || locationsData.locations.length === 0) && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                          No locations found. Click sync to fetch from SQ Insights.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
               </div>
             </CardContent>
           </Card>
@@ -216,55 +230,134 @@ export default function Admin() {
                     Last synced: {format(new Date(syncInfo.lastMachineSync.timestamp), 'MMM d, h:mm a')}
                   </p>
                 )}
-                {syncInfo?.lastMachineSync?.machineCount && (
-                  <p className="text-sm text-muted-foreground">
-                    Machines synced: {syncInfo.lastMachineSync.machineCount}
-                  </p>
-                )}
               </div>
+            </CardContent>
+          </Card>
+        </div>
 
-              {/* Machines Table */}
-              <div className="mt-6">
+        {/* Data Tables Section */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Synchronized Data</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="locations" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="locations">Locations</TabsTrigger>
+                <TabsTrigger value="machines">Machines</TabsTrigger>
+                <TabsTrigger value="programs">Machine Programs</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="locations">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Type</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {locationsData?.locations.map((location) => (
+                      <TableRow key={location.id}>
+                        <TableCell className="font-medium">{location.name}</TableCell>
+                        <TableCell>
+                          {location.address}
+                          {location.city && `, ${location.city}`}
+                          {location.state && `, ${location.state}`}
+                        </TableCell>
+                        <TableCell>
+                          {location.contactName && (
+                            <div>
+                              <div>{location.contactName}</div>
+                              <div className="text-sm text-muted-foreground">{location.contactEmail}</div>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={location.status === 'active' ? 'success' : 'secondary'}>
+                            {location.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{location.type || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              <TabsContent value="machines">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Model</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Location</TableHead>
                       <TableHead>Last Ping</TableHead>
+                      <TableHead>Metrics</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {machinesData?.machines.map((machine) => (
-                      <TableRow key={machine.id}>
-                        <TableCell className="font-medium">{machine.name}</TableCell>
-                        <TableCell>{machine.model || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge variant={machine.status === 'online' ? 'success' : 'destructive'}>
-                            {machine.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {machine.lastPing ? 
-                            format(new Date(machine.lastPing), 'MMM d, h:mm a') : 
-                            'Never'
-                          }
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {(!machinesData?.machines || machinesData.machines.length === 0) && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                          No machines found. Click sync to fetch from SQ Insights.
-                        </TableCell>
-                      </TableRow>
-                    )}
+                    {machinesData?.machines.map((machine) => {
+                      const location = locationsData?.locations.find(l => l.id === machine.locationId);
+                      return (
+                        <TableRow key={machine.id}>
+                          <TableCell className="font-medium">{machine.name}</TableCell>
+                          <TableCell>{machine.model || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant={machine.status === 'online' ? 'success' : 'destructive'}>
+                              {machine.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{location?.name || 'Unknown'}</TableCell>
+                          <TableCell>
+                            {machine.lastPing ? 
+                              format(new Date(machine.lastPing), 'MMM d, h:mm a') : 
+                              'Never'
+                            }
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>Cycles: {machine.metrics?.cycles || 0}</div>
+                              <div>Uptime: {machine.metrics?.uptime}%</div>
+                              <div>Errors: {machine.metrics?.errors || 0}</div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </TabsContent>
+
+              <TabsContent value="programs">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Description</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {programsData?.programs.map((program) => (
+                      <TableRow key={program.id}>
+                        <TableCell className="font-medium">{program.name}</TableCell>
+                        <TableCell>{program.type}</TableCell>
+                        <TableCell>{program.duration} min</TableCell>
+                        <TableCell>{program.description || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

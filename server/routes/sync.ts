@@ -14,6 +14,44 @@ const apiService = new ApiSyncService(process.env.SQ_INSIGHTS_API_KEY);
 // Apply the isManagerOrAdmin middleware to protect all sync routes
 syncRouter.use(isManagerOrAdmin);
 
+syncRouter.post('/all', async (req, res) => {
+  try {
+    log('Starting full sync process...', 'sync');
+
+    // First sync locations
+    const locationCount = await apiService.syncLocations();
+    const locations = await storage.getLocations();
+
+    // Then sync machines for each location
+    let totalMachines = 0;
+    for (const location of locations) {
+      try {
+        const machineCount = await apiService.syncMachinesForLocation(location.externalId);
+        totalMachines += machineCount;
+      } catch (error) {
+        log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+      }
+    }
+
+    const machines = await storage.getMachines();
+
+    log('Full sync completed successfully', 'sync');
+    res.json({
+      success: true,
+      locationCount,
+      machineCount: totalMachines,
+      locations,
+      machines
+    });
+  } catch (error) {
+    log(`Full sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to sync all data'
+    });
+  }
+});
+
 syncRouter.post('/machines', async (req, res) => {
   try {
     log('Starting sync process...', 'sync');
