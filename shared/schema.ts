@@ -31,7 +31,7 @@ export const insertUserSchema = createInsertSchema(users)
     locationId: z.number().optional(),
   });
 
-// Location schema updates
+// Location schema
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
   externalId: text("external_id").notNull().unique(),
@@ -101,7 +101,7 @@ export const insertMachineProgramSchema = createInsertSchema(machinePrograms).pi
   type: true,
 });
 
-// Laundry operations related schemas
+// Machine schema
 export const machines = pgTable("machines", {
   id: serial("id").primaryKey(),
   externalId: text("external_id").notNull().unique(),
@@ -132,7 +132,7 @@ export const insertMachineSchema = createInsertSchema(machines).pick({
   supportedPrograms: true,
 });
 
-// Alert related schemas
+// Alert schema
 export const alerts = pgTable("alerts", {
   id: serial("id").primaryKey(),
   machineId: integer("machine_id").notNull(),
@@ -142,7 +142,6 @@ export const alerts = pgTable("alerts", {
   createdAt: timestamp("created_at").notNull(),
   clearedAt: timestamp("cleared_at"),
   clearedBy: integer("cleared_by"),
-  // Make new fields optional for backward compatibility
   priority: text("priority"), // high, medium, low
   category: text("category"), // maintenance, operational, system
 });
@@ -157,7 +156,7 @@ export const insertAlertSchema = createInsertSchema(alerts).pick({
   category: z.enum(['maintenance', 'operational', 'system']).optional(),
 });
 
-// API Sync related schemas
+// Sync Log schema
 export const syncLogs = pgTable("sync_logs", {
   id: serial("id").primaryKey(),
   timestamp: timestamp("timestamp").notNull(),
@@ -177,7 +176,7 @@ export const insertSyncLogSchema = createInsertSchema(syncLogs).pick({
   programCount: true,
 });
 
-// Types
+// Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Location = typeof locations.$inferSelect;
