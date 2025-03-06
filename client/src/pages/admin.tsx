@@ -15,7 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Location, Machine } from "@shared/schema";
+import type { Location, Machine, SyncLog } from "@shared/schema";
+
+interface SyncInfo {
+  lastLocationSync?: SyncLog;
+  lastMachineSync?: SyncLog;
+}
 
 export default function Admin() {
   const { toast } = useToast();
@@ -29,7 +34,7 @@ export default function Admin() {
     queryKey: ['/api/machines'],
   });
 
-  const { data: syncInfo } = useQuery({
+  const { data: syncInfo } = useQuery<SyncInfo>({
     queryKey: ['/api/admin/sync-info'],
   });
 
@@ -79,8 +84,7 @@ export default function Admin() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Location Sync Card */}
           <Card>
@@ -261,7 +265,7 @@ export default function Admin() {
             </CardContent>
           </Card>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

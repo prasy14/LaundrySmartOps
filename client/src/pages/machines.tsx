@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
-import { Header } from "@/components/layout/Header";
 
 export default function Machines() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
@@ -45,7 +44,6 @@ export default function Machines() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <Header />
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Machines</h1>
         <div className="flex items-center gap-4">
