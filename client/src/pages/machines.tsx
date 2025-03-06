@@ -44,26 +44,23 @@ export default function Machines() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Machines</h1>
-        <div className="flex items-center gap-4">
-          <Select
-            value={selectedLocation}
-            onValueChange={(value: string) => setSelectedLocation(value)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Locations</SelectItem>
-              {locationsData?.locations.map((location) => (
-                <SelectItem key={location.id} value={location.id.toString()}>
-                  {location.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex justify-end mb-4">
+        <Select
+          value={selectedLocation}
+          onValueChange={(value: string) => setSelectedLocation(value)}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Select Location" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Locations</SelectItem>
+            {locationsData?.locations.map((location) => (
+              <SelectItem key={location.id} value={location.id.toString()}>
+                {location.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
