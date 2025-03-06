@@ -1,10 +1,8 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { Machine } from "@shared/schema";
-import { Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -13,13 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 
 export default function Machines() {
-  const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
 
   const { data: machinesData, isLoading } = useQuery<{ machines: Machine[] }>({
@@ -30,30 +25,10 @@ export default function Machines() {
     queryKey: ['/api/locations'],
   });
 
-  const syncMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest('POST', '/api/sync/machines');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/machines'] });
-      toast({
-        title: "Success",
-        description: "Machines synced successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to sync machines",
-      });
-    },
-  });
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="animate-spin">Loading...</div>
       </div>
     );
   }
@@ -90,22 +65,6 @@ export default function Machines() {
               ))}
             </SelectContent>
           </Select>
-          <Button 
-            onClick={() => syncMutation.mutate()} 
-            disabled={syncMutation.isPending}
-          >
-            {syncMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Sync Machines
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -152,7 +111,7 @@ export default function Machines() {
               {(!filteredMachines || filteredMachines.length === 0) && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No machines found. Add machines or sync with the SQ Insights API.
+                    No machines found. Contact an administrator to sync machines from SQ Insights.
                   </TableCell>
                 </TableRow>
               )}
