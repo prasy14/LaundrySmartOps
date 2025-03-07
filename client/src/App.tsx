@@ -7,7 +7,7 @@ import MachinesPage from "@/pages/machines";
 import DashboardPage from "@/pages/dashboard";
 import AdminPage from "@/pages/admin";
 import ReportsPage from "@/pages/reports";
-import Login from "@/pages/login";
+import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -17,10 +17,10 @@ function Router() {
   return (
     <div className="min-h-screen bg-background">
       <Switch>
-        <Route path="/login">
-          <Login />
-        </Route>
+        {/* Public Route for Login */}
+        <Route path="/login" component={LoginPage} />
 
+        {/* Protected Routes */}
         <Route path="*">
           <div className="flex h-screen">
             <Sidebar />
@@ -53,9 +53,7 @@ function Router() {
                     component={ReportsPage}
                     allowedRoles={['admin', 'manager']} 
                   />
-                  <Route>
-                    <NotFound />
-                  </Route>
+                  <Route component={NotFound} />
                 </Switch>
               </main>
             </div>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 
@@ -18,10 +18,15 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export default function Login() {
+export default function LoginPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log("LoginPage mounted"); // Debug log
+  }, []);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -33,7 +38,10 @@ export default function Login() {
 
   const onSubmit = async (values: LoginFormData) => {
     try {
+      console.log("Attempting login..."); // Debug log
       setIsLoading(true);
+      setError(null);
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { 
@@ -41,8 +49,9 @@ export default function Login() {
         },
         body: JSON.stringify(values),
         credentials: "include",
-        cache: "no-cache",
       });
+
+      console.log("Login response status:", res.status); // Debug log
 
       if (!res.ok) {
         const error = await res.json();
@@ -50,6 +59,8 @@ export default function Login() {
       }
 
       const data = await res.json();
+      console.log("Login successful, updating query client"); // Debug log
+
       // Update auth state in React Query
       queryClient.setQueryData(['/api/auth/me'], { user: data.user });
 
@@ -62,7 +73,8 @@ export default function Login() {
       await new Promise(resolve => setTimeout(resolve, 100));
       setLocation("/");
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', error); // Debug log
+      setError(error instanceof Error ? error.message : "Failed to login");
       toast({
         variant: "destructive",
         title: "Error",
@@ -73,13 +85,21 @@ export default function Login() {
     }
   };
 
+  // Debug render output
+  console.log("Rendering login form, isLoading:", isLoading, "error:", error);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">SmartOps Platform</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">SmartOps Platform</CardTitle>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-md text-sm">
+              {error}
+            </div>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField

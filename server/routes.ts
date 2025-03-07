@@ -6,7 +6,7 @@ import { log } from "./vite";
 import express from "express";
 import authRoutes from "./routes/auth";
 import syncRoutes from "./routes/sync";
-import reportsRoutes from "./routes/reports"; // Add reports routes
+import reportsRoutes from "./routes/reports";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 
 declare module 'express-session' {
@@ -22,13 +22,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // API Router to ensure all routes are properly prefixed
     const apiRouter = express.Router();
 
-    // Auth routes
+    // Auth routes - No middleware needed as these handle authentication
     apiRouter.use('/auth', authRoutes);
 
     // Protected routes
     apiRouter.use('/sync', isManagerOrAdmin, syncRoutes);
-    apiRouter.use('/reports', isManagerOrAdmin, reportsRoutes); // Add reports routes
+    apiRouter.use('/reports', isManagerOrAdmin, reportsRoutes);
 
+    // Data access routes
     apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {
       try {
         const locations = await storage.getLocations();
@@ -46,6 +47,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         log(`Error fetching machines: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
         res.status(500).json({ message: 'Failed to fetch machines' });
+      }
+    });
+
+    // Current user endpoint for authentication check
+    apiRouter.get('/auth/me', async (req, res) => {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+      try {
+        const user = await storage.getUser(req.session.userId);
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+        res.json({ user });
+      } catch (error) {
+        log(`Error fetching user: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to fetch user details' });
       }
     });
 
