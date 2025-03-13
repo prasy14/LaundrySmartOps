@@ -16,13 +16,19 @@ export class ApiSyncService {
     log(`Making API request to: ${url}`, 'api-sync');
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'X-API-Key': this.apiKey,
           'Accept': 'application/json'
-        }
+        },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const text = await response.text();
@@ -31,8 +37,13 @@ export class ApiSyncService {
       }
 
       const data = await response.json();
+      log(`API response received for ${endpoint}: ${JSON.stringify(data).substring(0, 100)}...`, 'api-sync');
       return data;
     } catch (error) {
+      if (error.name === 'AbortError') {
+        log(`API request timeout for ${endpoint}`, 'api-sync');
+        throw new Error(`API request timed out: ${endpoint}`);
+      }
       log(`API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
     }
@@ -105,14 +116,20 @@ export class ApiSyncService {
 
         for (const machine of response.data) {
           try {
+            log(`Processing machine ${machine.id}`, 'api-sync');
+
+            // Create or update machine type first
             const machineType = await storage.createOrUpdateMachineType({
               name: machine.machineType.name,
-              description: machine.machineType.description,
-              isWasher: machine.machineType.isWasher,
-              isDryer: machine.machineType.isDryer,
-              isCombo: machine.machineType.isCombo,
+              description: machine.machineType.description || '',
+              isWasher: machine.machineType.isWasher || false,
+              isDryer: machine.machineType.isDryer || false,
+              isCombo: machine.machineType.isCombo || false,
             });
 
+            log(`Machine type created/updated: ${machineType.id}`, 'api-sync');
+
+            // Then create or update the machine
             await storage.createOrUpdateMachine({
               externalId: machine.id,
               name: machine.name,
@@ -123,13 +140,14 @@ export class ApiSyncService {
               machineNumber: machine.machineNumber,
               networkNode: machine.networkNode,
               modelNumber: machine.modelNumber,
-              status: machine.status,
+              status: machine.status || {},
               lastSyncAt: new Date()
             });
 
             // Sync machine programs
             await this.syncMachinePrograms(machine.id, locationId);
             totalMachines++;
+            log(`Machine ${machine.id} processed successfully`, 'api-sync');
           } catch (error) {
             log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
           }
@@ -139,6 +157,7 @@ export class ApiSyncService {
         page++;
       }
 
+      log(`Successfully synced ${totalMachines} machines for location ${locationId}`, 'api-sync');
       return totalMachines;
     } catch (error) {
       log(`Failed to sync machines for location ${locationId}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');

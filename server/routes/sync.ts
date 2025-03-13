@@ -40,37 +40,51 @@ syncRouter.use(isManagerOrAdmin);
 
 // Test sync endpoint to verify data storage
 syncRouter.post('/test', async (req, res) => {
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Sync operation timed out')), 60000)
+  );
+
   try {
     log('Starting test sync process...', 'sync');
 
-    // First sync locations
-    const locationCount = await apiService.syncLocations();
-    const locations = await storage.getLocations();
+    // Race between sync operation and timeout
+    const result = await Promise.race([
+      (async () => {
+        // First sync locations
+        const locationCount = await apiService.syncLocations();
+        const locations = await storage.getLocations();
 
-    // Verify location data
-    log(`Synced ${locationCount} locations:`, 'sync');
-    for (const location of locations) {
-      log(`Location: ${location.name} (${location.externalId})`, 'sync');
-    }
+        // Verify location data
+        log(`Synced ${locationCount} locations:`, 'sync');
+        for (const location of locations) {
+          log(`Location: ${location.name} (${location.externalId})`, 'sync');
+        }
 
-    // Then sync machines for each location
-    let totalMachines = 0;
-    for (const location of locations) {
-      try {
-        const machineCount = await apiService.syncMachinesForLocation(location.externalId);
-        totalMachines += machineCount;
-        log(`Synced ${machineCount} machines for location ${location.name}`, 'sync');
-      } catch (error) {
-        log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
-      }
-    }
+        // Then sync machines for each location
+        let totalMachines = 0;
+        for (const location of locations) {
+          try {
+            const machineCount = await apiService.syncMachinesForLocation(location.externalId);
+            totalMachines += machineCount;
+            log(`Synced ${machineCount} machines for location ${location.name}`, 'sync');
+          } catch (error) {
+            log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+          }
+        }
 
-    // Get all machines to verify data
-    const machines = await storage.getMachines();
-    log(`Total machines synced: ${totalMachines}`, 'sync');
+        // Get all machines to verify data
+        const machines = await storage.getMachines();
+        log(`Total machines synced: ${totalMachines}`, 'sync');
 
-    // Report sync status
-    log('Test sync completed successfully', 'sync');
+        // Report sync status
+        log('Test sync completed successfully', 'sync');
+        return { locationCount, totalMachines, locations, machines };
+      })(),
+      timeoutPromise
+    ]);
+
+    const { locationCount, totalMachines, locations, machines } = result;
+
     res.json({
       success: true,
       locationCount,
@@ -144,15 +158,15 @@ syncRouter.post('/machines', async (req, res) => {
 
     const machines = await storage.getMachines();
     log('Sync completed successfully', 'sync');
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       machineCount: totalMachines,
-      machines 
+      machines
     });
   } catch (error) {
     log(`Sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error instanceof Error ? error.message : 'Failed to sync machines'
     });
   }
@@ -165,15 +179,15 @@ syncRouter.post('/locations', async (req, res) => {
     const locations = await storage.getLocations();
 
     log('Location sync completed successfully', 'sync');
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       locationCount,
-      locations 
+      locations
     });
   } catch (error) {
     log(`Location sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error instanceof Error ? error.message : 'Failed to sync locations'
     });
   }

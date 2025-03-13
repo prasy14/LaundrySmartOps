@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import passport from "passport";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { SyncScheduler } from "./services/scheduler";
@@ -41,6 +42,10 @@ app.use(
   })
 );
 
+// Initialize Passport and session handling
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
@@ -55,7 +60,7 @@ app.use((req, res, next) => {
 
   // Add session debug logging
   if (path.startsWith('/api/auth')) {
-    log(`Session ID: ${req.sessionID}, User ID: ${req.session.userId}`, 'session');
+    log(`Session ID: ${req.sessionID}, User: ${req.user?.username}`, 'session');
     log(`Cookie Headers: ${req.headers.cookie}`, 'session');
   }
 
