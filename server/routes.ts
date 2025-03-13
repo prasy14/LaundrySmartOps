@@ -25,7 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Auth routes - No middleware needed as these handle authentication
     apiRouter.use('/auth', authRoutes);
 
-    // Protected routes
+    // Protected routes - Apply middleware here
     apiRouter.use('/sync', isManagerOrAdmin, syncRoutes);
     apiRouter.use('/reports', isManagerOrAdmin, reportsRoutes);
 
@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    // Mount the API router with /api prefix
+    // Mount the API router with /api prefix BEFORE any static file handling
     app.use('/api', apiRouter);
 
     log('All routes registered successfully', 'server');

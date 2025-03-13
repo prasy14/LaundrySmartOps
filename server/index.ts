@@ -79,40 +79,45 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Register API routes first
-  const server = await registerRoutes(app);
+  try {
+    // Register API routes first
+    const server = await registerRoutes(app);
 
-  // Error handling middleware
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Error:', err);
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-  });
+    // Error handling middleware
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      console.error('Error:', err);
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+    });
 
-  // Initialize sync scheduler with API key
-  const apiKey = process.env.SQ_INSIGHTS_API_KEY;
-  if (apiKey) {
-    const syncScheduler = new SyncScheduler(apiKey);
-    syncScheduler.start();
-    log('Sync scheduler initialized and started', 'scheduler');
-  } else {
-    log('Warning: SQ_INSIGHTS_API_KEY not provided, sync scheduler not started', 'scheduler');
+    // Initialize sync scheduler with API key
+    const apiKey = process.env.SQ_INSIGHTS_API_KEY;
+    if (apiKey) {
+      const syncScheduler = new SyncScheduler(apiKey);
+      syncScheduler.start();
+      log('Sync scheduler initialized and started', 'scheduler');
+    } else {
+      log('Warning: SQ_INSIGHTS_API_KEY not provided, sync scheduler not started', 'scheduler');
+    }
+
+    // Setup Vite or serve static files last
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    const port = 5000;
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
+    });
+  } catch (error) {
+    log(`Server startup error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'server');
+    process.exit(1);
   }
-
-  // Setup Vite or serve static files last
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
 })();
