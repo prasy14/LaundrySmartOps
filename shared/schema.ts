@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -34,71 +34,44 @@ export const insertUserSchema = createInsertSchema(users)
 // Location schema
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
-  externalId: text("external_id").notNull().unique(),
+  externalId: text("external_id").notNull().unique(), // From API: loc_xxxx
   name: text("name").notNull(),
+  timezone: text("timezone").notNull(),
   address: text("address"),
-  city: text("city"),
-  state: text("state"),
-  country: text("country"),
-  postalCode: text("postal_code"),
-  type: text("type"), // store, facility, etc.
-  status: text("status").notNull(), // active, inactive
-  timezone: text("timezone"),
-  contactName: text("contact_name"),
-  contactEmail: text("contact_email"),
-  contactPhone: text("contact_phone"),
-  operatingHours: jsonb("operating_hours").$type<{
-    monday?: string;
-    tuesday?: string;
-    wednesday?: string;
-    thursday?: string;
-    friday?: string;
-    saturday?: string;
-    sunday?: string;
+  coordinates: jsonb("coordinates").$type<{
+    lat: number;
+    long: number;
   }>(),
-  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  status: text("status").notNull().default('active'),
+  lastSyncAt: timestamp("last_sync_at"),
 });
 
-export const insertLocationSchema = createInsertSchema(locations).pick({
-  externalId: true,
-  name: true,
-  address: true,
-  city: true,
-  state: true,
-  country: true,
-  postalCode: true,
-  type: true,
-  status: true,
-  timezone: true,
-  contactName: true,
-  contactEmail: true,
-  contactPhone: true,
-  operatingHours: true,
-  metadata: true,
-});
-
-// Machine Program schema
-export const machinePrograms = pgTable("machine_programs", {
+// Machine Type schema
+export const machineTypes = pgTable("machine_types", {
   id: serial("id").primaryKey(),
-  externalId: text("external_id").notNull().unique(),
   name: text("name").notNull(),
   description: text("description"),
-  duration: integer("duration"), // in minutes
-  type: text("type").notNull(), // wash, dry, etc.
-  metadata: jsonb("metadata").$type<{
-    temperature?: number;
-    spinSpeed?: number;
-    waterLevel?: number;
-    energyUsage?: number;
-  }>(),
+  isWasher: boolean("is_washer").notNull(),
+  isDryer: boolean("is_dryer").notNull(),
+  isCombo: boolean("is_combo").notNull(),
 });
 
-export const insertMachineProgramSchema = createInsertSchema(machinePrograms).pick({
-  externalId: true,
-  name: true,
-  description: true,
-  duration: true,
-  type: true,
+// Machine Programs (Cycles) schema
+export const machinePrograms = pgTable("machine_programs", {
+  id: serial("id").primaryKey(),
+  machineTypeId: integer("machine_type_id").references(() => machineTypes.id),
+  externalId: text("external_id").notNull(), // e.g. cyc_normal_hot
+  name: text("name").notNull(), // e.g. NORMAL_HOT
+  type: text("type").notNull(), // washer or dryer program
+  sortOrder: integer("sort_order"),
+});
+
+// Program Modifiers schema
+export const programModifiers = pgTable("program_modifiers", {
+  id: serial("id").primaryKey(),
+  externalId: text("external_id").notNull(), // e.g. mod_regular
+  name: text("name").notNull(), // e.g. REGULAR
+  programId: integer("program_id").references(() => machinePrograms.id),
 });
 
 // Machine schema
@@ -106,39 +79,55 @@ export const machines = pgTable("machines", {
   id: serial("id").primaryKey(),
   externalId: text("external_id").notNull().unique(),
   name: text("name").notNull(),
-  locationId: integer("location_id").notNull(),
-  model: text("model"),
+  locationId: integer("location_id").references(() => locations.id),
+  machineTypeId: integer("machine_type_id").references(() => machineTypes.id),
+  controlId: text("control_id"),
   serialNumber: text("serial_number"),
-  status: text("status").notNull(), // online, offline, maintenance
-  lastPing: timestamp("last_ping"),
-  installationDate: timestamp("installation_date"),
-  lastMaintenanceDate: timestamp("last_maintenance_date"),
-  nextMaintenanceDate: timestamp("next_maintenance_date"),
-  metrics: jsonb("metrics").$type<{
-    cycles: number;
-    uptime: number;
-    errors: number;
-    temperature: number;
-    waterLevel: number;
-    detergentLevel: number;
-    energyConsumption: number;
-    waterConsumption: number;
-    maintenanceCount: number;
-    avgCycleTime: number;
-    totalRuntime: number;
+  machineNumber: text("machine_number"),
+  networkNode: text("network_node"),
+  modelNumber: text("model_number"),
+  status: jsonb("status").$type<{
+    linkQualityIndicator: number;
+    statusId: string;
+    selectedCycle?: {
+      id: string;
+      name: string;
+    };
+    selectedModifiers?: Array<{
+      id: string;
+      name: string;
+    }>;
+    remainingSeconds?: number;
+    remainingVend?: number;
+    isDoorOpen?: boolean;
+    topoffFullyDisabled?: boolean;
+    canTopOff?: boolean;
+    topOffVend?: number;
+    topOffTime?: number;
   }>(),
-  supportedPrograms: jsonb("supported_programs").$type<string[]>(),
+  lastSyncAt: timestamp("last_sync_at"),
 });
 
-export const insertMachineSchema = createInsertSchema(machines).pick({
-  externalId: true,
-  name: true,
-  locationId: true,
-  model: true,
-  serialNumber: true,
-  status: true,
-  supportedPrograms: true,
+// Command History schema
+export const commandHistory = pgTable("command_history", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id),
+  commandId: text("command_id").notNull(), // The generated command ID from API
+  command: text("command").notNull(), // START, STOP, etc.
+  params: jsonb("params"), // Command parameters
+  status: text("status").notNull(), // QUEUED, COMPLETED, FAILED
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  error: text("error"),
 });
+
+// Create insert schemas
+export const insertLocationSchema = createInsertSchema(locations);
+export const insertMachineTypeSchema = createInsertSchema(machineTypes);
+export const insertMachineProgramSchema = createInsertSchema(machinePrograms);
+export const insertProgramModifierSchema = createInsertSchema(programModifiers);
+export const insertMachineSchema = createInsertSchema(machines);
+export const insertCommandHistorySchema = createInsertSchema(commandHistory);
 
 // Alert schema
 export const alerts = pgTable("alerts", {
@@ -200,14 +189,20 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Location = typeof locations.$inferSelect;
 export type InsertLocation = z.infer<typeof insertLocationSchema>;
+export type MachineType = typeof machineTypes.$inferSelect;
+export type InsertMachineType = z.infer<typeof insertMachineTypeSchema>;
 export type MachineProgram = typeof machinePrograms.$inferSelect;
 export type InsertMachineProgram = z.infer<typeof insertMachineProgramSchema>;
+export type ProgramModifier = typeof programModifiers.$inferSelect;
+export type InsertProgramModifier = z.infer<typeof insertProgramModifierSchema>;
 export type Machine = typeof machines.$inferSelect;
 export type InsertMachine = z.infer<typeof insertMachineSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type SyncLog = typeof syncLogs.$inferSelect;
 export type InsertSyncLog = z.infer<typeof insertSyncLogSchema>;
+export type CommandHistory = typeof commandHistory.$inferSelect;
+export type InsertCommandHistory = z.infer<typeof insertCommandHistorySchema>;
 
 // WebSocket message types
 export type WSMessage = {

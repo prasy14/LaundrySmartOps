@@ -1,13 +1,16 @@
 import { db } from "./db";
 import { eq, desc, inArray } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
   Alert, InsertAlert,
   SyncLog, InsertSyncLog,
   Location, InsertLocation,
-  MachineProgram, InsertMachineProgram
+  MachineProgram, InsertMachineProgram,
+  MachineType, InsertMachineType,
+  ProgramModifier, InsertProgramModifier,
+  CommandHistory, InsertCommandHistory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -25,19 +28,27 @@ export interface IStorage {
   getLocationByExternalId(externalId: string): Promise<Location | undefined>;
   createOrUpdateLocation(location: InsertLocation): Promise<Location>;
 
+  // Machine Type operations
+  getMachineType(id: number): Promise<MachineType | undefined>;
+  createOrUpdateMachineType(machineType: InsertMachineType): Promise<MachineType>;
+
   // Machine Program operations
   getMachinePrograms(): Promise<MachineProgram[]>;
   getMachineProgram(id: number): Promise<MachineProgram | undefined>;
   getMachineProgramByExternalId(externalId: string): Promise<MachineProgram | undefined>;
   createOrUpdateMachineProgram(program: InsertMachineProgram): Promise<MachineProgram>;
+  createOrUpdateProgramModifier(modifier: InsertProgramModifier): Promise<ProgramModifier>;
 
   // Machine operations
   getMachines(): Promise<Machine[]>;
   getMachine(id: number): Promise<Machine | undefined>;
   getMachineByExternalId(externalId: string): Promise<Machine | undefined>;
   createOrUpdateMachine(machine: InsertMachine): Promise<Machine>;
-  updateMachineStatus(id: number, status: string): Promise<Machine>;
+  updateMachineStatus(id: number, status: any): Promise<Machine>;
   clearAllMachines(): Promise<void>;
+
+  // Command History operations
+  updateCommandHistory(commandId: string, updates: Partial<InsertCommandHistory>): Promise<CommandHistory>;
 
   // Alert operations
   getAlerts(machineId?: number): Promise<Alert[]>;
@@ -48,7 +59,7 @@ export interface IStorage {
   getLastSyncLog(): Promise<SyncLog | undefined>;
   createSyncLog(log: InsertSyncLog): Promise<SyncLog>;
 
-  // New analytics methods
+  // Analytics methods
   getMachinesByLocation(locationId: number): Promise<Machine[]>;
   getAlertsByMachines(machineIds: number[]): Promise<Alert[]>;
   getAlertsByServiceType(serviceType: string): Promise<Alert[]>;
@@ -121,6 +132,30 @@ export class DatabaseStorage implements IStorage {
     const [location] = await db.insert(locations).values(insertLocation).returning();
     return location;
   }
+  // Machine Type methods
+  async getMachineType(id: number): Promise<MachineType | undefined> {
+    const [machineType] = await db.select().from(machineTypes).where(eq(machineTypes.id, id));
+    return machineType;
+  }
+
+  async createOrUpdateMachineType(insertMachineType: InsertMachineType): Promise<MachineType> {
+    const existing = await db.select().from(machineTypes)
+      .where(eq(machineTypes.name, insertMachineType.name))
+      .limit(1);
+
+    if (existing.length > 0) {
+      const [updated] = await db
+        .update(machineTypes)
+        .set(insertMachineType)
+        .where(eq(machineTypes.name, insertMachineType.name))
+        .returning();
+      return updated;
+    }
+
+    const [machineType] = await db.insert(machineTypes).values(insertMachineType).returning();
+    return machineType;
+  }
+
   // Machine Program methods
   async getMachinePrograms(): Promise<MachineProgram[]> {
     return await db.select().from(machinePrograms);
@@ -148,6 +183,24 @@ export class DatabaseStorage implements IStorage {
     }
     const [program] = await db.insert(machinePrograms).values(insertProgram).returning();
     return program;
+  }
+  // Program Modifier methods
+  async createOrUpdateProgramModifier(insertModifier: InsertProgramModifier): Promise<ProgramModifier> {
+    const existing = await db.select().from(programModifiers)
+      .where(eq(programModifiers.externalId, insertModifier.externalId))
+      .limit(1);
+
+    if (existing.length > 0) {
+      const [updated] = await db
+        .update(programModifiers)
+        .set(insertModifier)
+        .where(eq(programModifiers.externalId, insertModifier.externalId))
+        .returning();
+      return updated;
+    }
+
+    const [modifier] = await db.insert(programModifiers).values(insertModifier).returning();
+    return modifier;
   }
 
   // Machine methods
@@ -263,6 +316,16 @@ export class DatabaseStorage implements IStorage {
       .values(insertLog)
       .returning();
     return log;
+  }
+
+  // Command History methods
+  async updateCommandHistory(commandId: string, updates: Partial<InsertCommandHistory>): Promise<CommandHistory> {
+    const [command] = await db
+      .update(commandHistory)
+      .set(updates)
+      .where(eq(commandHistory.commandId, commandId))
+      .returning();
+    return command;
   }
 
   // New analytics methods implementation

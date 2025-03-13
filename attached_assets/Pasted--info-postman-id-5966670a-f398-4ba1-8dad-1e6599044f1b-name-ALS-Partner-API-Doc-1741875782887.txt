@@ -1,0 +1,2027 @@
+{
+	"info": {
+		"_postman_id": "5966670a-f398-4ba1-8dad-1e6599044f1b",
+		"name": "ALS Partner API Documentation",
+		"description": "Welcome to the Alliance Laundry Systems API documentation. Our API gives you access to a wide range of resources, enabling you to integrate with our services and operate your machines in innovative ways. Before you can start building with our API, there are a few key steps you need to follow:\n\n---\n\n## Obtain an API Key\n\nTo interact with our API, you need a valid API Key. This key serves as your identification and authorization token for making API requests. During our testing period, please reach out to us directly to request an API key. We will guide you through the process of key acquisition.\n\n---\n\n## Understand Rate and Usage Limits\n\nOur API comes with rate and usage limits to ensure fair use and optimal performance for all our partners. Please familiarize yourself with these limits to avoid unexpected service interruptions. Further details on specific rate limits will be provided alongside your API key.\n\n---\n\n## Secure Communication Via HTTPS\n\nThe safety and integrity of your data are paramount. As such, our API exclusively responds to HTTPS-secured communications. Ensure that your API requests are sent over HTTPS to successfully communicate with our endpoints.\n\n---\n\n## Working with JSON\n\nOur API communicates and responds in JSON format, which is both human and machine-readable. Whether you're receiving data from our API or sending a request, ensure your content is structured in JSON.\n\n---\n\n## Authentication\n\nThe Partner API uses secure API keys for authentication.\n\nYou must include an API key in each request to the Partner API with the `X-Api-Key` request header.\n\n### Authentication error response\n\nIf an API key is missing, malformed, or invalid, you will receive an `HTTP 401 Unauthorized` response code.\n\n---\n\n## Rate and usage limits\n\nAPI access rate limits apply at a per-API key basis in unit time. The limit is 10 requests per second. Also, depending on your plan, you may have usage limits. If you exceed either limit, your request will return an `HTTP 429 Too Many Requests` status code.\n\nEach API response returns the following set of headers to help you identify your use status:\n\n| Header | Description |\n| --- | --- |\n| `X-RateLimit-Limit` | The maximum number of requests that the consumer is permitted to make per minute. |\n| `X-RateLimit-Remaining` | The number of requests remaining in the current rate limit window. |\n| `X-RateLimit-Reset` | The time at which the current rate limit window resets in UTC epoch seconds. |\n\n### 503 response\n\nAn HTTP `503` response from our servers indicates an unexpected spike in API access traffic. The server is usually operational within the next five minutes. If the outage persists or you receive any other form of an HTTP `5XX` error, please contact us.\n\n---\n\n### **Need some help?**\n\nIf you have questions or encounter issues, please e-mail us at [digital.api@alliancels.com](https://mailto:digital.api@alliancels.com). We appreciate your feedback!",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33167756"
+	},
+	"item": [
+		{
+			"name": "Locations",
+			"item": [
+				{
+					"name": "All Locations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations?pageSize=10&page=1",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations"
+							],
+							"query": [
+								{
+									"key": "pageSize",
+									"value": "10",
+									"description": "Maximum number of locations to return per page"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number of results to retrieve"
+								}
+							]
+						},
+						"description": "Returns a list of all locations accessible from the provided API key."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations?pageSize=10&page=1",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations"
+									],
+									"query": [
+										{
+											"key": "pageSize",
+											"value": "10",
+											"description": "Specify size of location lresults for one page"
+										},
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Specify the pagination of the location list"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"data\": [\n    {\n      \"id\": \"loc_xxxx\",\n      \"name\": \"location_name\",\n      \"timezone\": \"America/Chicago\",\n      \"address\": \"street_address\",\n      \"coordinates\": {\n        \"lat\": 29.4567809,\n        \"long\": -98.5567844\n      }\n    },\n    {\n      \"id\": \"loc_xxxx\",\n      \"name\": \"location_name\",\n      \"timezone\": \"America/Chicago\",\n      \"address\": \"street_address\",\n      \"coordinates\": {\n        \"lat\": 29.65616,\n        \"long\": -95.509448\n      }\n    },\n    {\n      \"id\": \"loc_xxxx\",\n      \"name\": \"location_name\",\n      \"timezone\": \"America/Chicago\",\n      \"address\": \"street_address\",\n      \"coordinates\": {\n        \"lat\": 29.6646607,\n        \"long\": -95.1901636\n      }\n    },\n    {\n      \"id\": \"loc_xxxx\",\n      \"name\": \"location_name\",\n      \"timezone\": \"America/New_York\",\n      \"address\": \"street_address\",\n      \"coordinates\": {\n        \"lat\": 33.7337051,\n        \"long\": -84.2842304\n      }\n    },\n    {\n      \"id\": \"loc_xxxx\",\n      \"name\": \"location_name\",\n      \"timezone\": \"America/New_York\",\n      \"address\": \"street_address\",\n      \"coordinates\": {\n        \"lat\": 34.7788476,\n        \"long\": -84.9666668\n      }\n    },\n    {\n      \"id\": \"loc_xxxx\",\n      \"name\": \"location_name\",\n      \"timezone\": \"America/Chicago\",\n      \"address\": \"street_address\",\n      \"coordinates\": {\n        \"lat\": 29.870334,\n        \"long\": -95.334639\n      }\n    },\n    {\n      \"id\": \"loc_xxxx\",\n      \"name\": \"location_name\",\n      \"timezone\": \"America/New_York\",\n      \"address\": \"street_address\",\n      \"coordinates\": {\n        \"lat\": 33.690096,\n        \"long\": -84.4908568\n      }\n    }\n  ],\n  \"meta\": {\n    \"itemsPerPage\": 7,\n    \"totalItems\": 7,\n    \"currentPage\": 1,\n    \"totalPages\": 1\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Location Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}"
+							]
+						},
+						"description": "Fetches details about a specific location."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "/v1/locations/loc_xyz",
+									"path": [
+										"v1",
+										"locations",
+										"loc_xyz"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"loc_123\",\n    \"name\": \"ALS\",\n    \"address\": \"123 Main Street\",\n    \"timezone\": \"America/New_York\",\n    \"coordinates\": {\n        \"lat\": 123.456,\n        \"long\": 123.456\n    }\n}"
+						}
+					]
+				}
+			],
+			"description": "The \\`/locations\\` endpoints let you manage your locations (also sometimes referred to as \"rooms\")."
+		},
+		{
+			"name": "Machines",
+			"item": [
+				{
+					"name": "All Machines at a Location",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines?pageSize=50&page=1",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines"
+							],
+							"query": [
+								{
+									"key": "pageSize",
+									"value": "50",
+									"description": "Maximum number of machines to return per page"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number of results to retrieve."
+								}
+							]
+						},
+						"description": "Returns a list of all machines at a specific location."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines?pageSize=1&page=1",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines"
+									],
+									"query": [
+										{
+											"key": "pageSize",
+											"value": "1",
+											"description": "Specify size of machine results for one page"
+										},
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Specify the pagination of the machine list"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"data\": [\n    {\n      \"id\": \"mac_xxxx\",\n      \"name\": \"Machine Node - 96\",\n      \"createdAt\": \"2023-11-01T07:21:12.987Z\",\n      \"controlId\": \"**********\",\n      \"serialNumber\": \"**********\",\n      \"machineNumber\": \"0096\",\n      \"networkNode\": \"96\",\n      \"modelNumber\": \"\",\n      \"machineType\": {\n        \"name\": \"SY105H\",\n        \"description\": \"SY105H\",\n        \"isWasher\": true,\n        \"isDryer\": false,\n        \"isCombo\": false\n      }\n    }\n  ],\n  \"meta\": {\n    \"itemsPerPage\": 1,\n    \"totalItems\": 50,\n    \"currentPage\": 1,\n    \"totalPages\": 50\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Machine Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}"
+							]
+						},
+						"description": "Fetches details about a specific machine."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"id\": \"mac_xxxx\",\n  \"name\": \"Machine Node - 15\",\n  \"createdAt\": \"2018-02-27T17:27:30.934Z\",\n  \"controlId\": \"12345678912345678\",\n  \"serialNumber\": \"1234567890\",\n  \"machineNumber\": \"0015\",\n  \"networkNode\": \"15\",\n  \"modelNumber\": \"SCT020WY0VXB000000\",\n  \"location\": {\n    \"id\": \"loc_xxxx\",\n    \"name\": \"location_name\"\n  },\n  \"machineType\": {\n    \"name\": \"Washer Extractor 20 lbs.\",\n    \"description\": \"Washer Extractor 20 lbs.\",\n    \"isWasher\": true,\n    \"isDryer\": false,\n    \"isCombo\": false\n  },\n  \"status\": {\n    \"linkQualityIndicator\": 42,\n    \"statusId\": \"IN_USE\",\n    \"selectedCycle\": {\n      \"id\": \"cyc_normal_hot\",\n      \"name\": \"NORMAL_HOT\"\n    },\n    \"selectedModifiers\": [\n      {\n        \"id\": \"mod_ultra\",\n        \"name\": \"ULTRA\"\n      }\n    ],\n    \"remainingSeconds\": 682,\n    \"remainingVend\": 0,\n    \"isDoorOpen\": false,\n    \"topoffFullyDisabled\": false,\n    \"canTopOff\": false,\n    \"topOffVend\": 10,\n    \"topOffTime\": 500\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Machine Cycle Programs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/cycles",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"cycles"
+							]
+						},
+						"description": "Retrieve all cycle and modifier options available for a specific machine.\n\n---\n\n**Successful Response (200 OK) Format**\n\nThe available cycle options and modifiers of the selected machine.\n\n| property | **type** | value |\n| --- | --- | --- |\n| cycles | List of `Cycle` | The `Cycle`s available on this machine. |\n| modifiers | List of `Modifier` | The `Modifier`s available on this machine. |\n| bundles | List of `Bundle` | The `Bundle`s available to this machine, if supported. If this machine does not support bundles, this property will not be returned. |"
+					},
+					"response": [
+						{
+							"name": "Washer",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/cycles",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"cycles"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"cycles\": [\n    {\n      \"id\": \"cyc_normal_hot\",\n      \"name\": \"NORMAL_HOT\"\n    },\n    {\n      \"id\": \"cyc_normal_warm\",\n      \"name\": \"NORMAL_WARM\"\n    },\n    {\n      \"id\": \"cyc_normal_cold\",\n      \"name\": \"NORMAL_COLD\"\n    },\n    {\n      \"id\": \"cyc_permanent_press_hot\",\n      \"name\": \"PERMANENT_PRESS_HOT\"\n    },\n    {\n      \"id\": \"cyc_permanent_press_warm\",\n      \"name\": \"PERMANENT_PRESS_WARM\"\n    },\n    {\n      \"id\": \"cyc_permanent_press_cold\",\n      \"name\": \"PERMANENT_PRESS_COLD\"\n    },\n    {\n      \"id\": \"cyc_delicate_hot\",\n      \"name\": \"DELICATE_HOT\"\n    },\n    {\n      \"id\": \"cyc_delicate_warm\",\n      \"name\": \"DELICATE_WARM\"\n    },\n    {\n      \"id\": \"cyc_delicate_cold\",\n      \"name\": \"DELICATE_COLD\"\n    }\n  ],\n  \"modifiers\": [\n    {\n      \"id\": \"mod_regular\",\n      \"name\": \"REGULAR\"\n    },\n    {\n      \"id\": \"mod_deluxe\",\n      \"name\": \"DELUXE\"\n    },\n    {\n      \"id\": \"mod_ultra\",\n      \"name\": \"ULTRA\"\n    }\n  ]\n}"
+						},
+						{
+							"name": "Tumbler/Dryer",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/cycles",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"cycles"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"cycles\": [\n    {\n      \"id\": \"cyc_high\",\n      \"name\": \"HIGH\"\n    },\n    {\n      \"id\": \"cyc_low\",\n      \"name\": \"LOW\"\n    },\n    {\n      \"id\": \"cyc_no_heat\",\n      \"name\": \"NO_HEAT\"\n    },\n    {\n      \"id\": \"cyc_medium\",\n      \"name\": \"MEDIUM\"\n    },\n    {\n      \"id\": \"cyc_delicate\",\n      \"name\": \"DELICATE\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Machine Cycle Steps",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/steps",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"steps"
+							]
+						},
+						"description": "This command retrieves machine cycle step information and is used in the Rapid Advance command, as each machine type has a different cycle step availability\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `Get all locations_` _)_ |\n| machine_id **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `Get machines for a location` _)_ |\n\n---\n\n**Successful Response (200 OK) Format**\n\nThe details of the machine steps return with the following format\n\n| key | value |\n| --- | --- |\n| step | The available cycle steps for the selected machine to be used in `Rapid Advance` command parameter. |\n\n---\n\nAvailable Steps Description\n\n| Step | Description |\n| --- | --- |\n| start_cycle | Command a machine to start its default cycle |\n| next_step | Command a machine to advance to its next step from the current activity. This gives the same result as `Rapid Advance to Next Step` |\n| next_fill | Command a machine to advance to its next water-fill step |\n| next_agitate_soak | Command a machine to advance to its next agitate soak step with detergent |\n| next_cool_down_drain_extract | Command a machine to advance to its next cool down and water drain step of the cycle |\n| next_hold | Command a machine to advance to hold the cycle step |\n| last_cool_down | Command a machine to advance to its last cool-down step before the cycle completes |\n| end_of_cycle | Command a machine to advance to end the current cycle |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/steps",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"steps"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"step\": \"start_cycle\"\n    },\n    {\n        \"step\": \"next_step\"\n    },\n    {\n        \"step\": \"next_fill\"\n    },\n    {\n        \"step\": \"next_agitate_soak\"\n    },\n    {\n        \"step\": \"next_cool_down_drain_extract\"\n    },\n    {\n        \"step\": \"next_hold\"\n    },\n    {\n        \"step\": \"last_cool_down\"\n    },\n    {\n        \"step\": \"end_of_cycle\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Command Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands/{{command_id}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands",
+								"{{command_id}}"
+							]
+						},
+						"description": "This endpoint allows you to check if your requested machine command has been successfully executed, is in the queue, or failed. To check the command status, use `generated_command_id` from your machine command's successful response.\n\nPossible values for `status`:\n\n|  |  |\n| --- | --- |\n| QUEUED | The command has been received and is waiting to be executed. This is the initial status of the command, so it is only an indication that the command is in our system and has been made available for the gateway to pick up and execute. |\n| FAILED | The gateway failed to execute the command. |\n| COMPLETED | The command successfully completed. |"
+					},
+					"response": [
+						{
+							"name": "In Queue",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands/{{command_id}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands",
+										"{{command_id}}"
+									]
+								}
+							},
+							"_postman_previewlanguage": "Text",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"status\": \"QUEUED\"\n}"
+						},
+						{
+							"name": "Completed",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands/{{command_id}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands",
+										"{{command_id}}"
+									]
+								}
+							},
+							"_postman_previewlanguage": "Text",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"status\": \"COMPLETED\"\n}"
+						},
+						{
+							"name": "Failed",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands/{{command_id}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands",
+										"{{command_id}}"
+									]
+								}
+							},
+							"_postman_previewlanguage": "Text",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"status\": \"FAILED\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Remote Start",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"command\": \"START\",\n  \"params\": {\n    \"remoteStartReason\": {},\n    \"forceRemoteStart\": false\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "Remotely start a machine. This command is only available when the machine is in `AVAILABLE` or `PARTIAL_VEND` status."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"command\": \"START\",\n  \"params\": {\n    \"remoteStartReason\": {},\n    \"forceRemoteStart\": false\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Remote Stop",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"command\": \"STOP\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "Remotely stop a machine that is in `IN_USE` status\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `_Get all locations_` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `_Get machines for a location_` _)_ |\n| command | The name of the machine command to execute |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"command\": \"STOP\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Remote Vend",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"command\": \"REMOTE_VEND\",\n    \"params\": {\n        \"vendAmount\": 200\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "Remote Vend allows you to put a vend amount to the selected machine and its selected cycle to start the machine.\n\nYou could put the vend amount on either the machine in `AVAILABLE` status to satisfy its full vend amount, or in `PARTIAL_VEND` status to complete the middle of the vend amount.\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `_Get all locations_` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `_Get machines for a location_` _)_ |\n| command | name of the machine command to execute |\n| vendAmount **(Required)** | a `JSON` to specify the vend amount for the selected machine and its current cycle vend price.  <br>{  <br>\"vendAmount\":  <br>`integer` to specify the vend amount sent to the selected machine. This could be `0`, but not `null`  <br>} |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"command\": \"REMOTE_VEND\",\n    \"params\": {\n        \"vendAmount\": 200\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Start Dryer with Minutes",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"command\": \"START_DRYER_WITH_TIME\",\n    \"params\": {\n        \"minutes\": 10\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "The command initiates a dryer or tumbler remotely for a specified duration _without a vend amount_\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `_Get all locations_` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `_Get machines for a location_` _)_ |\n| command | The name of the machine command to execute |\n| minutes | Duration to start the dryer/tumbler in minutes |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"command\": \"START_DRYER_WITH_TIME\",\n    \"params\": {\n        \"minutes\": 10\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://partner.sqinsights.com/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"protocol": "https",
+									"host": [
+										"partner",
+										"sqinsights",
+										"com"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Clear Errors",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"command\": \"CLEAR_ERROR\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "The Clear Errors command allows you to remove ongoing machine errors and reset the machine to an `available` state. Note that this command only removes non-fatal errors that are not caused by physical damage to the machine.\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `_Get all locations_` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `_Get machines for a location_` _)_ |\n| command | The name of the machine command to execute |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"command\": \"CLEAR_ERROR\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Clear Partial Vend",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"command\": \"CLEAR_PARTIAL_VEND\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "Clear Partial Vend allows you to clear control that is in the middle of satisfying the initial vend amount and set it back to the ready mode.\n\nWhen the machine is in the middle of the vend amount, the status is shown as `PARTIAL_VEND`\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `_Get all locations_` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `_Get machines for a location_` _)_ |\n| command | The name of the machine command to execute |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"command\": \"CLEAR_PARTIAL_VEND\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Program Out of Order",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"command\": \"PROGRAM_OUT_OF_ORDER\",\n  \"params\": {\n    \"enabled\": true\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "This command programs a machine to be `OUT_OF_ORDER` status where customers cannot vend the selected machine.\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `_Get all locations_` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `_Get machines for a location_` _)_ |\n| command | name of the machine command to execute |\n| parameters: enabled **(Required)** | To program a machine to be `OUT_OF_ORDER`, set this parameter as `true`.  <br>  <br>To remove`OUT_OF_ORDER` state, set this parameter as `false` |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"command\": \"PROGRAM_OUT_OF_ORDER\",\n  \"params\": {\n    \"enabled\": true\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Select Machine Cycle (new)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"command\": \"SET_CYCLE_SELECTIONS\",\n  \"params\": {\n    \"cycle\": {\n      \"id\": \"2\"\n    },\n    \"modifiers\": [\n      {\n        \"id\": \"0\"\n      }\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "To select a machine cycle program before sending `remote vending` or `remote start` command.\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `Get all locations` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `Get machines for a location`_)_ |\n| command | The name of the machine command to execute |\n| cycle id | The id of a machine cycle that you want to select for the machine. Get the cycle information from `GET Machine Cycle Programs` |\n| modifier id | The id of a cycle modifier that you want to select for the machine. Get the cycle information from `GET Machine Cycle Programs` |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"command\": \"SET_CYCLE_SELECTIONS\",\n  \"params\": {\n    \"cycle\": {\n      \"id\": \"2\"\n    },\n    \"modifiers\": [\n      {\n        \"id\": \"0\"\n      }\n    ]\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://partner.sqinsights.com/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"protocol": "https",
+									"host": [
+										"partner",
+										"sqinsights",
+										"com"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Rapid Advance",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"command\": \"ADVANCE_WASHER_TO_CYCLE\",\n  \"params\": {\n    \"step\": \"next_step\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "This command allows you to choose to advance the machine cycle to your preferred next step. Note that Rapid Advance is available for washers only.\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `Get all locations` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `Get machines for a location` _)_ |\n| command | The name of the machine command to execute |\n| steps | The step of a cycle that you want to advance to. The available steps of each machine can be retrieved by using `GET Machine Cycle Steps` |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"command\": \"ADVANCE_WASHER_TO_CYCLE\",\n  \"params\": {\n    \"step\": \"next_step\"\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Rapid Advance to Next Step",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"command\": \"RAPID_ADVANCE_TO_NEXT_STEP\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"commands"
+							]
+						},
+						"description": "This command allows you to advance the machine cycle to its next step **from the current step**\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `Get all locations` _)_ |\n| machineID **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `Get machines for a location` _)_ |\n| command | The name of the machine command to execute |"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"command\": \"RAPID_ADVANCE_TO_NEXT_STEP\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/commands",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"commands"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": ""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": \"<generated command id>\"\n}"
+						}
+					]
+				}
+			],
+			"description": "These endpoints provide functionality for managing machines, including getting a machine's current status and sending commands.\n\n## Machine Object\n\nThe Machine object has the following properties:\n\n| property | **type** | description |\n| --- | --- | --- |\n| id | string | The unique id of the machine |\n| name | string | The name given to the machine. This name can be changed in a number of ways outside of the API. |\n| createdAt | datetime | The datetime string in ISO8601 format representing when the machine was first created. |\n| controlId | string | The unique identifier for this machine's control. This is separate from the machine id as it identifies the actual control installed on the machine. |\n| machineNumber | string |  |\n| networkNode | string |  |\n| modelNumber | string | The model number of the machine. |\n| machineType | `MachineType` | The MachineType for this machine. |\n| status | `MachineStatus` | The current MachineStatus of this machine, at the time the request was made. |\n\n## MachineType Object\n\n| **property** | **type** | **description** |\n| --- | --- | --- |\n| name | string | The name for this machine type. |\n| description | string | The description for this machine type. This will sometimes be a more detailed description than the `name`. |\n| isWasher | boolean | Whether this machine is a washer. |\n| isDryer | boolean | Whether this machine is a dryer. |\n| isCombo | boolean | Whether the machine is a combo machine that is both a washer and dryer. If `isCombo` is `true`, `isWasher` and `isDryer` will also be `true` |\n\n## MachineStatus Object\n\n| **property** | **type** | **description** |\n| --- | --- | --- |\n| linkQualityIndicator | number | This is a numerical measurement of the signal strength of the connection between the machine and the gateway in dBm. This number is relevant to machines that are using a zigbee connection rather than a wifi connection. |\n| statusId | enum | An enum representing the machine's overall current state. See the \"Possible Values of `statusId`\" section before for a full list of possible values. |\n| remainingSeconds | number | For vend machines, this is the number of seconds remaining to complete the currently selected cycle. If the machine is not running, this number will represent the number of seconds that the selected cycle will take to complete once it is started. |\n| remainingVend | number | For vend machines, this is the total vend amount remaining in order to start the currently selected cycle. This number will change as different cycle/modifier combinations are selected on a machine to represent the price that must be paid in order to vend the machine. When `remainingVend=0` the machine will start (or has started). This number is always in units of currency and the exact worth of those units is determined by the currency settings for the organization that the parent location resides in. |\n| isDoorOpen | boolean | Indicates whether the door on the machine is open or not. |\n| topoffFullyDisabled | boolean |  |\n| canTopOff | boolean |  |\n| topOffVend | number |  |\n| topOffTime | number |  |\n| selectedCycle | `Cycle` | The currently selected cycle on the machine. If there is no cycle selected, this object will not be present. |\n| selectedModifiers | List of `Modifier`s | The currently selected Modifiers for this machine. If no modifiers are selected, this object will not be present. |\n\n## Possible values of `statusId`\n\n| key | description |\n| --- | --- |\n| **AVAILABLE** | The machine can be vended for use. |\n| **COMPLETE** | The cycle has finished and the door has not been opened. |\n| **IN_USE** | The machine is in use. |\n| **LUCKY_CYCLE** | Same as `IN_USE`, but this happens to be a Lucky Cycle (free) |\n| **NETWORK_ERROR** | This statusId occurs when a gateway is up and running but the machine becomes disconnected |\n| **OUT_OF_ORDER** | The machine was set as Out of Order by the store owner so the machine cannot be vended. |\n| **PARTIAL_VEND** | The user has started to vend a machine but the amount required for the selected cycle has not been satisfied. |\n| **READY_TO_START** | The machine is fully vended and waiting for the user to press the Start button |\n| **RESERVED** | The machine cannot be used; it is reserved for wash/dry/fold use. |\n| **UNAVAILABLE** | The machine is in an error state. |\n| **UNKNOWN** | The machine is in a status that the gateway does not recognize. |\n\n## Cycle Object\n\n| **property** | **type** | **description** |\n| --- | --- | --- |\n| id | string | The identifier for this cycle. This is guaranteed to be unique within the context of a single machine. |\n| name | string | The name given for this cyle on this machine. In the case of some machine models, this name is customizable via the machine's programming, so it could change. |\n\n## Modifier Object\n\n| **property** | **type** | **description** |\n| --- | --- | --- |\n| id | string | The identifier for this modifier, guaranteed to be unique within the context of this machine. |\n| name | string | The name given for this modifier on this machine. In the case of some machine models, this name is customizable via the machine's programming, so it could change. A machine can have multiple selected modifiers at one time, though most machines support just one at a time. |"
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "Machine Error Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/errors",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"locations",
+								"{{location_id}}",
+								"machines",
+								"{{machine_id}}",
+								"errors"
+							],
+							"query": [
+								{
+									"key": "start",
+									"value": "{{start_date}}",
+									"description": "(optional) To specify the start date and time to retrieve the data with the format of YYYY-MM-DDTHH:MM:SSZ in UTC",
+									"disabled": true
+								},
+								{
+									"key": "end",
+									"value": "{{end_date}}",
+									"description": "(optional) To specify the end date and time to retrieve the data with the format of YYYY-MM-DDTHH:MM:SSZin UTC",
+									"disabled": true
+								}
+							]
+						},
+						"description": "This endpoint allows you to retrieve the error details of the machine for the last 30 days or a specific date and time range.\n\n---\n\n**Last 30 Days**  \n`{{URL}}/v1/locations/{{locationid}}/machines/{{machineID}}/errors`\n\n---\n\n**From a specific date range**  \n`{{URL}}/v1/locations/{{locationid}}/machines/{{machineID}}/errors?start=YYYY-MM-DDTHH:MM:SSZ&end=YYYY-MM-DDTHH:MM:SSZ`\n\n---\n\n**Query & Parameters**\n\n| key | value |\n| --- | --- |\n| locationID **(Required)** | The location id to search for.  <br>_(Your location id can be found at_ `Get all locations` _)_ |\n| machine_id **(Required)** | The machine id to search for.  <br>_(Your machine id can be found at_ `Get machines for a location` _)_ |\n| start (optional) | To specify the start date and time to retrieve the data with the format of `YYYY-MM-DDTHH:MM:SSZ` in UTC |\n| end (optional) | To specify the end date and time to retrieve the data with the format of `YYYY-MM-DDTHH:MM:SSZ`in UTC |"
+					},
+					"response": [
+						{
+							"name": "last 30 days",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/errors",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"errors"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"18a9e369-eaf5-4f6a-8141-b20637924a50\",\n        \"name\": \"ERROR_OUTBOARD_COMMUNICATION_ENUM\",\n        \"type\": \"CONTROL\",\n        \"code\": 4,\n        \"timestamp\": \"2024-02-13T14:20:05.000Z\"\n    },\n    {\n        \"id\": \"7bafc72e-c81f-4b67-a587-6b9b2a0e4187\",\n        \"name\": \"ERROR_OUTBOARD_COMMUNICATION_ENUM\",\n        \"type\": \"CONTROL\",\n        \"code\": 4,\n        \"timestamp\": \"2024-02-13T21:28:55.000Z\"\n    }\n]"
+						},
+						{
+							"name": "specific date range",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/locations/{{location_id}}/machines/{{machine_id}}/errors?start=YYYY-MM-DDTHH:MM:SSZ&end=YYYY-MM-DDTHH:MM:SSZ",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"locations",
+										"{{location_id}}",
+										"machines",
+										"{{machine_id}}",
+										"errors"
+									],
+									"query": [
+										{
+											"key": "start",
+											"value": "YYYY-MM-DDTHH:MM:SSZ"
+										},
+										{
+											"key": "end",
+											"value": "YYYY-MM-DDTHH:MM:SSZ"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"name": "Content-Type",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": \"18a9e369-eaf5-4f6a-8141-b20637924a50\",\n        \"name\": \"ERROR_OUTBOARD_COMMUNICATION_ENUM\",\n        \"type\": \"CONTROL\",\n        \"code\": 4,\n        \"timestamp\": \"2024-02-13T14:20:05.000Z\"\n    },\n    {\n        \"id\": \"7bafc72e-c81f-4b67-a587-6b9b2a0e4187\",\n        \"name\": \"ERROR_OUTBOARD_COMMUNICATION_ENUM\",\n        \"type\": \"CONTROL\",\n        \"code\": 4,\n        \"timestamp\": \"2024-02-13T21:28:55.000Z\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Machine Reports - COIN_VAULT",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/reports?reportId=COIN_VAULT&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"reports"
+							],
+							"query": [
+								{
+									"key": "reportId",
+									"value": "COIN_VAULT",
+									"description": "COIN_VAULT, AUDIT_OPERATION, AUDIT_CYCLE_USAGE, AUDIT_TOTAL_VENDING"
+								},
+								{
+									"key": "locationIds",
+									"value": "{{location_id}}",
+									"description": "Can be multiple locations by adding comma (,)"
+								},
+								{
+									"key": "startDate",
+									"value": "{{start_date}}",
+									"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ  in UTC"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date}}",
+									"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ in UTC"
+								}
+							]
+						},
+						"description": "Retrieve and display the status of the coin vault and the coin amount for each machine at the specified location(s) within the given date range.\n\nThis report only shows the dates when the coin box was opened."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/reports?reportId=COIN_VAULT&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"reports"
+									],
+									"query": [
+										{
+											"key": "reportId",
+											"value": "COIN_VAULT",
+											"description": "COIN_VAULT"
+										},
+										{
+											"key": "locationIds",
+											"value": "{{location_id}}",
+											"description": "Can be multiple locations by adding comma (,)"
+										},
+										{
+											"key": "startDate",
+											"value": "{{start_date}}",
+											"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										},
+										{
+											"key": "endDate",
+											"value": "{{end_date}}",
+											"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										}
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"reportId\": \"COIN_VAULT\",\n    \"data\": {\n        \"locations\": [\n            {\n                \"id\": \"loc_id\",\n                \"name\": \"location_name\",\n                \"machines\": [\n                    {\n                        \"id\": \"mac_id\",\n                        \"emptiedDetails\": [\n                            {\n                                \"emptiedAt\": \"2022-03-23T10:00:00.000Z\",\n                                \"emptiedValue\": 0\n                            },\n                            {\n                                \"emptiedAt\": \"2021-08-16T15:00:00.000Z\",\n                                \"emptiedValue\": 0\n                            }\n                        ],\n                        \"name\": \"Machine Node - 1\",\n                        \"vaultSize\": 400,\n                        \"percentCapacity\": 0.165,\n                        \"totalValue\": 1650,\n                        \"machineType\": {\n                            \"name\": \"Dryer\",\n                            \"description\": \"Dryer\",\n                            \"isWasher\": false,\n                            \"isDryer\": true,\n                            \"isCombo\": false\n                        }\n                    },\n                    {\n                        \"id\": \"mac_id\",\n                        \"emptiedDetails\": [\n                            {\n                                \"emptiedAt\": \"2022-04-27T14:00:00.000Z\",\n                                \"emptiedValue\": 0\n                            },\n                            {\n                                \"emptiedAt\": \"2022-04-12T13:00:00.000Z\",\n                                \"emptiedValue\": 0\n                            }\n                        ],\n                        \"name\": \"Machine Node - 2\",\n                        \"vaultSize\": 500,\n                        \"percentCapacity\": 0.16,\n                        \"totalValue\": 2000,\n                        \"machineType\": {\n                            \"name\": \"Washer Extractor 20 lbs.\",\n                            \"description\": \"Washer Extractor 20 lbs.\",\n                            \"isWasher\": true,\n                            \"isDryer\": false,\n                            \"isCombo\": false\n                        }\n                    }\n                ]\n            }\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Machine Reports - AUDIT_OPERATION",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/reports?reportId=AUDITT_OPERATION&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"reports"
+							],
+							"query": [
+								{
+									"key": "reportId",
+									"value": "AUDITT_OPERATION",
+									"description": "COIN_VAULT, AUDIT_OPERATION, AUDIT_CYCLE_USAGE, AUDIT_TOTAL_VENDING"
+								},
+								{
+									"key": "locationIds",
+									"value": "{{location_id}}",
+									"description": "Can be multiple locations by adding comma (,)"
+								},
+								{
+									"key": "startDate",
+									"value": "{{start_date}}",
+									"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ  in UTC"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date}}",
+									"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ in UTC"
+								}
+							]
+						},
+						"description": "Retrieve and display the status of the coin vault and the coin amount for each machine at the specified location(s) within the given date range.\n\nThis report only shows the dates when the coin box was opened."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/reports?reportId=COIN_VAULT&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"reports"
+									],
+									"query": [
+										{
+											"key": "reportId",
+											"value": "COIN_VAULT",
+											"description": "COIN_VAULT"
+										},
+										{
+											"key": "locationIds",
+											"value": "{{location_id}}",
+											"description": "Can be multiple locations by adding comma (,)"
+										},
+										{
+											"key": "startDate",
+											"value": "{{start_date}}",
+											"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										},
+										{
+											"key": "endDate",
+											"value": "{{end_date}}",
+											"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										}
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"reportId\": \"AUDIT_OPERATION\",\n    \"data\": {\n        \"locations\": [\n            {\n                \"id\": \"loc_id\",\n                \"name\": \"location_name\",\n                \"machines\": [\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 12\",\n                        \"machineType\": {\n                            \"name\": \"Tumbler 50 lbs.\",\n                            \"description\": \"Tumbler 50 lbs.\",\n                            \"isWasher\": false,\n                            \"isDryer\": true,\n                            \"isCombo\": false\n                        },\n                        \"totalNumberOfMachineCycles\": \"20\",\n                        \"totalNumberOfRapidAdvanceCycles\": \"5\",\n                        \"totalOperationHours\": \"25\",\n                        \"firstReceivedAt\": \"2024-06-09T14:00:09.000Z\",\n                        \"lastReceivedAt\": \"2024-07-09T19:00:03.000Z\"\n                    },\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 10\",\n                        \"machineType\": {\n                            \"name\": \"Washer Extractor 20 lbs.\",\n                            \"description\": \"Washer Extractor 20 lbs.\",\n                            \"isWasher\": true,\n                            \"isDryer\": false,\n                            \"isCombo\": false\n                        },\n                        \"totalNumberOfMachineCycles\": \"50\",\n                        \"totalNumberOfRapidAdvanceCycles\": \"0\",\n                        \"totalOperationHours\": \"100\",\n                        \"firstReceivedAt\": \"2024-06-09T12:00:03.000Z\",\n                        \"lastReceivedAt\": \"2024-07-09T19:00:14.000Z\"\n                    },\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 13\",\n                        \"machineType\": {\n                            \"name\": \"CZCOMBO240\",\n                            \"description\": \"CZCOMBO240\",\n                            \"isWasher\": false,\n                            \"isDryer\": false,\n                            \"isCombo\": true\n                        },\n                        \"totalNumberOfMachineCycles\": \"53\",\n                        \"totalNumberOfRapidAdvanceCycles\": \"2\",\n                        \"totalOperationHours\": \"104\",\n                        \"firstReceivedAt\": \"2024-06-09T14:15:07.000Z\",\n                        \"lastReceivedAt\": \"2024-07-09T19:00:08.000Z\"\n                    }\n                ]\n            }\n        ]\n    }\n}\n"
+						}
+					]
+				},
+				{
+					"name": "Machine Reports - AUDIT_CYCLE_USAGE",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/reports?reportId=AUDIT_CYCLE_USAGE&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"reports"
+							],
+							"query": [
+								{
+									"key": "reportId",
+									"value": "AUDIT_CYCLE_USAGE",
+									"description": "COIN_VAULT, AUDIT_OPERATION, AUDIT_CYCLE_USAGE, AUDIT_TOTAL_VENDING"
+								},
+								{
+									"key": "locationIds",
+									"value": "{{location_id}}",
+									"description": "Can be multiple locations by adding comma (,)"
+								},
+								{
+									"key": "startDate",
+									"value": "{{start_date}}",
+									"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ  in UTC"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date}}",
+									"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ in UTC"
+								}
+							]
+						},
+						"description": "Retrieve and display the status of the coin vault and the coin amount for each machine at the specified location(s) within the given date range.\n\nThis report only shows the dates when the coin box was opened."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/reports?reportId=COIN_VAULT&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"reports"
+									],
+									"query": [
+										{
+											"key": "reportId",
+											"value": "COIN_VAULT",
+											"description": "COIN_VAULT"
+										},
+										{
+											"key": "locationIds",
+											"value": "{{location_id}}",
+											"description": "Can be multiple locations by adding comma (,)"
+										},
+										{
+											"key": "startDate",
+											"value": "{{start_date}}",
+											"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										},
+										{
+											"key": "endDate",
+											"value": "{{end_date}}",
+											"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										}
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"reportId\": \"AUDIT_CYCLE_USAGE\",\n    \"data\": {\n        \"locations\": [\n            {\n                \"id\": \"loc_id\",\n                \"name\": \"location_name\",\n                \"machines\": [\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 250\",\n                        \"delicateColdCount\": 1447,\n                        \"delicateHotCount\": 1127,\n                        \"delicateWarmCount\": 201,\n                        \"normalColdCount\": 2575,\n                        \"normalHotCount\": 2850,\n                        \"normalWarmCount\": 34,\n                        \"permanentPressColdCount\": 0,\n                        \"permanentPressHotCount\": 0,\n                        \"permanentPressWarmCount\": 0,\n                        \"totalCycles\": 2884,\n                        \"machineType\": {\n                            \"name\": \"Washer Extractor 80 lbs.\",\n                            \"description\": \"Washer Extractor 80 lbs.\",\n                            \"isWasher\": true,\n                            \"isDryer\": false,\n                            \"isCombo\": false\n                        },\n                        \"firstReceivedAt\": \"2024-07-22T09:06:14.000Z\",\n                        \"lastReceivedAt\": \"2024-08-26T09:15:06.000Z\"\n                    },\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 1\",\n                        \"delicateColdCount\": 0,\n                        \"delicateHotCount\": 0,\n                        \"delicateWarmCount\": 0,\n                        \"normalColdCount\": 4,\n                        \"normalHotCount\": 150,\n                        \"normalWarmCount\": 10,\n                        \"permanentPressColdCount\": 0,\n                        \"permanentPressHotCount\": 0,\n                        \"permanentPressWarmCount\": 0,\n                        \"totalCycles\": 194,\n                        \"machineType\": {\n                            \"name\": \"CZCOMBO135\",\n                            \"description\": \"CZCOMBO135\",\n                            \"isWasher\": true,\n                            \"isDryer\": true,\n                            \"isCombo\": true\n                        },\n                        \"firstReceivedAt\": \"2024-07-15T20:45:11.000Z\",\n                        \"lastReceivedAt\": \"2024-08-13T09:18:27.000Z\"\n                    },\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 5\",\n                        \"delicateColdCount\": 1877,\n                        \"delicateHotCount\": 1546,\n                        \"delicateWarmCount\": 235,\n                        \"normalColdCount\": 3502,\n                        \"normalHotCount\": 3767,\n                        \"normalWarmCount\": 61,\n                        \"permanentPressColdCount\": 0,\n                        \"permanentPressHotCount\": 0,\n                        \"permanentPressWarmCount\": 0,\n                        \"totalCycles\": 3828,\n                        \"machineType\": {\n                            \"name\": \"Washer Extractor 80 lbs.\",\n                            \"description\": \"Washer Extractor 80 lbs.\",\n                            \"isWasher\": true,\n                            \"isDryer\": false,\n                            \"isCombo\": false\n                        },\n                        \"firstReceivedAt\": \"2024-07-22T09:06:17.000Z\",\n                        \"lastReceivedAt\": \"2024-08-26T09:15:09.000Z\"\n                    }\n                ]\n            }\n        ]\n    }\n}\n"
+						}
+					]
+				},
+				{
+					"name": "Machine Reports - AUDIT_TOTAL_VENDING",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/reports?reportId=AUDIT_TOTAL_VENDING&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"reports"
+							],
+							"query": [
+								{
+									"key": "reportId",
+									"value": "AUDIT_TOTAL_VENDING",
+									"description": "COIN_VAULT, AUDIT_OPERATION, AUDIT_CYCLE_USAGE, AUDIT_TOTAL_VENDING"
+								},
+								{
+									"key": "locationIds",
+									"value": "{{location_id}}",
+									"description": "Can be multiple locations by adding comma (,)"
+								},
+								{
+									"key": "startDate",
+									"value": "{{start_date}}",
+									"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ  in UTC"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date}}",
+									"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ in UTC"
+								}
+							]
+						},
+						"description": "Retrieve and display the status of the coin vault and the coin amount for each machine at the specified location(s) within the given date range.\n\nThis report only shows the dates when the coin box was opened."
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/v1/reports?reportId=COIN_VAULT&locationIds={{location_id}}&startDate={{start_date}}&endDate={{end_date}}",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"reports"
+									],
+									"query": [
+										{
+											"key": "reportId",
+											"value": "COIN_VAULT",
+											"description": "COIN_VAULT"
+										},
+										{
+											"key": "locationIds",
+											"value": "{{location_id}}",
+											"description": "Can be multiple locations by adding comma (,)"
+										},
+										{
+											"key": "startDate",
+											"value": "{{start_date}}",
+											"description": "Start date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										},
+										{
+											"key": "endDate",
+											"value": "{{end_date}}",
+											"description": "End date and time for the report data coverage with the format of YYYY-MM-DDTHH:MM:SSZ"
+										}
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"reportId\": \"AUDIT_TOTAL_VENDING\",\n    \"data\": {\n        \"locations\": [\n            {\n                \"id\": \"loc_id\",\n                \"name\": \"ALS - Laundromat\",\n                \"machines\": [\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 250\",\n                        \"totalCycles\": 298,\n                        \"totalVended\": 2356,\n                        \"machineType\": {\n                            \"name\": \"Washer Extractor P105 lbs.\",\n                            \"description\": \"Washer Extractor P105 lbs.\",\n                            \"isWasher\": true,\n                            \"isDryer\": false,\n                            \"isCombo\": false\n                        },\n                        \"firstReceivedAt\": \"2024-07-27T09:44:04.000Z\",\n                        \"lastReceivedAt\": \"2024-08-31T23:48:05.000Z\"\n                    },\n                    {\n                        \"id\": \"mac_id\",\n                        \"name\": \"Machine Node - 250\",\n                        \"totalCycles\": 567,\n                        \"totalVended\": 1292,\n                        \"machineType\": {\n                            \"name\": \"Washer Extractor 80 lbs.\",\n                            \"description\": \"Washer Extractor 80 lbs.\",\n                            \"isWasher\": true,\n                            \"isDryer\": false,\n                            \"isCombo\": false\n                        },\n                        \"firstReceivedAt\": \"2024-07-22T09:06:14.000Z\",\n                        \"lastReceivedAt\": \"2024-08-31T23:48:05.000Z\"\n                    }\n                ]\n            }\n        ]\n    }\n}"
+						}
+					]
+				}
+			],
+			"description": "The `/reports` endpoints allow you to access comprehensive data from washer and tumbler vending activities, including cycle details, machine turns, and operational statistics."
+		},
+		{
+			"name": "Websockets API",
+			"item": [
+				{
+					"name": "Obtain Websockets Token",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "{{api_key}}",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "Authorization",
+									"type": "string"
+								},
+								{
+									"key": "in",
+									"value": "header",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{URL}}/v1/realtime/auth",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"v1",
+								"realtime",
+								"auth"
+							]
+						},
+						"description": "### **Connecting to real-time data via the Partner API**\n\nSteps:\n\n1. Use your API Key to obtain a JWT\n    \n2. Pass that JWT to our real-time data service along with the channels you care about\n    \n3. Listen for messages being received on those channels\n    \n\n---\n\n### Obtaining an auth token\n\nMake a POST request to our `/auth` endpoint with your API Key in the `Authorization` header\n\nIf all goes well, the response should look like in the response example\n\n---"
+					},
+					"response": [
+						{
+							"name": "Successful Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{URL}}/v1/realtime/auth",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"v1",
+										"realtime",
+										"auth"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"token\": \"<JWT>\"\n}"
+						}
+					]
+				}
+			],
+			"description": "WebSockets API enables clients to connect to our machines in real-time, directly receiving live machine event updates.",
+			"auth": {
+				"type": "apikey",
+				"apikey": [
+					{
+						"key": "value",
+						"value": "{{api_key}}",
+						"type": "string"
+					},
+					{
+						"key": "key",
+						"value": "Authorization",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "value",
+				"value": "9bddcc16598547747926de204a5ac7b1",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "X-API-Key",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "URL",
+			"value": "https://partner.sqinsights.com"
+		}
+	]
+}

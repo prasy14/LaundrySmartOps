@@ -3,6 +3,7 @@ import { ApiSyncService } from '../services/api-sync';
 import { storage } from '../storage';
 import { log } from '../vite';
 import { isManagerOrAdmin } from '../middleware/auth';
+import bcrypt from 'bcryptjs';
 
 if (!process.env.SQ_INSIGHTS_API_KEY) {
   throw new Error('SQ_INSIGHTS_API_KEY environment variable is required');
@@ -11,8 +12,81 @@ if (!process.env.SQ_INSIGHTS_API_KEY) {
 const syncRouter = Router();
 const apiService = new ApiSyncService(process.env.SQ_INSIGHTS_API_KEY);
 
+// Initialize test admin user if needed
+async function ensureTestAdmin() {
+  try {
+    const testUser = await storage.getUserByUsername('admin');
+    if (!testUser) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await storage.createUser({
+        username: 'admin',
+        password: hashedPassword,
+        role: 'admin',
+        name: 'Test Admin',
+        email: 'admin@test.com',
+      });
+      log('Created test admin user', 'sync');
+    }
+  } catch (error) {
+    log(`Error ensuring test admin: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+  }
+}
+
+// Call this when the router is initialized
+ensureTestAdmin();
+
 // Apply the isManagerOrAdmin middleware to protect all sync routes
 syncRouter.use(isManagerOrAdmin);
+
+// Test sync endpoint to verify data storage
+syncRouter.post('/test', async (req, res) => {
+  try {
+    log('Starting test sync process...', 'sync');
+
+    // First sync locations
+    const locationCount = await apiService.syncLocations();
+    const locations = await storage.getLocations();
+
+    // Verify location data
+    log(`Synced ${locationCount} locations:`, 'sync');
+    for (const location of locations) {
+      log(`Location: ${location.name} (${location.externalId})`, 'sync');
+    }
+
+    // Then sync machines for each location
+    let totalMachines = 0;
+    for (const location of locations) {
+      try {
+        const machineCount = await apiService.syncMachinesForLocation(location.externalId);
+        totalMachines += machineCount;
+        log(`Synced ${machineCount} machines for location ${location.name}`, 'sync');
+      } catch (error) {
+        log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+      }
+    }
+
+    // Get all machines to verify data
+    const machines = await storage.getMachines();
+    log(`Total machines synced: ${totalMachines}`, 'sync');
+
+    // Report sync status
+    log('Test sync completed successfully', 'sync');
+    res.json({
+      success: true,
+      locationCount,
+      machineCount: totalMachines,
+      locations,
+      machines,
+      message: 'Test sync completed successfully'
+    });
+  } catch (error) {
+    log(`Test sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to complete test sync'
+    });
+  }
+});
 
 syncRouter.post('/all', async (req, res) => {
   try {

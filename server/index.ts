@@ -3,6 +3,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { SyncScheduler } from "./services/scheduler";
 
 declare module 'express-session' {
   interface SessionData {
@@ -88,6 +89,16 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
     res.status(status).json({ message });
   });
+
+  // Initialize sync scheduler with API key
+  const apiKey = process.env.SQ_INSIGHTS_API_KEY;
+  if (apiKey) {
+    const syncScheduler = new SyncScheduler(apiKey);
+    syncScheduler.start();
+    log('Sync scheduler initialized and started', 'scheduler');
+  } else {
+    log('Warning: SQ_INSIGHTS_API_KEY not provided, sync scheduler not started', 'scheduler');
+  }
 
   // Setup Vite or serve static files last
   if (app.get("env") === "development") {
