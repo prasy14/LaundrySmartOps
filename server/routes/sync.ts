@@ -40,51 +40,56 @@ syncRouter.use(isManagerOrAdmin);
 
 // Test sync endpoint to verify data storage
 syncRouter.post('/test', async (req, res) => {
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Sync operation timed out')), 60000)
-  );
+  // Set a timeout for the entire operation
+  const SYNC_TIMEOUT = 60000; // 60 seconds
+  let timeoutHandle: NodeJS.Timeout;
 
   try {
     log('Starting test sync process...', 'sync');
 
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        reject(new Error('Sync operation timed out'));
+      }, SYNC_TIMEOUT);
+    });
+
+    const syncPromise = (async () => {
+      // First sync locations
+      const locationCount = await apiService.syncLocations();
+      const locations = await storage.getLocations();
+
+      // Log location data
+      log(`Synced ${locationCount} locations`, 'sync');
+      for (const location of locations) {
+        log(`Location: ${location.name} (${location.externalId})`, 'sync');
+      }
+
+      // Then sync machines for each location
+      let totalMachines = 0;
+      for (const location of locations) {
+        try {
+          const machineCount = await apiService.syncMachinesForLocation(location.externalId);
+          totalMachines += machineCount;
+          log(`Synced ${machineCount} machines for location ${location.name}`, 'sync');
+        } catch (error) {
+          log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+        }
+      }
+
+      // Get all machines to verify data
+      const machines = await storage.getMachines();
+      log(`Total machines synced: ${totalMachines}`, 'sync');
+
+      return { locationCount, totalMachines, locations, machines };
+    })();
+
     // Race between sync operation and timeout
-    const result = await Promise.race([
-      (async () => {
-        // First sync locations
-        const locationCount = await apiService.syncLocations();
-        const locations = await storage.getLocations();
+    const result = await Promise.race([syncPromise, timeoutPromise]);
+    clearTimeout(timeoutHandle);
 
-        // Verify location data
-        log(`Synced ${locationCount} locations:`, 'sync');
-        for (const location of locations) {
-          log(`Location: ${location.name} (${location.externalId})`, 'sync');
-        }
+    const { locationCount, totalMachines, locations, machines } = result as any;
 
-        // Then sync machines for each location
-        let totalMachines = 0;
-        for (const location of locations) {
-          try {
-            const machineCount = await apiService.syncMachinesForLocation(location.externalId);
-            totalMachines += machineCount;
-            log(`Synced ${machineCount} machines for location ${location.name}`, 'sync');
-          } catch (error) {
-            log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
-          }
-        }
-
-        // Get all machines to verify data
-        const machines = await storage.getMachines();
-        log(`Total machines synced: ${totalMachines}`, 'sync');
-
-        // Report sync status
-        log('Test sync completed successfully', 'sync');
-        return { locationCount, totalMachines, locations, machines };
-      })(),
-      timeoutPromise
-    ]);
-
-    const { locationCount, totalMachines, locations, machines } = result;
-
+    log('Test sync completed successfully', 'sync');
     res.json({
       success: true,
       locationCount,
@@ -94,40 +99,31 @@ syncRouter.post('/test', async (req, res) => {
       message: 'Test sync completed successfully'
     });
   } catch (error) {
+    clearTimeout(timeoutHandle);
     log(`Test sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to complete test sync'
-    });
+
+    // Ensure we always send a response
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to complete test sync'
+      });
+    }
   }
 });
 
+// Full sync endpoint
 syncRouter.post('/all', async (req, res) => {
   try {
     log('Starting full sync process...', 'sync');
+    await apiService.syncAll();
 
-    // First sync locations
-    const locationCount = await apiService.syncLocations();
     const locations = await storage.getLocations();
-
-    // Then sync machines for each location
-    let totalMachines = 0;
-    for (const location of locations) {
-      try {
-        const machineCount = await apiService.syncMachinesForLocation(location.externalId);
-        totalMachines += machineCount;
-      } catch (error) {
-        log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
-      }
-    }
-
     const machines = await storage.getMachines();
 
     log('Full sync completed successfully', 'sync');
     res.json({
       success: true,
-      locationCount,
-      machineCount: totalMachines,
       locations,
       machines
     });

@@ -96,69 +96,58 @@ export class ApiSyncService {
   async syncMachinesForLocation(locationId: string): Promise<number> {
     try {
       log(`Starting machine sync for location ${locationId}`, 'api-sync');
-      const pageSize = 50;
-      let page = 1;
-      let totalMachines = 0;
-      let hasMorePages = true;
+      const response = await this.fetchWithAuth(`/locations/${locationId}/machines`);
+
+      if (!response?.data) {
+        throw new Error(`No machine data received for location ${locationId}`);
+      }
 
       const location = await storage.getLocationByExternalId(locationId);
       if (!location) {
         throw new Error(`Location with external ID ${locationId} not found`);
       }
 
-      while (hasMorePages) {
-        log(`Fetching machines for location ${locationId} - page ${page}`, 'api-sync');
-        const response = await this.fetchWithAuth(`/locations/${locationId}/machines?pageSize=${pageSize}&page=${page}`);
+      let machineCount = 0;
+      for (const machine of response.data) {
+        try {
+          log(`Processing machine ${machine.id}`, 'api-sync');
 
-        if (!response?.data) {
-          break;
+          // Create or update machine type first
+          const machineType = await storage.createOrUpdateMachineType({
+            name: machine.machineType.name,
+            description: machine.machineType.description || '',
+            isWasher: machine.machineType.isWasher || false,
+            isDryer: machine.machineType.isDryer || false,
+            isCombo: machine.machineType.isCombo || false,
+          });
+
+          log(`Machine type created/updated: ${machineType.id}`, 'api-sync');
+
+          // Then create or update the machine
+          await storage.createOrUpdateMachine({
+            externalId: machine.id,
+            name: machine.name,
+            locationId: location.id,
+            machineTypeId: machineType.id,
+            controlId: machine.controlId,
+            serialNumber: machine.serialNumber,
+            machineNumber: machine.machineNumber,
+            networkNode: machine.networkNode,
+            modelNumber: machine.modelNumber,
+            status: machine.status || {},
+            lastSyncAt: new Date()
+          });
+
+          machineCount++;
+          log(`Machine ${machine.id} processed successfully`, 'api-sync');
+        } catch (error) {
+          log(`Failed to process machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          // Continue with next machine even if one fails
         }
-
-        for (const machine of response.data) {
-          try {
-            log(`Processing machine ${machine.id}`, 'api-sync');
-
-            // Create or update machine type first
-            const machineType = await storage.createOrUpdateMachineType({
-              name: machine.machineType.name,
-              description: machine.machineType.description || '',
-              isWasher: machine.machineType.isWasher || false,
-              isDryer: machine.machineType.isDryer || false,
-              isCombo: machine.machineType.isCombo || false,
-            });
-
-            log(`Machine type created/updated: ${machineType.id}`, 'api-sync');
-
-            // Then create or update the machine
-            await storage.createOrUpdateMachine({
-              externalId: machine.id,
-              name: machine.name,
-              locationId: location.id,
-              machineTypeId: machineType.id,
-              controlId: machine.controlId,
-              serialNumber: machine.serialNumber,
-              machineNumber: machine.machineNumber,
-              networkNode: machine.networkNode,
-              modelNumber: machine.modelNumber,
-              status: machine.status || {},
-              lastSyncAt: new Date()
-            });
-
-            // Sync machine programs
-            await this.syncMachinePrograms(machine.id, locationId);
-            totalMachines++;
-            log(`Machine ${machine.id} processed successfully`, 'api-sync');
-          } catch (error) {
-            log(`Failed to sync machine ${machine.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
-          }
-        }
-
-        hasMorePages = response.data.length === pageSize;
-        page++;
       }
 
-      log(`Successfully synced ${totalMachines} machines for location ${locationId}`, 'api-sync');
-      return totalMachines;
+      log(`Successfully synced ${machineCount} machines for location ${locationId}`, 'api-sync');
+      return machineCount;
     } catch (error) {
       log(`Failed to sync machines for location ${locationId}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
@@ -179,10 +168,12 @@ export class ApiSyncService {
 
       for (const location of response.data) {
         try {
+          log(`Processing location: ${location.name} (${location.id})`, 'api-sync');
+
           await storage.createOrUpdateLocation({
             externalId: location.id,
             name: location.name,
-            timezone: location.timezone,
+            timezone: location.timezone || 'UTC',
             address: location.address,
             coordinates: location.coordinates,
             status: 'active',
@@ -192,8 +183,10 @@ export class ApiSyncService {
 
           const machineCount = await this.syncMachinesForLocation(location.id);
           totalMachines += machineCount;
+          log(`Processed ${machineCount} machines for location ${location.name}`, 'api-sync');
         } catch (error) {
           log(`Failed to sync location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+          // Continue with next location even if one fails
         }
       }
 
@@ -216,7 +209,7 @@ export class ApiSyncService {
         error: null,
         locationCount,
         machineCount: 0, // Updated during individual location syncs
-        programCount: 0 // Updated during individual machine syncs
+        programCount: 0  // Updated during individual machine syncs
       });
 
       log('Full sync completed successfully', 'api-sync');
@@ -230,25 +223,6 @@ export class ApiSyncService {
         machineCount: 0,
         programCount: 0
       });
-      throw error;
-    }
-  }
-
-  // Track command status
-  async checkCommandStatus(locationId: string, machineId: string, commandId: string): Promise<string> {
-    try {
-      const response = await this.fetchWithAuth(`/locations/${locationId}/machines/${machineId}/commands/${commandId}`);
-      const status = response.status; // QUEUED, COMPLETED, FAILED
-
-      await storage.updateCommandHistory(commandId, {
-        status,
-        completedAt: status !== 'QUEUED' ? new Date() : null,
-        error: status === 'FAILED' ? 'Command execution failed' : null
-      });
-
-      return status;
-    } catch (error) {
-      log(`Failed to check command status: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
       throw error;
     }
   }
