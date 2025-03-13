@@ -32,14 +32,31 @@ export default function Machines() {
     );
   }
 
-  const getLocationName = (locationId: number) => {
+  const getLocationName = (locationId: number | null) => {
+    if (!locationId) return 'Unknown Location';
     const location = locationsData?.locations.find(loc => loc.id === locationId);
     return location?.name || 'Unknown Location';
   };
 
+  const getStatusDisplay = (machine: Machine) => {
+    if (!machine.status) return 'Unknown';
+    return machine.status.statusId || 'Unknown';
+  };
+
+  const getRemainingTime = (machine: Machine) => {
+    if (!machine.status?.remainingSeconds) return null;
+    const minutes = Math.round(machine.status.remainingSeconds / 60);
+    return `${minutes} min`;
+  };
+
+  const getLinkQuality = (machine: Machine) => {
+    if (!machine.status?.linkQualityIndicator) return null;
+    return Math.round(machine.status.linkQualityIndicator);
+  };
+
   const filteredMachines = machinesData?.machines.filter(machine =>
     selectedLocation === "all" ||
-    (machine.locationId != null && machine.locationId.toString() === selectedLocation)
+    (machine.locationId && machine.locationId.toString() === selectedLocation)
   );
 
   return (
@@ -73,8 +90,8 @@ export default function Machines() {
                 <TableHead>Model</TableHead>
                 <TableHead>Serial Number</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last Active</TableHead>
-                <TableHead>Metrics</TableHead>
+                <TableHead>Link Quality</TableHead>
+                <TableHead>Remaining Time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,30 +99,22 @@ export default function Machines() {
                 <TableRow key={machine.id}>
                   <TableCell className="font-medium">{machine.name}</TableCell>
                   <TableCell>{getLocationName(machine.locationId)}</TableCell>
-                  <TableCell>{machine.model || 'N/A'}</TableCell>
+                  <TableCell>{machine.modelNumber || 'N/A'}</TableCell>
                   <TableCell>{machine.serialNumber || 'N/A'}</TableCell>
                   <TableCell>
-                    <Badge variant={machine.status === 'online' ? 'success' : 'destructive'}>
-                      {machine.status}
+                    <Badge variant={machine.status?.statusId === 'online' ? 'success' : 'destructive'}>
+                      {getStatusDisplay(machine)}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {machine.lastPing ?
-                      format(new Date(machine.lastPing), 'MMM d, h:mm a') :
-                      'Never'
-                    }
+                    {getLinkQuality(machine) !== null ? (
+                      <span>{getLinkQuality(machine)}%</span>
+                    ) : (
+                      'N/A'
+                    )}
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1 text-sm">
-                      <div>Cycles: {machine.metrics?.cycles || 0}</div>
-                      <div>Uptime: {machine.metrics?.uptime ? `${machine.metrics.uptime.toFixed(1)}%` : 'N/A'}</div>
-                      <div className="flex items-center gap-1">
-                        Errors: 
-                        <Badge variant={machine.metrics?.errors ? 'destructive' : 'secondary'}>
-                          {machine.metrics?.errors || 0}
-                        </Badge>
-                      </div>
-                    </div>
+                    {getRemainingTime(machine) || 'N/A'}
                   </TableCell>
                 </TableRow>
               ))}

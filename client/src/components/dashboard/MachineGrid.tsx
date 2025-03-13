@@ -42,6 +42,16 @@ export function MachineGrid() {
     },
   });
 
+  const getStatusDisplay = (machine: Machine) => {
+    if (!machine.status) return 'Unknown';
+    return machine.status.statusId || 'Unknown';
+  };
+
+  const getLinkQuality = (machine: Machine) => {
+    if (!machine.status?.linkQualityIndicator) return null;
+    return Math.round(machine.status.linkQualityIndicator);
+  };
+
   if (isLoadingMachines) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -57,7 +67,7 @@ export function MachineGrid() {
 
   // Filter machines based on selected location
   const filteredMachines = machineData?.machines.filter(machine => 
-    selectedLocation === "all" || machine.locationId.toString() === selectedLocation
+    selectedLocation === "all" || (machine.locationId && machine.locationId.toString() === selectedLocation)
   );
 
   return (
@@ -102,7 +112,8 @@ export function MachineGrid() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredMachines?.map((machine) => {
-          const location = locationMap.get(machine.locationId);
+          const location = locationMap.get(machine.locationId || 0);
+          const linkQuality = getLinkQuality(machine);
 
           return (
             <Card key={machine.id}>
@@ -111,10 +122,10 @@ export function MachineGrid() {
                   {machine.name}
                 </CardTitle>
                 <Badge 
-                  variant={machine.status === 'online' ? 'default' : 
-                          machine.status === 'offline' ? 'destructive' : 'outline'}
+                  variant={machine.status?.statusId === 'online' ? 'default' : 
+                          machine.status?.statusId === 'offline' ? 'destructive' : 'outline'}
                 >
-                  {machine.status}
+                  {getStatusDisplay(machine)}
                 </Badge>
               </CardHeader>
               <CardContent>
@@ -125,19 +136,19 @@ export function MachineGrid() {
                   </div>
                   <div className="flex items-center space-x-2 text-sm">
                     <WashingMachine className="h-4 w-4" />
-                    <span>{machine.model || 'Unknown Model'}</span>
+                    <span>{machine.modelNumber || 'Unknown Model'}</span>
                   </div>
-                  {machine.metrics && (
-                    <>
-                      <div className="flex items-center space-x-2 text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span>{machine.metrics.errors} errors today</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm">
-                        <Clock className="h-4 w-4" />
-                        <span>{Math.round(machine.metrics.uptime)}% uptime</span>
-                      </div>
-                    </>
+                  {linkQuality !== null && (
+                    <div className="flex items-center space-x-2 text-sm">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>Link Quality: {linkQuality}%</span>
+                    </div>
+                  )}
+                  {machine.status?.remainingSeconds !== undefined && (
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Clock className="h-4 w-4" />
+                      <span>Remaining: {Math.round(machine.status.remainingSeconds / 60)} min</span>
+                    </div>
                   )}
                 </div>
               </CardContent>

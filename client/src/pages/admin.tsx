@@ -111,6 +111,16 @@ export default function Admin() {
     },
   });
 
+  const getStatusDisplay = (machine: Machine) => {
+    if (!machine.status) return 'Unknown';
+    return machine.status.statusId || 'Unknown';
+  };
+
+  const getSelectedCycle = (machine: Machine) => {
+    if (!machine.status?.selectedCycle) return 'None';
+    return machine.status.selectedCycle.name;
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 p-6 space-y-6">
@@ -254,34 +264,26 @@ export default function Admin() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Address</TableHead>
-                      <TableHead>Contact</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>Last Sync</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {locationsData?.locations.map((location) => (
                       <TableRow key={location.id}>
                         <TableCell className="font-medium">{location.name}</TableCell>
-                        <TableCell>
-                          {location.address}
-                          {location.city && `, ${location.city}`}
-                          {location.state && `, ${location.state}`}
-                        </TableCell>
-                        <TableCell>
-                          {location.contactName && (
-                            <div>
-                              <div>{location.contactName}</div>
-                              <div className="text-sm text-muted-foreground">{location.contactEmail}</div>
-                            </div>
-                          )}
-                        </TableCell>
+                        <TableCell>{location.address || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge variant={location.status === 'active' ? 'success' : 'secondary'}>
                             {location.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{location.type || 'N/A'}</TableCell>
+                        <TableCell>
+                          {location.lastSyncAt ? 
+                            format(new Date(location.lastSyncAt), 'MMM d, h:mm a') : 
+                            'Never'
+                          }
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -296,8 +298,7 @@ export default function Admin() {
                       <TableHead>Model</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Last Ping</TableHead>
-                      <TableHead>Metrics</TableHead>
+                      <TableHead>Selected Cycle</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -306,26 +307,14 @@ export default function Admin() {
                       return (
                         <TableRow key={machine.id}>
                           <TableCell className="font-medium">{machine.name}</TableCell>
-                          <TableCell>{machine.model || 'N/A'}</TableCell>
+                          <TableCell>{machine.modelNumber || 'N/A'}</TableCell>
                           <TableCell>
-                            <Badge variant={machine.status === 'online' ? 'success' : 'destructive'}>
-                              {machine.status}
+                            <Badge variant={machine.status?.statusId === 'online' ? 'success' : 'destructive'}>
+                              {getStatusDisplay(machine)}
                             </Badge>
                           </TableCell>
                           <TableCell>{location?.name || 'Unknown'}</TableCell>
-                          <TableCell>
-                            {machine.lastPing ? 
-                              format(new Date(machine.lastPing), 'MMM d, h:mm a') : 
-                              'Never'
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <div>Cycles: {machine.metrics?.cycles || 0}</div>
-                              <div>Uptime: {machine.metrics?.uptime}%</div>
-                              <div>Errors: {machine.metrics?.errors || 0}</div>
-                            </div>
-                          </TableCell>
+                          <TableCell>{getSelectedCycle(machine)}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -339,8 +328,7 @@ export default function Admin() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Description</TableHead>
+                      <TableHead>Sort Order</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -348,8 +336,7 @@ export default function Admin() {
                       <TableRow key={program.id}>
                         <TableCell className="font-medium">{program.name}</TableCell>
                         <TableCell>{program.type}</TableCell>
-                        <TableCell>{program.duration} min</TableCell>
-                        <TableCell>{program.description || 'N/A'}</TableCell>
+                        <TableCell>{program.sortOrder || 'N/A'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
