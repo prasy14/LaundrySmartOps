@@ -39,7 +39,7 @@ export class ApiSyncService {
       const data = await response.json();
       log(`API response received for ${endpoint}: ${JSON.stringify(data).substring(0, 100)}...`, 'api-sync');
       return data;
-    } catch (error) {
+    } catch (error: any) { // Explicitly type as any to handle both Error and AbortError
       if (error.name === 'AbortError') {
         log(`API request timeout for ${endpoint}`, 'api-sync');
         throw new Error(`API request timed out: ${endpoint}`);
@@ -112,13 +112,19 @@ export class ApiSyncService {
         try {
           log(`Processing machine ${machine.id}`, 'api-sync');
 
+          // Validate machine data before processing
+          if (!machine.machineType?.name) {
+            log(`Skipping machine ${machine.id} - invalid machine type data`, 'api-sync');
+            continue;
+          }
+
           // Create or update machine type first
           const machineType = await storage.createOrUpdateMachineType({
             name: machine.machineType.name,
             description: machine.machineType.description || '',
-            isWasher: machine.machineType.isWasher || false,
-            isDryer: machine.machineType.isDryer || false,
-            isCombo: machine.machineType.isCombo || false,
+            isWasher: Boolean(machine.machineType.isWasher),
+            isDryer: Boolean(machine.machineType.isDryer),
+            isCombo: Boolean(machine.machineType.isCombo),
           });
 
           log(`Machine type created/updated: ${machineType.id}`, 'api-sync');
@@ -126,14 +132,14 @@ export class ApiSyncService {
           // Then create or update the machine
           await storage.createOrUpdateMachine({
             externalId: machine.id,
-            name: machine.name,
+            name: machine.name || `Machine ${machine.id}`,
             locationId: location.id,
             machineTypeId: machineType.id,
-            controlId: machine.controlId,
-            serialNumber: machine.serialNumber,
-            machineNumber: machine.machineNumber,
-            networkNode: machine.networkNode,
-            modelNumber: machine.modelNumber,
+            controlId: machine.controlId || null,
+            serialNumber: machine.serialNumber || null,
+            machineNumber: machine.machineNumber || null,
+            networkNode: machine.networkNode || null,
+            modelNumber: machine.modelNumber || null,
             status: machine.status || {},
             lastSyncAt: new Date()
           });
@@ -172,10 +178,10 @@ export class ApiSyncService {
 
           await storage.createOrUpdateLocation({
             externalId: location.id,
-            name: location.name,
+            name: location.name || `Location ${location.id}`,
             timezone: location.timezone || 'UTC',
-            address: location.address,
-            coordinates: location.coordinates,
+            address: location.address || null,
+            coordinates: location.coordinates || null,
             status: 'active',
             lastSyncAt: new Date()
           });
