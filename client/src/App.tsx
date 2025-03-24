@@ -33,33 +33,45 @@ function Router() {
               {!isAuthPage && <Header />}
               <main className="flex-1 overflow-auto p-6">
                 <Switch>
-                  {/* Dashboard - accessible to all roles */}
-                  <ProtectedRoute 
-                    path="/" 
-                    component={DashboardPage}
-                    allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']} 
-                  />
+                  <Route path="/">
+                    <ProtectedRoute 
+                      path="/" 
+                      component={DashboardPage}
+                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']} 
+                    />
+                  </Route>
 
-                  {/* System Analyst & Performance Analyst Routes */}
-                  <ProtectedRoute 
-                    path="/reports" 
-                    component={ReportsPage}
-                    allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
-                  />
+                  <Route path="/locations">
+                    <ProtectedRoute 
+                      path="/locations" 
+                      component={LocationsPage}
+                      allowedRoles={['admin', 'lease_manager']} 
+                    />
+                  </Route>
 
-                  {/* Machine Management - Lease Manager Routes */}
-                  <ProtectedRoute 
-                    path="/machines" 
-                    component={MachinesPage}
-                    allowedRoles={['admin', 'lease_manager', 'system_analyst']} 
-                  />
+                  <Route path="/reports">
+                    <ProtectedRoute 
+                      path="/reports" 
+                      component={ReportsPage}
+                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
+                    />
+                  </Route>
 
-                  {/* Admin Only Routes */}
-                  <ProtectedRoute 
-                    path="/admin" 
-                    component={AdminPage}
-                    allowedRoles={['admin']} 
-                  />
+                  <Route path="/machines">
+                    <ProtectedRoute 
+                      path="/machines" 
+                      component={MachinesPage}
+                      allowedRoles={['admin', 'lease_manager', 'system_analyst']} 
+                    />
+                  </Route>
+
+                  <Route path="/admin">
+                    <ProtectedRoute 
+                      path="/admin" 
+                      component={AdminPage}
+                      allowedRoles={['admin']} 
+                    />
+                  </Route>
 
                   <Route>
                     <NotFound />
