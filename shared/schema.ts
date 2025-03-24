@@ -304,6 +304,28 @@ export const insertMachineSupportedModifierSchema = createInsertSchema(machineSu
 export const insertCycleStepSchema = createInsertSchema(cycleSteps);
 export const insertMachineCycleStepSchema = createInsertSchema(machineCycleSteps);
 
+// Machine Errors schema
+export const machineErrors = pgTable("machine_errors", {
+  id: text("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id),
+  locationId: integer("location_id").references(() => locations.id),
+  errorName: text("error_name").notNull(),
+  errorType: text("error_type").notNull(),
+  errorCode: integer("error_code"),
+  timestamp: timestamp("timestamp").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add to the existing insert schemas section
+export const insertMachineErrorSchema = createInsertSchema(machineErrors).extend({
+  id: z.string().uuid().optional(),
+  timestamp: z.string().transform(str => new Date(str)),
+});
+
+// Add to the existing export types section
+export type MachineError = typeof machineErrors.$inferSelect;
+export type InsertMachineError = z.infer<typeof insertMachineErrorSchema>;
+
 // Export types for new tables
 export type MachineCycle = typeof machineCycles.$inferSelect;
 export type InsertMachineCycle = z.infer<typeof insertMachineCycleSchema>;
