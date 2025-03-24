@@ -6,9 +6,12 @@ import { format } from "date-fns";
 import type { Alert, Machine, Location, MachineError } from "@shared/schema";
 import { Loader2, AlertTriangle, CheckCircle, WrenchIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MachineStatusChart } from "@/components/visualizations/MachineStatusChart";
+import { PerformanceChart } from "@/components/visualizations/PerformanceChart";
+import { AlertMetricsChart } from "@/components/visualizations/AlertMetricsChart";
 
 export default function Dashboard() {
-  // Fetch data for dashboard
+  // Existing queries
   const { data: alertsData, isLoading: alertsLoading } = useQuery<{ alerts: Alert[] }>({
     queryKey: ['/api/alerts'],
   });
@@ -25,6 +28,14 @@ export default function Dashboard() {
     queryKey: ['/api/machine-errors'],
   });
 
+  // New query for performance data
+  const { data: performanceData } = useQuery<{
+    uptimeHistory: Array<{ timestamp: string; value: number }>;
+    alertMetrics: Array<{ type: string; count: number; avgResolutionTime: number }>;
+  }>({
+    queryKey: ['/api/dashboard/performance'],
+  });
+
   if (alertsLoading || machinesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -37,8 +48,8 @@ export default function Dashboard() {
   const totalMachines = machinesData?.machines.length || 0;
   const activeMachines = machinesData?.machines.filter(m => m.status?.statusId === 'AVAILABLE').length || 0;
   const inUseMachines = machinesData?.machines.filter(m => m.status?.statusId === 'IN_USE').length || 0;
-  const maintenanceNeeded = machinesData?.machines.filter(m => 
-    m.status?.statusId === 'MAINTENANCE_REQUIRED' || 
+  const maintenanceNeeded = machinesData?.machines.filter(m =>
+    m.status?.statusId === 'MAINTENANCE_REQUIRED' ||
     errorsData?.errors.some(e => e.machineId === m.id)
   ).length || 0;
 
@@ -93,6 +104,31 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Visualization Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Machine Status Distribution */}
+        {machinesData?.machines && (
+          <MachineStatusChart machines={machinesData.machines} />
+        )}
+
+        {/* System Uptime Trend */}
+        {performanceData?.uptimeHistory && (
+          <PerformanceChart
+            data={performanceData.uptimeHistory}
+            title="System Uptime Trend"
+            yAxisLabel="Uptime %"
+            color="rgb(34, 197, 94)"
+          />
+        )}
+      </div>
+
+      {/* Alert Metrics */}
+      {performanceData?.alertMetrics && (
+        <div className="mt-6">
+          <AlertMetricsChart data={performanceData.alertMetrics} />
+        </div>
+      )}
+
       {/* Recent Errors Section */}
       <Card>
         <CardHeader>
@@ -141,7 +177,6 @@ export default function Dashboard() {
           </Table>
         </CardContent>
       </Card>
-
       {/* Machine Status Overview */}
       <Card>
         <CardHeader>
@@ -166,11 +201,11 @@ export default function Dashboard() {
                     <TableCell className="font-medium">{machine.name}</TableCell>
                     <TableCell>{location?.name || 'Unknown'}</TableCell>
                     <TableCell>
-                      <Badge 
+                      <Badge
                         variant={
                           machine.status?.statusId === 'AVAILABLE' ? 'success' :
-                          machine.status?.statusId === 'IN_USE' ? 'default' :
-                          'destructive'
+                            machine.status?.statusId === 'IN_USE' ? 'default' :
+                              'destructive'
                         }
                       >
                         {machine.status?.statusId || 'Unknown'}
