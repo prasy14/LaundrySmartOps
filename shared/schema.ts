@@ -278,11 +278,31 @@ export const machineSupportedModifiers = pgTable("machine_supported_modifiers", 
   isEnabled: boolean("is_enabled").default(true),
 });
 
+// Cycle Steps schema
+export const cycleSteps = pgTable("cycle_steps", {
+  id: serial("id").primaryKey(),
+  stepName: text("step_name").notNull().unique(),
+  description: text("description"),
+  sortOrder: integer("sort_order"),
+});
+
+// Machine Cycle Steps schema (relationships)
+export const machineCycleSteps = pgTable("machine_cycle_steps", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id),
+  cycleId: integer("cycle_id").references(() => machineCycles.id),
+  stepId: integer("step_id").references(() => cycleSteps.id),
+  stepOrder: integer("step_order").notNull(),
+  isEnabled: boolean("is_enabled").default(true),
+});
+
 // Create insert schemas for new tables
 export const insertMachineCycleSchema = createInsertSchema(machineCycles);
 export const insertCycleModifierSchema = createInsertSchema(cycleModifiers);
 export const insertMachineSupportedCycleSchema = createInsertSchema(machineSupportedCycles);
 export const insertMachineSupportedModifierSchema = createInsertSchema(machineSupportedModifiers);
+export const insertCycleStepSchema = createInsertSchema(cycleSteps);
+export const insertMachineCycleStepSchema = createInsertSchema(machineCycleSteps);
 
 // Export types for new tables
 export type MachineCycle = typeof machineCycles.$inferSelect;
@@ -293,3 +313,7 @@ export type MachineSupportedCycle = typeof machineSupportedCycles.$inferSelect;
 export type InsertMachineSupportedCycle = z.infer<typeof insertMachineSupportedCycleSchema>;
 export type MachineSupportedModifier = typeof machineSupportedModifiers.$inferSelect;
 export type InsertMachineSupportedModifier = z.infer<typeof insertMachineSupportedModifierSchema>;
+export type CycleStep = typeof cycleSteps.$inferSelect;
+export type InsertCycleStep = z.infer<typeof insertCycleStepSchema>;
+export type MachineCycleStep = typeof machineCycleSteps.$inferSelect;
+export type InsertMachineCycleStep = z.infer<typeof insertMachineCycleStepSchema>;
