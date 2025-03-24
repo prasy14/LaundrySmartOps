@@ -244,3 +244,52 @@ export type WSMessage = {
   type: 'machine_update' | 'new_alert' | 'alert_cleared';
   payload: any;
 };
+
+// Machine Cycles schema
+export const machineCycles = pgTable("machine_cycles", {
+  id: serial("id").primaryKey(),
+  externalId: text("external_id").notNull().unique(),
+  name: text("name").notNull(),
+  cycleType: text("cycle_type").notNull(),
+  sortOrder: integer("sort_order"),
+});
+
+// Cycle Modifiers schema
+export const cycleModifiers = pgTable("cycle_modifiers", {
+  id: serial("id").primaryKey(),
+  externalId: text("external_id").notNull().unique(),
+  name: text("name").notNull(),
+  sortOrder: integer("sort_order"),
+});
+
+// Machine Supported Cycles schema (many-to-many)
+export const machineSupportedCycles = pgTable("machine_supported_cycles", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id),
+  cycleId: integer("cycle_id").references(() => machineCycles.id),
+  isEnabled: boolean("is_enabled").default(true),
+});
+
+// Machine Supported Modifiers schema (many-to-many)
+export const machineSupportedModifiers = pgTable("machine_supported_modifiers", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id),
+  modifierId: integer("modifier_id").references(() => cycleModifiers.id),
+  isEnabled: boolean("is_enabled").default(true),
+});
+
+// Create insert schemas for new tables
+export const insertMachineCycleSchema = createInsertSchema(machineCycles);
+export const insertCycleModifierSchema = createInsertSchema(cycleModifiers);
+export const insertMachineSupportedCycleSchema = createInsertSchema(machineSupportedCycles);
+export const insertMachineSupportedModifierSchema = createInsertSchema(machineSupportedModifiers);
+
+// Export types for new tables
+export type MachineCycle = typeof machineCycles.$inferSelect;
+export type InsertMachineCycle = z.infer<typeof insertMachineCycleSchema>;
+export type CycleModifier = typeof cycleModifiers.$inferSelect;
+export type InsertCycleModifier = z.infer<typeof insertCycleModifierSchema>;
+export type MachineSupportedCycle = typeof machineSupportedCycles.$inferSelect;
+export type InsertMachineSupportedCycle = z.infer<typeof insertMachineSupportedCycleSchema>;
+export type MachineSupportedModifier = typeof machineSupportedModifiers.$inferSelect;
+export type InsertMachineSupportedModifier = z.infer<typeof insertMachineSupportedModifierSchema>;
