@@ -33,31 +33,34 @@ function Router() {
               {!isAuthPage && <Header />}
               <main className="flex-1 overflow-auto p-6">
                 <Switch>
+                  {/* Dashboard - accessible to all roles */}
                   <ProtectedRoute 
                     path="/" 
                     component={DashboardPage}
-                    allowedRoles={['admin', 'manager', 'operator']} 
+                    allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']} 
                   />
+
+                  {/* System Analyst & Performance Analyst Routes */}
                   <ProtectedRoute 
-                    path="/dashboard" 
-                    component={DashboardPage}
-                    allowedRoles={['admin', 'manager', 'operator']} 
+                    path="/reports" 
+                    component={ReportsPage}
+                    allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
                   />
+
+                  {/* Machine Management - Lease Manager Routes */}
                   <ProtectedRoute 
                     path="/machines" 
                     component={MachinesPage}
-                    allowedRoles={['admin', 'manager', 'operator']} 
+                    allowedRoles={['admin', 'lease_manager', 'system_analyst']} 
                   />
+
+                  {/* Admin Only Routes */}
                   <ProtectedRoute 
                     path="/admin" 
                     component={AdminPage}
                     allowedRoles={['admin']} 
                   />
-                  <ProtectedRoute 
-                    path="/reports" 
-                    component={ReportsPage}
-                    allowedRoles={['admin', 'manager']} 
-                  />
+
                   <Route component={NotFound} />
                 </Switch>
               </main>

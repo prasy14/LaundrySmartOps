@@ -29,9 +29,21 @@ export default function Reports() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedServiceType, setSelectedServiceType] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange>({
-    from: new Date(new Date().setDate(new Date().getDate() - 30)), // Last 30 days
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
   });
+
+  // Auth query to get user role
+  const { data: userData } = useQuery<{ user: { role: string } }>({
+    queryKey: ['/api/auth/me'],
+  });
+
+  const userRole = userData?.user?.role;
+
+  // Function to check if user has permission
+  const hasPermission = (allowedRoles: string[]) => {
+    return userRole && allowedRoles.includes(userRole);
+  };
 
   // Fetch data with error handling
   const { data: locationsData, isLoading: locationsLoading } = useQuery<{ locations: Location[] }>({
@@ -95,8 +107,17 @@ export default function Reports() {
     );
   }
 
-  // Export function
+  // Export function with role check
   const exportToCSV = (data: any[], filename: string) => {
+    if (!hasPermission(['data_analyst', 'admin'])) {
+      toast({
+        title: "Access Denied",
+        description: "Only Data Analysts can export data",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!data?.length) return;
 
     const csvContent = "data:text/csv;charset=utf-8," + 
@@ -107,6 +128,11 @@ export default function Reports() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    toast({
+      title: "Export Successful",
+      description: `Data exported to ${filename}.csv`,
+    });
   };
 
   return (
@@ -121,10 +147,23 @@ export default function Reports() {
 
       <Tabs defaultValue="alerts" className="space-y-4">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="alerts">Service Alerts</TabsTrigger>
-          <TabsTrigger value="issues">Service Issues</TabsTrigger>
-          <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
-          <TabsTrigger value="trends">Error Trends</TabsTrigger>
+          {/* System Analyst Tabs */}
+          {hasPermission(['system_analyst', 'admin']) && (
+            <>
+              <TabsTrigger value="alerts">Service Alerts</TabsTrigger>
+              <TabsTrigger value="trends">Error Trends</TabsTrigger>
+            </>
+          )}
+
+          {/* Performance Analyst Tabs */}
+          {hasPermission(['performance_analyst', 'admin']) && (
+            <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
+          )}
+
+          {/* Lease Manager Tabs */}
+          {hasPermission(['lease_manager', 'admin']) && (
+            <TabsTrigger value="usage">Usage Trends</TabsTrigger>
+          )}
         </TabsList>
 
         {/* Service Alerts Tab */}
@@ -150,13 +189,15 @@ export default function Reports() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="outline"
-                    onClick={() => exportToCSV(serviceAlerts?.alerts || [], 'service-alerts')}
-                  >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(serviceAlerts?.alerts || [], 'service-alerts')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -181,8 +222,8 @@ export default function Reports() {
                       <TableCell>
                         <Badge variant={
                           alert.status === 'active' ? 'destructive' :
-                          alert.status === 'in_progress' ? 'default' :
-                          'success'
+                            alert.status === 'in_progress' ? 'default' :
+                              'success'
                         }>
                           {alert.status}
                         </Badge>
@@ -212,13 +253,15 @@ export default function Reports() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Error Trends Analysis</CardTitle>
-                <Button
-                  variant="outline"
-                  onClick={() => exportToCSV(errorTrends?.trends || [], 'error-trends')}
-                >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
+                {hasPermission(['data_analyst', 'admin']) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => exportToCSV(errorTrends?.trends || [], 'error-trends')}
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -240,8 +283,8 @@ export default function Reports() {
                       <TableCell>
                         <Badge variant={
                           trend.trend === 'increasing' ? 'destructive' :
-                          trend.trend === 'decreasing' ? 'success' :
-                          'default'
+                            trend.trend === 'decreasing' ? 'success' :
+                              'default'
                         }>
                           {trend.trend}
                         </Badge>
@@ -267,13 +310,15 @@ export default function Reports() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Machine Performance Metrics</CardTitle>
-                <Button
-                  variant="outline"
-                  onClick={() => exportToCSV(performanceMetrics?.machines || [], 'performance-metrics')}
-                >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
+                {hasPermission(['data_analyst', 'admin']) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => exportToCSV(performanceMetrics?.machines || [], 'performance-metrics')}
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -295,8 +340,8 @@ export default function Reports() {
                   <CardContent>
                     <Badge variant={
                       performanceMetrics?.slaDetails?.status === 'met' ? 'success' :
-                      performanceMetrics?.slaDetails?.status === 'warning' ? 'default' :
-                      'destructive'
+                        performanceMetrics?.slaDetails?.status === 'warning' ? 'default' :
+                          'destructive'
                     }>
                       {(performanceMetrics?.slaDetails?.status || 'N/A').toUpperCase()}
                     </Badge>
@@ -308,9 +353,9 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {performanceMetrics?.machines?.length ? 
-                        (performanceMetrics.machines.reduce((acc, m) => acc + (m.serviceResponseTime || 0), 0) / 
-                        performanceMetrics.machines.length).toFixed(1) + ' min'
+                      {performanceMetrics?.machines?.length ?
+                        (performanceMetrics.machines.reduce((acc, m) => acc + (m.serviceResponseTime || 0), 0) /
+                          performanceMetrics.machines.length).toFixed(1) + ' min'
                         : 'N/A'}
                     </div>
                   </CardContent>
@@ -372,13 +417,15 @@ export default function Reports() {
                       <SelectItem value="software">Software</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="outline"
-                    onClick={() => exportToCSV(serviceIssues?.alerts || [], 'service-issues')}
-                  >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(serviceIssues?.alerts || [], 'service-issues')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -401,8 +448,8 @@ export default function Reports() {
                       <TableCell>
                         <Badge variant={
                           issue.priority === 'high' ? 'destructive' :
-                          issue.priority === 'medium' ? 'default' :
-                          'secondary'
+                            issue.priority === 'medium' ? 'default' :
+                              'secondary'
                         }>
                           {issue.priority}
                         </Badge>
