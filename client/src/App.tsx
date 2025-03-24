@@ -61,7 +61,9 @@ function Router() {
                     allowedRoles={['admin']} 
                   />
 
-                  <Route component={NotFound} />
+                  <Route>
+                    <NotFound />
+                  </Route>
                 </Switch>
               </main>
             </div>
