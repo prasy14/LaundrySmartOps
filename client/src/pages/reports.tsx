@@ -36,39 +36,18 @@ export default function Reports() {
   // Fetch data with error handling
   const { data: locationsData, isLoading: locationsLoading } = useQuery<{ locations: Location[] }>({
     queryKey: ['/api/locations'],
-    onError: (error: Error) => {
-      toast({
-        title: "Error loading locations",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 
   // Service alerts with date range and location filter
   const { data: serviceAlerts, isLoading: alertsLoading } = useQuery<{ alerts: Alert[] }>({
     queryKey: ['/api/reports/service-alerts', selectedLocation, dateRange],
     enabled: !locationsLoading,
-    onError: (error: Error) => {
-      toast({
-        title: "Error loading service alerts",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 
   // Service issues with type filter
   const { data: serviceIssues, isLoading: issuesLoading } = useQuery<{ alerts: Alert[] }>({
     queryKey: ['/api/reports/service-issues', selectedServiceType],
     enabled: !locationsLoading,
-    onError: (error: Error) => {
-      toast({
-        title: "Error loading service issues",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 
   // Performance metrics with location and date range filter
@@ -93,13 +72,6 @@ export default function Reports() {
   }>({
     queryKey: ['/api/reports/performance-metrics', selectedLocation, dateRange],
     enabled: !locationsLoading,
-    onError: (error: Error) => {
-      toast({
-        title: "Error loading performance metrics",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 
   // Error trends data
@@ -125,6 +97,8 @@ export default function Reports() {
 
   // Export function
   const exportToCSV = (data: any[], filename: string) => {
+    if (!data?.length) return;
+
     const csvContent = "data:text/csv;charset=utf-8," + 
       data.map(row => Object.values(row).join(",")).join("\n");
     const link = document.createElement("a");
@@ -151,7 +125,6 @@ export default function Reports() {
           <TabsTrigger value="issues">Service Issues</TabsTrigger>
           <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
           <TabsTrigger value="trends">Error Trends</TabsTrigger>
-          <TabsTrigger value="compliance">SLA Compliance</TabsTrigger>
         </TabsList>
 
         {/* Service Alerts Tab */}
@@ -200,7 +173,7 @@ export default function Reports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {serviceAlerts?.alerts.map((alert) => (
+                  {serviceAlerts?.alerts?.map((alert) => (
                     <TableRow key={alert.id}>
                       <TableCell>{alert.machineId}</TableCell>
                       <TableCell>{alert.location}</TableCell>
@@ -220,6 +193,13 @@ export default function Reports() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {(!serviceAlerts?.alerts || serviceAlerts.alerts.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No service alerts found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -252,7 +232,7 @@ export default function Reports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {errorTrends?.trends.map((trend) => (
+                  {errorTrends?.trends?.map((trend) => (
                     <TableRow key={trend.errorType}>
                       <TableCell>{trend.errorType}</TableCell>
                       <TableCell>{trend.count}</TableCell>
@@ -268,6 +248,13 @@ export default function Reports() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {(!errorTrends?.trends || errorTrends.trends.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        No error trends data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -297,7 +284,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {performanceMetrics?.averageUptime.toFixed(1)}%
+                      {performanceMetrics?.averageUptime?.toFixed(1) || '0'}%
                     </div>
                   </CardContent>
                 </Card>
@@ -307,11 +294,11 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <Badge variant={
-                      performanceMetrics?.slaDetails.status === 'met' ? 'success' :
-                      performanceMetrics?.slaDetails.status === 'warning' ? 'default' :
+                      performanceMetrics?.slaDetails?.status === 'met' ? 'success' :
+                      performanceMetrics?.slaDetails?.status === 'warning' ? 'default' :
                       'destructive'
                     }>
-                      {performanceMetrics?.slaDetails.status.toUpperCase()}
+                      {(performanceMetrics?.slaDetails?.status || 'N/A').toUpperCase()}
                     </Badge>
                   </CardContent>
                 </Card>
@@ -321,8 +308,10 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {performanceMetrics?.machines.reduce((acc, m) => acc + m.serviceResponseTime, 0) / 
-                        performanceMetrics?.machines.length}min
+                      {performanceMetrics?.machines?.length ? 
+                        (performanceMetrics.machines.reduce((acc, m) => acc + (m.serviceResponseTime || 0), 0) / 
+                        performanceMetrics.machines.length).toFixed(1) + ' min'
+                        : 'N/A'}
                     </div>
                   </CardContent>
                 </Card>
@@ -339,16 +328,23 @@ export default function Reports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {performanceMetrics?.machines.map((machine) => (
+                  {performanceMetrics?.machines?.map((machine) => (
                     <TableRow key={machine.id}>
                       <TableCell>{machine.name}</TableCell>
-                      <TableCell>{machine.uptime.toFixed(1)}%</TableCell>
-                      <TableCell>{(machine.totalRuntime / 3600).toFixed(1)}</TableCell>
-                      <TableCell>{machine.efficiency.toFixed(2)}</TableCell>
-                      <TableCell>{machine.cycleCount}</TableCell>
-                      <TableCell>{machine.avgCycleTime} min</TableCell>
+                      <TableCell>{machine.uptime?.toFixed(1) || '0'}%</TableCell>
+                      <TableCell>{((machine.totalRuntime || 0) / 3600).toFixed(1)}</TableCell>
+                      <TableCell>{machine.efficiency?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>{machine.cycleCount || 0}</TableCell>
+                      <TableCell>{machine.avgCycleTime || 0} min</TableCell>
                     </TableRow>
                   ))}
+                  {(!performanceMetrics?.machines || performanceMetrics.machines.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No performance metrics available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -399,7 +395,7 @@ export default function Reports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {serviceIssues?.alerts.map((issue) => (
+                  {serviceIssues?.alerts?.map((issue) => (
                     <TableRow key={issue.id}>
                       <TableCell>{issue.serviceType}</TableCell>
                       <TableCell>
@@ -417,13 +413,18 @@ export default function Reports() {
                       <TableCell>{issue.resolutionTime ? `${issue.resolutionTime} mins` : 'Pending'}</TableCell>
                     </TableRow>
                   ))}
+                  {(!serviceIssues?.alerts || serviceIssues.alerts.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No service issues found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </TabsContent>
-
-
       </Tabs>
     </div>
   );
