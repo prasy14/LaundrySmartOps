@@ -21,7 +21,9 @@ function Router() {
     <div className="min-h-screen bg-background">
       <Switch>
         {/* Public Route for Login */}
-        <Route path="/login" component={LoginPage} />
+        <Route path="/login">
+          <LoginPage />
+        </Route>
 
         {/* Protected Routes */}
         <Route path="*">
