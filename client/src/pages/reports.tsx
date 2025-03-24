@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FileDown, Loader2 } from "lucide-react";
+import { FileDown, Loader2, BarChart } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,14 +14,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { useState } from "react";
-import type { Alert, Location } from "@shared/schema";
+import type { Alert, Location, MachineError } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+
+interface DateRange {
+  from: Date;
+  to: Date;
+}
 
 export default function Reports() {
   const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedServiceType, setSelectedServiceType] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)), // Last 30 days
+    to: new Date()
+  });
 
   // Fetch data with error handling
   const { data: locationsData, isLoading: locationsLoading } = useQuery<{ locations: Location[] }>({
@@ -35,8 +45,9 @@ export default function Reports() {
     },
   });
 
+  // Service alerts with date range and location filter
   const { data: serviceAlerts, isLoading: alertsLoading } = useQuery<{ alerts: Alert[] }>({
-    queryKey: ['/api/reports/service-alerts', selectedLocation],
+    queryKey: ['/api/reports/service-alerts', selectedLocation, dateRange],
     enabled: !locationsLoading,
     onError: (error: Error) => {
       toast({
@@ -47,6 +58,7 @@ export default function Reports() {
     },
   });
 
+  // Service issues with type filter
   const { data: serviceIssues, isLoading: issuesLoading } = useQuery<{ alerts: Alert[] }>({
     queryKey: ['/api/reports/service-issues', selectedServiceType],
     enabled: !locationsLoading,
@@ -59,6 +71,7 @@ export default function Reports() {
     },
   });
 
+  // Performance metrics with location and date range filter
   const { data: performanceMetrics, isLoading: metricsLoading } = useQuery<{
     machines: Array<{
       id: number;
@@ -66,10 +79,19 @@ export default function Reports() {
       uptime: number;
       totalRuntime: number;
       efficiency: number;
+      cycleCount: number;
+      avgCycleTime: number;
+      serviceResponseTime: number;
     }>;
     averageUptime: number;
+    slaMet: boolean;
+    slaDetails: {
+      target: number;
+      actual: number;
+      status: 'met' | 'warning' | 'breached';
+    };
   }>({
-    queryKey: ['/api/reports/performance-metrics'],
+    queryKey: ['/api/reports/performance-metrics', selectedLocation, dateRange],
     enabled: !locationsLoading,
     onError: (error: Error) => {
       toast({
@@ -80,7 +102,20 @@ export default function Reports() {
     },
   });
 
-  if (locationsLoading || alertsLoading || issuesLoading || metricsLoading) {
+  // Error trends data
+  const { data: errorTrends, isLoading: trendsLoading } = useQuery<{
+    trends: Array<{
+      errorType: string;
+      count: number;
+      avgResolutionTime: number;
+      trend: 'increasing' | 'decreasing' | 'stable';
+    }>;
+  }>({
+    queryKey: ['/api/reports/error-trends', dateRange],
+    enabled: !locationsLoading,
+  });
+
+  if (locationsLoading || alertsLoading || issuesLoading || metricsLoading || trendsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -104,13 +139,19 @@ export default function Reports() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Reports & Analytics</h1>
+        <DateRangePicker
+          date={dateRange}
+          onDateChange={setDateRange}
+        />
       </div>
 
-      <Tabs defaultValue="alerts">
-        <TabsList>
+      <Tabs defaultValue="alerts" className="space-y-4">
+        <TabsList className="flex-wrap">
           <TabsTrigger value="alerts">Service Alerts</TabsTrigger>
           <TabsTrigger value="issues">Service Issues</TabsTrigger>
           <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
+          <TabsTrigger value="trends">Error Trends</TabsTrigger>
+          <TabsTrigger value="compliance">SLA Compliance</TabsTrigger>
         </TabsList>
 
         {/* Service Alerts Tab */}
@@ -177,6 +218,135 @@ export default function Reports() {
                       <TableCell>
                         {alert.resolutionTime ? `${alert.resolutionTime} mins` : 'Pending'}
                       </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Error Trends Tab */}
+        <TabsContent value="trends">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Error Trends Analysis</CardTitle>
+                <Button
+                  variant="outline"
+                  onClick={() => exportToCSV(errorTrends?.trends || [], 'error-trends')}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Error Type</TableHead>
+                    <TableHead>Occurrence Count</TableHead>
+                    <TableHead>Avg Resolution Time</TableHead>
+                    <TableHead>Trend</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {errorTrends?.trends.map((trend) => (
+                    <TableRow key={trend.errorType}>
+                      <TableCell>{trend.errorType}</TableCell>
+                      <TableCell>{trend.count}</TableCell>
+                      <TableCell>{trend.avgResolutionTime} mins</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          trend.trend === 'increasing' ? 'destructive' :
+                          trend.trend === 'decreasing' ? 'success' :
+                          'default'
+                        }>
+                          {trend.trend}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Performance Metrics Tab */}
+        <TabsContent value="performance">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Machine Performance Metrics</CardTitle>
+                <Button
+                  variant="outline"
+                  onClick={() => exportToCSV(performanceMetrics?.machines || [], 'performance-metrics')}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Average System Uptime</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {performanceMetrics?.averageUptime.toFixed(1)}%
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">SLA Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant={
+                      performanceMetrics?.slaDetails.status === 'met' ? 'success' :
+                      performanceMetrics?.slaDetails.status === 'warning' ? 'default' :
+                      'destructive'
+                    }>
+                      {performanceMetrics?.slaDetails.status.toUpperCase()}
+                    </Badge>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Average Response Time</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {performanceMetrics?.machines.reduce((acc, m) => acc + m.serviceResponseTime, 0) / 
+                        performanceMetrics?.machines.length}min
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Machine</TableHead>
+                    <TableHead>Uptime %</TableHead>
+                    <TableHead>Total Runtime (hrs)</TableHead>
+                    <TableHead>Efficiency Score</TableHead>
+                    <TableHead>Cycle Count</TableHead>
+                    <TableHead>Avg Cycle Time</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {performanceMetrics?.machines.map((machine) => (
+                    <TableRow key={machine.id}>
+                      <TableCell>{machine.name}</TableCell>
+                      <TableCell>{machine.uptime.toFixed(1)}%</TableCell>
+                      <TableCell>{(machine.totalRuntime / 3600).toFixed(1)}</TableCell>
+                      <TableCell>{machine.efficiency.toFixed(2)}</TableCell>
+                      <TableCell>{machine.cycleCount}</TableCell>
+                      <TableCell>{machine.avgCycleTime} min</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -253,50 +423,7 @@ export default function Reports() {
           </Card>
         </TabsContent>
 
-        {/* Performance Metrics Tab */}
-        <TabsContent value="performance">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Machine Performance Metrics</CardTitle>
-                <Button
-                  variant="outline"
-                  onClick={() => exportToCSV(performanceMetrics?.machines || [], 'performance-metrics')}
-                >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <p className="text-lg font-semibold">
-                  Average System Uptime: {performanceMetrics?.averageUptime.toFixed(1)}%
-                </p>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Machine</TableHead>
-                    <TableHead>Uptime %</TableHead>
-                    <TableHead>Total Runtime (hrs)</TableHead>
-                    <TableHead>Efficiency Score</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {performanceMetrics?.machines.map((machine) => (
-                    <TableRow key={machine.id}>
-                      <TableCell>{machine.name}</TableCell>
-                      <TableCell>{machine.uptime.toFixed(1)}%</TableCell>
-                      <TableCell>{(machine.totalRuntime / 3600).toFixed(1)}</TableCell>
-                      <TableCell>{machine.efficiency.toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
       </Tabs>
     </div>
   );
