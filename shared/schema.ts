@@ -51,9 +51,9 @@ export const machineTypes = pgTable("machine_types", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  isWasher: boolean("is_washer").notNull(),
-  isDryer: boolean("is_dryer").notNull(),
-  isCombo: boolean("is_combo").notNull(),
+  isWasher: boolean("is_washer").notNull().default(false),
+  isDryer: boolean("is_dryer").notNull().default(false),
+  isCombo: boolean("is_combo").notNull().default(false),
 });
 
 // Machine Programs (Cycles) schema
@@ -108,6 +108,38 @@ export const machines = pgTable("machines", {
   lastSyncAt: timestamp("last_sync_at"),
 });
 
+export const machineDetails = pgTable("machine_details", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id).unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  controlId: text("control_id"),
+  serialNumber: text("serial_number"),
+  machineNumber: text("machine_number"),
+  networkNode: text("network_node"),
+  modelNumber: text("model_number"),
+  machineTypeId: integer("machine_type_id").references(() => machineTypes.id),
+  details: jsonb("details").$type<{
+    linkQualityIndicator: number;
+    statusId: string;
+    selectedCycle?: {
+      id: string;
+      name: string;
+    };
+    selectedModifiers?: Array<{
+      id: string;
+      name: string;
+    }>;
+    remainingSeconds?: number;
+    remainingVend?: number;
+    isDoorOpen?: boolean;
+    topoffFullyDisabled?: boolean;
+    canTopOff?: boolean;
+    topOffVend?: number;
+    topOffTime?: number;
+  }>().default('{}'),
+});
+
+
 // Command History schema
 export const commandHistory = pgTable("command_history", {
   id: serial("id").primaryKey(),
@@ -127,6 +159,7 @@ export const insertMachineTypeSchema = createInsertSchema(machineTypes);
 export const insertMachineProgramSchema = createInsertSchema(machinePrograms);
 export const insertProgramModifierSchema = createInsertSchema(programModifiers);
 export const insertMachineSchema = createInsertSchema(machines);
+export const insertMachineDetailsSchema = createInsertSchema(machineDetails);
 export const insertCommandHistorySchema = createInsertSchema(commandHistory);
 
 // Alert schema
@@ -203,6 +236,8 @@ export type SyncLog = typeof syncLogs.$inferSelect;
 export type InsertSyncLog = z.infer<typeof insertSyncLogSchema>;
 export type CommandHistory = typeof commandHistory.$inferSelect;
 export type InsertCommandHistory = z.infer<typeof insertCommandHistorySchema>;
+export type MachineDetails = typeof machineDetails.$inferSelect;
+export type InsertMachineDetails = z.infer<typeof insertMachineDetailsSchema>;
 
 // WebSocket message types
 export type WSMessage = {
