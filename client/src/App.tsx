@@ -14,6 +14,9 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
+  const [location] = useLocation();
+  const isAuthPage = location === '/login';
+
   return (
     <div className="min-h-screen bg-background">
       <Switch>
@@ -23,14 +26,14 @@ function Router() {
         {/* Protected Routes */}
         <Route path="*">
           <div className="flex h-screen">
-            <Sidebar />
+            {!isAuthPage && <Sidebar />}
             <div className="flex-1 flex flex-col overflow-hidden">
-              <Header />
+              {!isAuthPage && <Header />}
               <main className="flex-1 overflow-auto p-6">
                 <Switch>
                   <ProtectedRoute 
                     path="/" 
-                    component={LocationsPage}
+                    component={DashboardPage}
                     allowedRoles={['admin', 'manager', 'operator']} 
                   />
                   <ProtectedRoute 
