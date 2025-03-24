@@ -15,7 +15,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Location, Machine, SyncLog, MachineProgram } from "@shared/schema";
+import type { 
+  Location, 
+  Machine, 
+  SyncLog, 
+  MachineProgram,
+  MachineError,
+  MachineCycle,
+  CycleStep,
+  CycleModifier 
+} from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SyncInfo {
@@ -39,11 +48,27 @@ export default function Admin() {
     queryKey: ['/api/machine-programs'],
   });
 
+  const { data: errorsData } = useQuery<{ errors: MachineError[] }>({
+    queryKey: ['/api/machine-errors'],
+  });
+
+  const { data: cyclesData } = useQuery<{ cycles: MachineCycle[] }>({
+    queryKey: ['/api/machine-cycles'],
+  });
+
+  const { data: stepsData } = useQuery<{ steps: CycleStep[] }>({
+    queryKey: ['/api/cycle-steps'],
+  });
+
+  const { data: modifiersData } = useQuery<{ modifiers: CycleModifier[] }>({
+    queryKey: ['/api/cycle-modifiers'],
+  });
+
   const { data: syncInfo } = useQuery<SyncInfo>({
     queryKey: ['/api/admin/sync-info'],
   });
 
-  // Sync all mutation
+  // Sync mutations remain the same...
   const syncAllMutation = useMutation({
     mutationFn: async () => {
       await apiRequest('POST', '/api/sync/all');
@@ -53,6 +78,10 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ['/api/machines'] });
       queryClient.invalidateQueries({ queryKey: ['/api/machine-programs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/sync-info'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/machine-errors'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/machine-cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycle-steps'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycle-modifiers'] });
       toast({
         title: "Success",
         description: "All data synced successfully",
@@ -67,7 +96,7 @@ export default function Admin() {
     },
   });
 
-  // Location sync mutation
+  // Other mutations remain the same...
   const locationSyncMutation = useMutation({
     mutationFn: async () => {
       await apiRequest('POST', '/api/sync/locations');
@@ -248,16 +277,21 @@ export default function Admin() {
         {/* Data Tables Section */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Synchronized Data</CardTitle>
+            <CardTitle>Database Tables</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="locations" className="space-y-4">
-              <TabsList>
+              <TabsList className="flex-wrap">
                 <TabsTrigger value="locations">Locations</TabsTrigger>
                 <TabsTrigger value="machines">Machines</TabsTrigger>
                 <TabsTrigger value="programs">Machine Programs</TabsTrigger>
+                <TabsTrigger value="errors">Machine Errors</TabsTrigger>
+                <TabsTrigger value="cycles">Machine Cycles</TabsTrigger>
+                <TabsTrigger value="steps">Cycle Steps</TabsTrigger>
+                <TabsTrigger value="modifiers">Cycle Modifiers</TabsTrigger>
               </TabsList>
 
+              {/* Locations Tab */}
               <TabsContent value="locations">
                 <Table>
                   <TableHeader>
@@ -290,6 +324,7 @@ export default function Admin() {
                 </Table>
               </TabsContent>
 
+              {/* Machines Tab */}
               <TabsContent value="machines">
                 <Table>
                   <TableHeader>
@@ -298,7 +333,7 @@ export default function Admin() {
                       <TableHead>Model</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Selected Cycle</TableHead>
+                      <TableHead>Last Sync</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -310,11 +345,16 @@ export default function Admin() {
                           <TableCell>{machine.modelNumber || 'N/A'}</TableCell>
                           <TableCell>
                             <Badge variant={machine.status?.statusId === 'online' ? 'success' : 'destructive'}>
-                              {getStatusDisplay(machine)}
+                              {machine.status?.statusId || 'Unknown'}
                             </Badge>
                           </TableCell>
                           <TableCell>{location?.name || 'Unknown'}</TableCell>
-                          <TableCell>{getSelectedCycle(machine)}</TableCell>
+                          <TableCell>
+                            {machine.lastSyncAt ? 
+                              format(new Date(machine.lastSyncAt), 'MMM d, h:mm a') : 
+                              'Never'
+                            }
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -322,7 +362,42 @@ export default function Admin() {
                 </Table>
               </TabsContent>
 
-              <TabsContent value="programs">
+              {/* Machine Errors Tab */}
+              <TabsContent value="errors">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Error Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Timestamp</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {errorsData?.errors.map((error) => {
+                      const machine = machinesData?.machines.find(m => m.id === error.machineId);
+                      const location = locationsData?.locations.find(l => l.id === error.locationId);
+                      return (
+                        <TableRow key={error.id}>
+                          <TableCell className="font-medium">{machine?.name || 'Unknown'}</TableCell>
+                          <TableCell>{location?.name || 'Unknown'}</TableCell>
+                          <TableCell>{error.errorName}</TableCell>
+                          <TableCell>{error.errorType}</TableCell>
+                          <TableCell>{error.errorCode}</TableCell>
+                          <TableCell>
+                            {format(new Date(error.timestamp), 'MMM d, h:mm a')}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              {/* Machine Cycles Tab */}
+              <TabsContent value="cycles">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -332,16 +407,59 @@ export default function Admin() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {programsData?.programs.map((program) => (
-                      <TableRow key={program.id}>
-                        <TableCell className="font-medium">{program.name}</TableCell>
-                        <TableCell>{program.type}</TableCell>
-                        <TableCell>{program.sortOrder || 'N/A'}</TableCell>
+                    {cyclesData?.cycles.map((cycle) => (
+                      <TableRow key={cycle.id}>
+                        <TableCell className="font-medium">{cycle.name}</TableCell>
+                        <TableCell>{cycle.cycleType}</TableCell>
+                        <TableCell>{cycle.sortOrder || 'N/A'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TabsContent>
+
+              {/* Cycle Steps Tab */}
+              <TabsContent value="steps">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Step Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Sort Order</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stepsData?.steps.map((step) => (
+                      <TableRow key={step.id}>
+                        <TableCell className="font-medium">{step.stepName}</TableCell>
+                        <TableCell>{step.description || 'N/A'}</TableCell>
+                        <TableCell>{step.sortOrder || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              {/* Cycle Modifiers Tab */}
+              <TabsContent value="modifiers">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Sort Order</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {modifiersData?.modifiers.map((modifier) => (
+                      <TableRow key={modifier.id}>
+                        <TableCell className="font-medium">{modifier.name}</TableCell>
+                        <TableCell>{modifier.sortOrder || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
             </Tabs>
           </CardContent>
         </Card>
