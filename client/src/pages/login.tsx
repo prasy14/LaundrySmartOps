@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 
@@ -24,10 +24,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log("LoginPage mounted"); // Debug log
-  }, []);
-
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -38,7 +34,6 @@ export default function LoginPage() {
 
   const onSubmit = async (values: LoginFormData) => {
     try {
-      console.log("Attempting login..."); // Debug log
       setIsLoading(true);
       setError(null);
 
@@ -51,15 +46,12 @@ export default function LoginPage() {
         credentials: "include",
       });
 
-      console.log("Login response status:", res.status); // Debug log
-
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Invalid credentials");
       }
 
       const data = await res.json();
-      console.log("Login successful, updating query client"); // Debug log
 
       // Update auth state in React Query
       queryClient.setQueryData(['/api/auth/me'], { user: data.user });
@@ -73,7 +65,6 @@ export default function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 100));
       setLocation("/");
     } catch (error) {
-      console.error('Login error:', error); // Debug log
       setError(error instanceof Error ? error.message : "Failed to login");
       toast({
         variant: "destructive",
@@ -84,9 +75,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
-  // Debug render output
-  console.log("Rendering login form, isLoading:", isLoading, "error:", error);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
