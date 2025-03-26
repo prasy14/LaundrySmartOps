@@ -36,7 +36,7 @@ function Router() {
                   <Route path="/">
                     <ProtectedRoute 
                       path="/" 
-                      component={DashboardPage}
+                      component={DashboardPage} 
                       allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']} 
                     />
                   </Route>
@@ -82,6 +82,7 @@ function Router() {
           </div>
         </Route>
       </Switch>
+      <Toaster />
     </div>
   );
 }
@@ -90,7 +91,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
-      <Toaster />
     </QueryClientProvider>
   );
 }
