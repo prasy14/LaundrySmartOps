@@ -1,0 +1,78 @@
+The dashboard will be styled according to the Automatic Laundry website theme and branding, ensuring a clean, modern UI with intuitive navigation.
+
+1. Overview Page (Main Dashboard)
+The main dashboard will provide a high-level overview of machine performance, alerts, and utilization trends.
+
+Welcome Panel: A personalized greeting (e.g., "Welcome, Admin!")
+
+Add Widget Button: Allows users to customize their dashboard
+
+Key Metrics Cards:
+
+Active Machines: Displays the number of currently operational machines
+
+Current Alerts: Shows the count of service alerts
+
+Today's Cycles: Total wash/dry cycles for the day
+
+Uptime Percentage: Indicates overall machine uptime performance
+
+Recent Alerts Table: Displays a list of the most recent service alerts with:
+
+Timestamp
+
+Machine ID
+
+Alert Description
+
+2. Sidebar Navigation
+The dashboard will include a collapsible sidebar menu for easy navigation, with the following sections:
+
+Machine Management – Manage machine status, view locations
+
+Alerts Issues – View and filter service alerts by campus or location
+
+Reports & Analytics – Insights into machine performance
+
+Visualizations – Data visualization for uptime trends
+
+Predictive Maintenance – Alerts for high-cycle machines that require maintenance
+
+User Management – Manage system users and permissions
+
+Custom Reports – Generate detailed reports
+
+Usage Patterns – Analyze machine utilization trends
+
+Machine Comparison – Compare machine efficiency and performance
+
+Energy Optimizer – Track energy consumption metrics
+
+Location Admin – Admin functions for campus and location-specific configurations
+
+3. Key Functional Features
+Machine Uptime Metrics: Display uptime percentage, historical trends, and downtime causes
+
+Track Underutilized Machines: Identify machines with no activity over a defined period
+
+Service Alerts by Campus: Filter and view alerts specific to a location
+
+Identify High-Cycle Machines: Get alerts for machines exceeding 5 cycles/day
+
+Location-Based Machine Management: View machine locations on a map, filter by status
+
+4. Machine Management Page
+This section will include a map-based view displaying machine locations and allowing filtering by:
+
+Location (All, specific campuses)
+
+Status (Active, Idle, Under Maintenance)
+
+Sort Options (by Location, Status, or Uptime)
+
+Heat Map Mode: A performance heatmap to visualize machine usage intensity
+
+Design Considerations
+Theme & Styling: The layout will follow the Automatic Laundry website’s colors, fonts, and UI style.
+
+Mobile-Friendly UI: The dashboard will be responsive for both desktop and mobile use.
