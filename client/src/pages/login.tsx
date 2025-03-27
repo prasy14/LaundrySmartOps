@@ -86,8 +86,8 @@ export default function LoginPage() {
           
           <div className="relative overflow-hidden rounded-lg shadow-lg">
             <img 
-              src="/images/laundry-machines.png" 
-              alt="Professional laundry machines" 
+              src="/images/laundry-room.png" 
+              alt="Automatic Laundry Solutions facility" 
               className="w-full h-auto max-w-lg mx-auto rounded-lg"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#2f3944]/80 to-transparent flex items-end">
@@ -171,8 +171,8 @@ export default function LoginPage() {
             {/* Mobile only image */}
             <div className="mt-8 md:hidden">
               <img 
-                src="/images/laundry-machines.png" 
-                alt="Professional laundry machines" 
+                src="/images/laundry-room.png" 
+                alt="Automatic Laundry Solutions facility" 
                 className="w-full h-auto rounded-lg shadow-md"
               />
               <p className="text-center text-sm text-muted-foreground mt-2">
