@@ -102,7 +102,6 @@ export default function LoginPage() {
         <Card className="w-full max-w-md shadow-xl border-t-4 border-t-[#73a4b7]">
           <CardHeader className="space-y-2">
             <CardTitle className="text-2xl font-bold text-center gradient-text">SmartOps Platform</CardTitle>
-            <p className="text-center text-muted-foreground">Sign in to access your dashboard</p>
           </CardHeader>
           <CardContent>
             {error && (
