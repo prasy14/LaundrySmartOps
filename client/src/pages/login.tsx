@@ -77,74 +77,111 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">SmartOps Platform</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-md text-sm">
-              {error}
+    <div className="min-h-screen grid md:grid-cols-2 bg-background">
+      {/* Hero Image Section */}
+      <div className="hidden md:flex flex-col items-center justify-center bg-[#2f3944] p-8">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-3xl font-bold text-white mb-4">Automatic Laundry Solutions</h1>
+          <p className="text-white/80 mb-8">Advanced enterprise laundry management and monitoring system</p>
+          
+          <div className="relative overflow-hidden rounded-lg shadow-lg">
+            <img 
+              src="/images/laundry-machines.png" 
+              alt="Professional laundry machines" 
+              className="w-full h-auto max-w-lg mx-auto rounded-lg"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#2f3944]/80 to-transparent flex items-end">
+              <p className="text-white text-sm p-4">Smart monitoring for efficient laundry operations</p>
             </div>
-          )}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        disabled={isLoading}
-                        placeholder="Enter your username"
-                        autoComplete="username"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Login Form Section */}
+      <div className="flex items-center justify-center p-8">
+        <Card className="w-full max-w-md shadow-xl border-t-4 border-t-[#73a4b7]">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl font-bold text-center gradient-text">SmartOps Platform</CardTitle>
+            <p className="text-center text-muted-foreground">Sign in to access your dashboard</p>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          disabled={isLoading}
+                          placeholder="Enter your username"
+                          autoComplete="username"
+                          className="border-[#647991]/30 focus-visible:ring-[#73a4b7]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          {...field} 
+                          disabled={isLoading}
+                          placeholder="Enter your password"
+                          autoComplete="current-password"
+                          className="border-[#647991]/30 focus-visible:ring-[#73a4b7]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#73a4b7] hover:bg-[#73a4b7]/90 text-white" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </Button>
+              </form>
+            </Form>
+            
+            {/* Mobile only image */}
+            <div className="mt-8 md:hidden">
+              <img 
+                src="/images/laundry-machines.png" 
+                alt="Professional laundry machines" 
+                className="w-full h-auto rounded-lg shadow-md"
               />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        {...field} 
-                        disabled={isLoading}
-                        placeholder="Enter your password"
-                        autoComplete="current-password"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                Automatic Laundry Solutions - Smart monitoring for efficient operations
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
