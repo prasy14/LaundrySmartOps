@@ -19,11 +19,12 @@ export function AlertMetricsChart({ data }: AlertMetricsChartProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Alert Metrics by Type</CardTitle>
+    <Card className="shadow-md">
+      <CardHeader className="gradient-blue text-white border-b">
+        <CardTitle className="text-xl">Alert Metrics by Type</CardTitle>
+        <p className="text-white/80 text-sm">Alert frequency and resolution times</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div style={{ height: '300px' }}>
           <ResponsiveBar
             data={chartData}
@@ -33,7 +34,7 @@ export function AlertMetricsChart({ data }: AlertMetricsChartProps) {
             padding={0.3}
             valueScale={{ type: 'linear' }}
             indexScale={{ type: 'band', round: true }}
-            colors={{ scheme: 'paired' }}
+            colors={['#73a4b7', '#e95f2a']}
             borderColor={{
               from: 'color',
               modifiers: [['darker', 1.6]]

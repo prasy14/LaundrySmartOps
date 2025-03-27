@@ -13,7 +13,7 @@ interface PerformanceChartProps {
   color?: string;
 }
 
-export function PerformanceChart({ data, title, yAxisLabel, color = "rgb(59, 130, 246)" }: PerformanceChartProps) {
+export function PerformanceChart({ data, title, yAxisLabel, color = "#73a4b7" }: PerformanceChartProps) {
   const chartData = [
     {
       id: title,
@@ -26,11 +26,12 @@ export function PerformanceChart({ data, title, yAxisLabel, color = "rgb(59, 130
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="shadow-md">
+      <CardHeader className="gradient-blue text-white border-b">
+        <CardTitle className="text-xl">{title}</CardTitle>
+        <p className="text-white/80 text-sm">Performance metrics over time</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div style={{ height: '300px' }}>
           <ResponsiveLine
             data={chartData}

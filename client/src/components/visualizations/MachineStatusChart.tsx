@@ -19,18 +19,19 @@ export function MachineStatusChart({ machines }: MachineStatusChartProps) {
     id: status,
     label: status,
     value,
-    color: status === 'AVAILABLE' ? 'rgb(34, 197, 94)' : 
-           status === 'IN_USE' ? 'rgb(59, 130, 246)' :
-           status === 'MAINTENANCE_REQUIRED' ? 'rgb(234, 179, 8)' :
-           'rgb(239, 68, 68)'
+    color: status === 'AVAILABLE' ? '#73a4b7' : 
+           status === 'IN_USE' ? '#647991' :
+           status === 'MAINTENANCE_REQUIRED' ? '#e95f2a' :
+           '#2f3944'
   }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Machine Status Distribution</CardTitle>
+    <Card className="shadow-md">
+      <CardHeader className="gradient-blue text-white border-b">
+        <CardTitle className="text-xl">Machine Status Distribution</CardTitle>
+        <p className="text-white/80 text-sm">Current machine operational states</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div style={{ height: '300px' }}>
           <ResponsivePie
             data={data}

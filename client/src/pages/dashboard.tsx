@@ -83,14 +83,14 @@ export default function Dashboard() {
       {/* Welcome Panel */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold gradient-text">
             Welcome, Admin!
           </h1>
           <p className="text-muted-foreground mt-1">
             Here's your machine management overview for today
           </p>
         </div>
-        <Button onClick={handleAddWidget} className="flex items-center gap-2">
+        <Button onClick={handleAddWidget} className="flex items-center gap-2 bg-[#e95f2a] hover:bg-[#e95f2a]/90">
           <PlusCircle size={16} />
           Add Widget
         </Button>
@@ -98,10 +98,10 @@ export default function Dashboard() {
 
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-[#73a4b7]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Machines</CardTitle>
-            <Activity className="h-4 w-4 text-green-500" />
+            <Activity className="h-4 w-4 text-[#73a4b7]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeMachines}</div>
@@ -109,10 +109,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-l-4 border-l-[#e95f2a]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Current Alerts</CardTitle>
-            <Bell className="h-4 w-4 text-orange-500" />
+            <Bell className="h-4 w-4 text-[#e95f2a]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{currentAlerts}</div>
@@ -120,10 +120,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-[#647991]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Cycles</CardTitle>
-            <RotateCw className="h-4 w-4 text-blue-500" />
+            <RotateCw className="h-4 w-4 text-[#647991]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{todayCycles}</div>
@@ -131,10 +131,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-[#2f3944]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Uptime Percentage</CardTitle>
-            <Percent className="h-4 w-4 text-purple-500" />
+            <Percent className="h-4 w-4 text-[#2f3944]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{uptimePercentage}%</div>
@@ -170,13 +170,13 @@ export default function Dashboard() {
 
       {/* Recent Alerts Table */}
       <Card className="shadow-md">
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b dark:from-slate-800 dark:to-slate-900">
+        <CardHeader className="gradient-blue text-white border-b">
           <CardTitle className="text-xl">Recent Service Alerts</CardTitle>
-          <CardDescription>Latest alerts requiring attention</CardDescription>
+          <CardDescription className="text-white/80">Latest alerts requiring attention</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-slate-50 dark:bg-slate-800">
+            <TableHeader className="bg-[#f0f4f6] dark:bg-[#2f3944]/90">
               <TableRow>
                 <TableHead className="w-1/4">Timestamp</TableHead>
                 <TableHead className="w-1/4">Machine ID</TableHead>
@@ -187,13 +187,13 @@ export default function Dashboard() {
               {alertsData?.alerts.filter(a => a.resolvedAt === null).slice(0, 5).map((alert) => {
                 const machine = machinesData?.machines.find(m => m.id === alert.machineId);
                 return (
-                  <TableRow key={alert.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                  <TableRow key={alert.id} className="hover:bg-[#f9fbfc] dark:hover:bg-[#2f3944]/50">
                     <TableCell className="font-medium">
                       {format(new Date(alert.createdAt), 'MMM d, h:mm a')}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                        <AlertTriangle className="h-4 w-4 text-[#e95f2a]" />
                         {machine?.externalId || `Machine #${alert.machineId}`}
                       </div>
                     </TableCell>
@@ -210,7 +210,7 @@ export default function Dashboard() {
                 <TableRow>
                   <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-6 w-6 text-[#73a4b7]" />
                       <span>No active service alerts</span>
                     </div>
                   </TableCell>
@@ -221,13 +221,14 @@ export default function Dashboard() {
         </CardContent>
       </Card>
       {/* Machine Status Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Machine Status Overview</CardTitle>
+      <Card className="shadow-md">
+        <CardHeader className="gradient-blue text-white border-b">
+          <CardTitle className="text-xl">Machine Status Overview</CardTitle>
+          <CardDescription className="text-white/80">Current operational status of machines</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-[#f0f4f6] dark:bg-[#2f3944]/90">
               <TableRow>
                 <TableHead>Machine Name</TableHead>
                 <TableHead>Location</TableHead>
@@ -240,15 +241,15 @@ export default function Dashboard() {
               {machinesData?.machines.slice(0, 5).map((machine) => {
                 const location = locationsData?.locations.find(l => l.id === machine.locationId);
                 return (
-                  <TableRow key={machine.id}>
+                  <TableRow key={machine.id} className="hover:bg-[#f9fbfc] dark:hover:bg-[#2f3944]/50">
                     <TableCell className="font-medium">{machine.name}</TableCell>
                     <TableCell>{location?.name || 'Unknown'}</TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          machine.status?.statusId === 'AVAILABLE' ? 'success' :
-                            machine.status?.statusId === 'IN_USE' ? 'default' :
-                              'destructive'
+                        className={
+                          machine.status?.statusId === 'AVAILABLE' ? 'bg-[#73a4b7] hover:bg-[#73a4b7]/90' :
+                            machine.status?.statusId === 'IN_USE' ? 'bg-[#647991] hover:bg-[#647991]/90' :
+                              'bg-[#e95f2a] hover:bg-[#e95f2a]/90'
                         }
                       >
                         {machine.status?.statusId || 'Unknown'}

@@ -2,6 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Automatic Laundry Colors */
+  --al-blue: #73a4b7;        /* Primary Blue */
+  --al-orange: #e95f2a;      /* Accent Orange */
+  --al-slate: #647991;       /* Secondary Slate Blue */
+  --al-dark: #2f3944;        /* Dark Background */
+
+  --background: #ffffff;
+  --foreground: #2f3944;
+  
+  --primary: #73a4b7;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #647991;
+  --secondary-foreground: #ffffff;
+  
+  --accent: #e95f2a;
+  --accent-foreground: #ffffff;
+  
+  --muted: #f5f5f5;
+  --muted-foreground: #64798f;
+  
+  --card: #ffffff;
+  --card-foreground: #2f3944;
+  
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+}
+
+.dark {
+  --background: #2f3944;
+  --foreground: #f8fafc;
+  
+  --primary: #73a4b7;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #647991;
+  --secondary-foreground: #ffffff;
+  
+  --accent: #e95f2a;
+  --accent-foreground: #ffffff;
+  
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  
+  --border: #334155;
+  --input: #334155;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -9,5 +67,18 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Custom Gradients */
+  .gradient-blue {
+    @apply bg-gradient-to-r from-[#73a4b7] to-[#647991];
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-[#73a4b7] to-[#647991] bg-clip-text text-transparent;
+  }
+  
+  .gradient-accent {
+    @apply bg-gradient-to-r from-[#e95f2a] to-[#f59e0b];
   }
 }
