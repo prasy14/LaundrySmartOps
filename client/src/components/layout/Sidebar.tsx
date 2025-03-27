@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Locations', href: '/', icon: MapPin },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Locations', href: '/locations', icon: MapPin },
   { name: 'Machines', href: '/machines', icon: WashingMachine },
   { name: 'Reports', href: '/reports', icon: FileBarChart },
   { name: 'Admin', href: '/admin', icon: Settings },

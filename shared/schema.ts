@@ -7,7 +7,9 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role", { enum: ['admin', 'manager', 'operator'] }).notNull(),
+  role: text("role", { 
+    enum: ['admin', 'manager', 'operator', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst'] 
+  }).notNull(),
   name: text("name").notNull(),
   email: text("email"),
   lastLogin: timestamp("last_login"),
@@ -26,7 +28,7 @@ export const insertUserSchema = createInsertSchema(users)
     locationId: true,
   })
   .extend({
-    role: z.enum(['admin', 'manager', 'operator']),
+    role: z.enum(['admin', 'manager', 'operator', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']),
     email: z.string().email().optional(),
     locationId: z.number().optional(),
   });
@@ -136,7 +138,7 @@ export const machineDetails = pgTable("machine_details", {
     canTopOff?: boolean;
     topOffVend?: number;
     topOffTime?: number;
-  }>().default('{}'),
+  }>(),
 });
 
 
