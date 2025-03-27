@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, WashingMachine, MapPin, FileBarChart, Settings } from "lucide-react";
+import { LayoutDashboard, WashingMachine, MapPin, FileBarChart, Settings, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -9,10 +10,18 @@ const navigation = [
   { name: 'Machines', href: '/machines', icon: WashingMachine },
   { name: 'Reports', href: '/reports', icon: FileBarChart },
   { name: 'Admin', href: '/admin', icon: Settings },
+  { name: 'Sync Logs', href: '/sync-logs', icon: History, role: 'admin' },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
+  
+  // Get current user info
+  const { data: userData } = useQuery<{ user: { role: string } }>({
+    queryKey: ['/api/auth/me'],
+  });
+  
+  const userRole = userData?.user?.role || '';
 
   return (
     <div className="flex h-full w-64 flex-col gap-y-5 bg-background border-r border-border p-6">
@@ -24,7 +33,9 @@ export function Sidebar() {
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {navigation.map((item) => (
+              {navigation
+                .filter(item => !item.role || item.role === userRole)
+                .map((item) => (
                 <li key={item.name}>
                   <Link href={item.href}>
                     <a className={cn(

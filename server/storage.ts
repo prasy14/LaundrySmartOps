@@ -57,6 +57,7 @@ export interface IStorage {
 
   // Sync log operations
   getLastSyncLog(): Promise<SyncLog | undefined>;
+  getSyncLogs(): Promise<SyncLog[]>;
   createSyncLog(log: InsertSyncLog): Promise<SyncLog>;
 
   // Analytics methods
@@ -308,6 +309,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(syncLogs.timestamp))
       .limit(1);
     return log;
+  }
+  
+  async getSyncLogs(): Promise<SyncLog[]> {
+    return await db
+      .select()
+      .from(syncLogs)
+      .orderBy(desc(syncLogs.timestamp))
+      .limit(100); // Limit to the last 100 logs for performance
   }
 
   async createSyncLog(insertLog: InsertSyncLog): Promise<SyncLog> {

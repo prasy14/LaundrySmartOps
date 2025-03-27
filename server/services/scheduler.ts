@@ -24,7 +24,7 @@ export class SyncScheduler {
 
   stop() {
     if (this.interval) {
-      clearInterval(this.interval);
+      clearInterval(this.interval as NodeJS.Timeout);
       this.interval = null;
       log('Sync scheduler stopped', 'scheduler');
     }
@@ -33,7 +33,7 @@ export class SyncScheduler {
   private async runSync() {
     try {
       log('Starting scheduled sync', 'scheduler');
-      await this.apiSync.syncAll();
+      await this.apiSync.syncAll(undefined, 'scheduled');
       log('Scheduled sync completed successfully', 'scheduler');
     } catch (error) {
       log(`Scheduled sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'scheduler');

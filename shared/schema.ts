@@ -205,18 +205,34 @@ export const syncLogs = pgTable("sync_logs", {
   timestamp: timestamp("timestamp").notNull(),
   success: boolean("success").notNull(),
   error: text("error"),
+  endpoint: text("endpoint").notNull(), // API endpoint called
+  method: text("method").notNull(), // HTTP method used
+  requestData: jsonb("request_data"), // Data sent in the request
+  responseData: jsonb("response_data"), // Data received in the response
+  duration: integer("duration"), // Duration of the API call in milliseconds
+  statusCode: integer("status_code"), // HTTP status code
   machineCount: integer("machine_count"),
   locationCount: integer("location_count"),
   programCount: integer("program_count"),
+  userId: integer("user_id").references(() => users.id), // User who initiated the sync (if applicable)
+  syncType: text("sync_type").notNull(), // Type of sync: 'auto', 'manual', 'scheduled'
 });
 
 export const insertSyncLogSchema = createInsertSchema(syncLogs).pick({
   timestamp: true,
   success: true,
   error: true,
+  endpoint: true,
+  method: true,
+  requestData: true,
+  responseData: true,
+  duration: true,
+  statusCode: true,
   machineCount: true,
   locationCount: true,
   programCount: true,
+  userId: true,
+  syncType: true,
 });
 
 // Export types

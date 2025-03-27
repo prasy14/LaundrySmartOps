@@ -1,9 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { ApiSyncService } from '../services/api-sync';
 import { storage } from '../storage';
 import { log } from '../vite';
 import { isManagerOrAdmin } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
+
+// Type declarations are already defined in auth.ts
 
 if (!process.env.SQ_INSIGHTS_API_KEY) {
   throw new Error('SQ_INSIGHTS_API_KEY environment variable is required');
@@ -38,14 +40,70 @@ ensureTestAdmin();
 // Apply the isManagerOrAdmin middleware to protect all sync routes
 syncRouter.use(isManagerOrAdmin);
 
+// GET endpoint to fetch sync logs with filtering options
+syncRouter.get('/logs', async (req, res) => {
+  try {
+    const { fromDate, toDate, syncType, status } = req.query;
+    
+    // Get all logs from the database, ordered by timestamp descending (most recent first)
+    const allLogs = await storage.getSyncLogs();
+    
+    // Apply filters
+    let filteredLogs = [...allLogs];
+    
+    // Filter by date range
+    if (fromDate) {
+      const fromDateTime = new Date(fromDate as string);
+      filteredLogs = filteredLogs.filter(log => 
+        new Date(log.timestamp) >= fromDateTime
+      );
+    }
+    
+    if (toDate) {
+      const toDateTime = new Date(toDate as string);
+      filteredLogs = filteredLogs.filter(log => 
+        new Date(log.timestamp) <= toDateTime
+      );
+    }
+    
+    // Filter by sync type
+    if (syncType) {
+      filteredLogs = filteredLogs.filter(log => 
+        log.syncType === syncType
+      );
+    }
+    
+    // Filter by status (success or failure)
+    if (status === 'success') {
+      filteredLogs = filteredLogs.filter(log => log.success);
+    } else if (status === 'failure') {
+      filteredLogs = filteredLogs.filter(log => !log.success);
+    }
+    
+    // Return the filtered logs
+    res.json({
+      logs: filteredLogs
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to retrieve sync logs';
+    log(`Error fetching sync logs: ${errorMessage}`, 'sync');
+    res.status(500).json({
+      success: false,
+      error: errorMessage
+    });
+  }
+});
+
 // Test sync endpoint to verify data storage
 syncRouter.post('/test', async (req, res) => {
   // Set a timeout for the entire operation
   const SYNC_TIMEOUT = 60000; // 60 seconds
-  let timeoutHandle: NodeJS.Timeout;
+  let timeoutHandle: NodeJS.Timeout | undefined;
 
   try {
     log('Starting test sync process...', 'sync');
+    const userId = req.user?.id;
+    const startTime = Date.now();
 
     const timeoutPromise = new Promise((_, reject) => {
       timeoutHandle = setTimeout(() => {
@@ -85,9 +143,32 @@ syncRouter.post('/test', async (req, res) => {
 
     // Race between sync operation and timeout
     const result = await Promise.race([syncPromise, timeoutPromise]);
-    clearTimeout(timeoutHandle);
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+    const endTime = Date.now();
 
     const { locationCount, totalMachines, locations, machines } = result as any;
+
+    // Log the successful test sync
+    try {
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: true,
+        error: null,
+        endpoint: '/sync/test',
+        method: 'POST',
+        requestData: null,
+        responseData: { locationCount, machineCount: totalMachines },
+        duration: endTime - startTime,
+        statusCode: 200,
+        locationCount,
+        machineCount: totalMachines,
+        programCount: 0,
+        userId,
+        syncType: 'manual'
+      });
+    } catch (logError) {
+      log(`Failed to log sync: ${logError instanceof Error ? logError.message : 'Unknown error'}`, 'sync');
+    }
 
     log('Test sync completed successfully', 'sync');
     res.json({
@@ -99,14 +180,37 @@ syncRouter.post('/test', async (req, res) => {
       message: 'Test sync completed successfully'
     });
   } catch (error) {
-    clearTimeout(timeoutHandle);
-    log(`Test sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to complete test sync';
+    log(`Test sync error: ${errorMessage}`, 'sync');
+
+    // Log the failed test sync
+    try {
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: false,
+        error: errorMessage,
+        endpoint: '/sync/test',
+        method: 'POST',
+        requestData: null,
+        responseData: null,
+        duration: 0,
+        statusCode: 500,
+        locationCount: 0,
+        machineCount: 0,
+        programCount: 0,
+        userId: req.user?.id,
+        syncType: 'manual'
+      });
+    } catch (logError) {
+      log(`Failed to log sync error: ${logError instanceof Error ? logError.message : 'Unknown error'}`, 'sync');
+    }
 
     // Ensure we always send a response
     if (!res.headersSent) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to complete test sync'
+        error: errorMessage
       });
     }
   }
@@ -116,7 +220,8 @@ syncRouter.post('/test', async (req, res) => {
 syncRouter.post('/all', async (req, res) => {
   try {
     log('Starting full sync process...', 'sync');
-    await apiService.syncAll();
+    // Pass the user ID from the request object
+    await apiService.syncAll(req.user?.id, 'manual');
 
     const locations = await storage.getLocations();
     const machines = await storage.getMachines();
@@ -141,15 +246,39 @@ syncRouter.post('/machines', async (req, res) => {
     log('Starting sync process...', 'sync');
     const locations = await storage.getLocations();
     let totalMachines = 0;
+    const userId = req.user?.id;
 
     // Sync machines for each location
     for (const location of locations) {
       try {
+        // Update fetchWithAuth method to pass userId and syncType
         const machineCount = await apiService.syncMachinesForLocation(location.externalId);
         totalMachines += machineCount;
       } catch (error) {
         log(`Error syncing machines for location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
       }
+    }
+
+    // Log a summary sync entry
+    try {
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: true,
+        error: null,
+        endpoint: '/sync/machines',
+        method: 'POST',
+        requestData: null,
+        responseData: { machineCount: totalMachines },
+        duration: 0,
+        statusCode: 200,
+        locationCount: locations.length,
+        machineCount: totalMachines,
+        programCount: 0,
+        userId,
+        syncType: 'manual'
+      });
+    } catch (logError) {
+      log(`Failed to log sync: ${logError instanceof Error ? logError.message : 'Unknown error'}`, 'sync');
     }
 
     const machines = await storage.getMachines();
@@ -160,10 +289,34 @@ syncRouter.post('/machines', async (req, res) => {
       machines
     });
   } catch (error) {
-    log(`Sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+    const errorMessage = error instanceof Error ? error.message : 'Failed to sync machines';
+    log(`Sync error: ${errorMessage}`, 'sync');
+    
+    // Log the error
+    try {
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: false,
+        error: errorMessage,
+        endpoint: '/sync/machines',
+        method: 'POST',
+        requestData: null,
+        responseData: null,
+        duration: 0,
+        statusCode: 500,
+        locationCount: 0,
+        machineCount: 0,
+        programCount: 0,
+        userId: req.user?.id,
+        syncType: 'manual'
+      });
+    } catch (logError) {
+      log(`Failed to log sync error: ${logError instanceof Error ? logError.message : 'Unknown error'}`, 'sync');
+    }
+    
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to sync machines'
+      error: errorMessage
     });
   }
 });
@@ -171,8 +324,33 @@ syncRouter.post('/machines', async (req, res) => {
 syncRouter.post('/locations', async (req, res) => {
   try {
     log('Starting location sync...', 'sync');
+    const startTime = Date.now();
     const locationCount = await apiService.syncLocations();
+    const endTime = Date.now();
     const locations = await storage.getLocations();
+    const userId = req.user?.id;
+
+    // Log a summary sync entry
+    try {
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: true,
+        error: null,
+        endpoint: '/sync/locations',
+        method: 'POST',
+        requestData: null,
+        responseData: { locationCount },
+        duration: endTime - startTime,
+        statusCode: 200,
+        locationCount,
+        machineCount: 0,
+        programCount: 0,
+        userId,
+        syncType: 'manual'
+      });
+    } catch (logError) {
+      log(`Failed to log sync: ${logError instanceof Error ? logError.message : 'Unknown error'}`, 'sync');
+    }
 
     log('Location sync completed successfully', 'sync');
     res.json({
@@ -181,10 +359,34 @@ syncRouter.post('/locations', async (req, res) => {
       locations
     });
   } catch (error) {
-    log(`Location sync error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'sync');
+    const errorMessage = error instanceof Error ? error.message : 'Failed to sync locations';
+    log(`Location sync error: ${errorMessage}`, 'sync');
+    
+    // Log the error
+    try {
+      await storage.createSyncLog({
+        timestamp: new Date(),
+        success: false,
+        error: errorMessage,
+        endpoint: '/sync/locations',
+        method: 'POST',
+        requestData: null,
+        responseData: null,
+        duration: 0,
+        statusCode: 500,
+        locationCount: 0,
+        machineCount: 0,
+        programCount: 0,
+        userId: req.user?.id,
+        syncType: 'manual'
+      });
+    } catch (logError) {
+      log(`Failed to log sync error: ${logError instanceof Error ? logError.message : 'Unknown error'}`, 'sync');
+    }
+    
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to sync locations'
+      error: errorMessage
     });
   }
 });

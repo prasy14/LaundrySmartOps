@@ -11,10 +11,16 @@ export class ApiSyncService {
     log(`API Service initialized with key: ${apiKey ? '[PROVIDED]' : '[MISSING]'}`, 'api-sync');
   }
 
-  private async fetchWithAuth(endpoint: string) {
+  private async fetchWithAuth(endpoint: string, userId?: number, syncType: 'auto' | 'manual' | 'scheduled' = 'auto') {
     const url = `${this.baseUrl}${endpoint}`;
     log(`Making API request to: ${url}`, 'api-sync');
-
+    
+    const startTime = Date.now();
+    let responseData: any = null;
+    let success = false;
+    let statusCode = 0;
+    let errorMessage = null;
+    
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -29,23 +35,53 @@ export class ApiSyncService {
       });
 
       clearTimeout(timeoutId);
-
+      statusCode = response.status;
+      
       if (!response.ok) {
         const text = await response.text();
+        errorMessage = `API request failed: ${response.status} - ${text}`;
         log(`API error (${response.status}): ${text}`, 'api-sync');
-        throw new Error(`API request failed: ${response.status} - ${text}`);
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
-      log(`API response received for ${endpoint}: ${JSON.stringify(data).substring(0, 100)}...`, 'api-sync');
-      return data;
+      responseData = await response.json();
+      success = true;
+      log(`API response received for ${endpoint}: ${JSON.stringify(responseData).substring(0, 100)}...`, 'api-sync');
+      return responseData;
     } catch (error: any) { // Explicitly type as any to handle both Error and AbortError
       if (error.name === 'AbortError') {
+        errorMessage = `API request timed out: ${endpoint}`;
         log(`API request timeout for ${endpoint}`, 'api-sync');
-        throw new Error(`API request timed out: ${endpoint}`);
+        throw new Error(errorMessage);
       }
-      log(`API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      log(`API request failed: ${errorMessage}`, 'api-sync');
       throw error;
+    } finally {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
+      // Log the API call to the database
+      try {
+        await storage.createSyncLog({
+          timestamp: new Date(),
+          success,
+          error: errorMessage,
+          endpoint,
+          method: 'GET',
+          requestData: { url },
+          responseData: success ? responseData : null,
+          duration,
+          statusCode,
+          userId,
+          syncType,
+          machineCount: 0,
+          locationCount: 0,
+          programCount: 0
+        });
+      } catch (logError) {
+        log(`Failed to log API call: ${logError instanceof Error ? logError.message : 'Unknown error'}`, 'api-sync');
+      }
     }
   }
 
@@ -204,31 +240,55 @@ export class ApiSyncService {
     }
   }
 
-  async syncAll(): Promise<void> {
+  async syncAll(userId?: number, syncType: 'auto' | 'manual' | 'scheduled' = 'scheduled'): Promise<void> {
+    const startTime = Date.now();
     try {
       log('Starting full sync', 'api-sync');
       const locationCount = await this.syncLocations();
+      const endTime = Date.now();
 
+      // Create an overall sync log entry for the full sync
       await storage.createSyncLog({
         timestamp: new Date(),
         success: true,
         error: null,
+        endpoint: '/sync/all',
+        method: 'POST',
+        requestData: null,
+        responseData: { locationCount },
+        duration: endTime - startTime,
+        statusCode: 200,
         locationCount,
         machineCount: 0, // Updated during individual location syncs
-        programCount: 0  // Updated during individual machine syncs
+        programCount: 0,  // Updated during individual machine syncs
+        userId,
+        syncType
       });
 
       log('Full sync completed successfully', 'api-sync');
     } catch (error) {
-      log(`Full sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
+      const endTime = Date.now();
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      log(`Full sync failed: ${errorMessage}`, 'api-sync');
+      
+      // Log the failure
       await storage.createSyncLog({
         timestamp: new Date(),
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
+        endpoint: '/sync/all',
+        method: 'POST',
+        requestData: null,
+        responseData: null,
+        duration: endTime - startTime,
+        statusCode: 500,
         locationCount: 0,
         machineCount: 0,
-        programCount: 0
+        programCount: 0,
+        userId,
+        syncType
       });
+      
       throw error;
     }
   }

@@ -7,6 +7,7 @@ import MachinesPage from "@/pages/machines";
 import DashboardPage from "@/pages/dashboard";
 import AdminPage from "@/pages/admin";
 import ReportsPage from "@/pages/reports";
+import SyncLogsPage from "@/pages/sync-logs";
 import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { Header } from "@/components/layout/Header";
@@ -69,6 +70,14 @@ function Router() {
                     <ProtectedRoute 
                       path="/admin" 
                       component={AdminPage}
+                      allowedRoles={['admin']} 
+                    />
+                  </Route>
+                  
+                  <Route path="/sync-logs">
+                    <ProtectedRoute 
+                      path="/sync-logs" 
+                      component={SyncLogsPage}
                       allowedRoles={['admin']} 
                     />
                   </Route>
