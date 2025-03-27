@@ -24,15 +24,15 @@ import { getQueryFn, queryClient } from '../lib/queryClient';
 
 type SyncFilterState = {
   dateRange: DateRange | undefined;
-  syncType: string | undefined;
-  status: string | undefined;
+  syncType: string;
+  status: string;
 };
 
 export default function SyncLogsPage() {
   const [filter, setFilter] = useState<SyncFilterState>({
     dateRange: undefined,
-    syncType: undefined,
-    status: undefined,
+    syncType: 'all',
+    status: 'all',
   });
 
   // Build query string based on filters
@@ -47,11 +47,11 @@ export default function SyncLogsPage() {
       params.append('toDate', filter.dateRange.to.toISOString());
     }
     
-    if (filter.syncType) {
+    if (filter.syncType && filter.syncType !== 'all') {
       params.append('syncType', filter.syncType);
     }
     
-    if (filter.status) {
+    if (filter.status && filter.status !== 'all') {
       params.append('status', filter.status);
     }
     
@@ -145,7 +145,7 @@ export default function SyncLogsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="">All Types</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="auto">Auto</SelectItem>
                     <SelectItem value="manual">Manual</SelectItem>
                     <SelectItem value="scheduled">Scheduled</SelectItem>
@@ -164,7 +164,7 @@ export default function SyncLogsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="success">Success</SelectItem>
                     <SelectItem value="failure">Failure</SelectItem>
                   </SelectGroup>
@@ -241,7 +241,7 @@ export default function SyncLogsPage() {
                                     <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-[100px]">
                                       {typeof log.requestData === 'string' 
                                         ? log.requestData 
-                                        : JSON.stringify(log.requestData, null, 2)}
+                                        : JSON.stringify(log.requestData || {}, null, 2)}
                                     </pre>
                                   </div>
                                 )}
@@ -252,7 +252,7 @@ export default function SyncLogsPage() {
                                     <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-[100px]">
                                       {typeof log.responseData === 'string' 
                                         ? log.responseData 
-                                        : JSON.stringify(log.responseData, null, 2)}
+                                        : JSON.stringify(log.responseData || {}, null, 2)}
                                     </pre>
                                   </div>
                                 )}
