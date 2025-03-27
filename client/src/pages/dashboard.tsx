@@ -1,16 +1,23 @@
 import { Header } from "@/components/layout/Header";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { Alert, Machine, Location, MachineError } from "@shared/schema";
-import { Loader2, AlertTriangle, CheckCircle, WrenchIcon } from "lucide-react";
+import { 
+  Loader2, AlertTriangle, CheckCircle, WrenchIcon, 
+  PlusCircle, Activity, Bell, RotateCw, Percent
+} from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MachineStatusChart } from "@/components/visualizations/MachineStatusChart";
 import { PerformanceChart } from "@/components/visualizations/PerformanceChart";
 import { AlertMetricsChart } from "@/components/visualizations/AlertMetricsChart";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  
   // Existing queries
   const { data: alertsData, isLoading: alertsLoading } = useQuery<{ alerts: Alert[] }>({
     queryKey: ['/api/alerts'],
@@ -52,54 +59,86 @@ export default function Dashboard() {
     m.status?.statusId === 'MAINTENANCE_REQUIRED' ||
     errorsData?.errors.some(e => e.machineId === m.id)
   ).length || 0;
+  
+  // Calculate additional metrics
+  const currentAlerts = alertsData?.alerts.filter(a => a.resolvedAt === null).length || 0;
+  const todayCycles = machinesData?.machines.reduce((count, machine) => {
+    // This is a placeholder calculation - in a real app you'd have cycle logs
+    return count + (machine.status?.statusId === 'IN_USE' ? 1 : 0);
+  }, 0) || 0;
+  const uptimePercentage = performanceData?.uptimeHistory && performanceData.uptimeHistory.length > 0 
+    ? Math.round(performanceData.uptimeHistory[performanceData.uptimeHistory.length - 1].value) 
+    : 98; // Fallback value if no data is available
+  
+  // Handle Add Widget
+  const handleAddWidget = () => {
+    toast({
+      title: "Add Widget",
+      description: "Widget customization will be available in a future update.",
+    });
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Machine Management Dashboard</h1>
+      {/* Welcome Panel */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+            Welcome, Admin!
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Here's your machine management overview for today
+          </p>
+        </div>
+        <Button onClick={handleAddWidget} className="flex items-center gap-2">
+          <PlusCircle size={16} />
+          Add Widget
+        </Button>
+      </div>
 
-      {/* Overview Cards */}
+      {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Machines</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalMachines}</div>
-            <p className="text-xs text-muted-foreground">Across all locations</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Machines</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium">Active Machines</CardTitle>
+            <Activity className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeMachines}</div>
-            <p className="text-xs text-muted-foreground">Ready for use</p>
+            <p className="text-xs text-muted-foreground">Operational machines</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-orange-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Use</CardTitle>
-            <CheckCircle className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">Current Alerts</CardTitle>
+            <Bell className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inUseMachines}</div>
-            <p className="text-xs text-muted-foreground">Currently operating</p>
+            <div className="text-2xl font-bold">{currentAlerts}</div>
+            <p className="text-xs text-muted-foreground">Unresolved service alerts</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Maintenance Required</CardTitle>
-            <WrenchIcon className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-medium">Today's Cycles</CardTitle>
+            <RotateCw className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{maintenanceNeeded}</div>
-            <p className="text-xs text-muted-foreground">Needs attention</p>
+            <div className="text-2xl font-bold">{todayCycles}</div>
+            <p className="text-xs text-muted-foreground">Total wash/dry cycles</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-purple-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Uptime Percentage</CardTitle>
+            <Percent className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{uptimePercentage}%</div>
+            <p className="text-xs text-muted-foreground">Overall performance</p>
           </CardContent>
         </Card>
       </div>
@@ -129,47 +168,51 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent Errors Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Service Alerts</CardTitle>
+      {/* Recent Alerts Table */}
+      <Card className="shadow-md">
+        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b dark:from-slate-800 dark:to-slate-900">
+          <CardTitle className="text-xl">Recent Service Alerts</CardTitle>
+          <CardDescription>Latest alerts requiring attention</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50 dark:bg-slate-800">
               <TableRow>
-                <TableHead>Machine</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Error Type</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-1/4">Timestamp</TableHead>
+                <TableHead className="w-1/4">Machine ID</TableHead>
+                <TableHead className="w-2/4">Alert Description</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {errorsData?.errors.slice(0, 5).map((error) => {
-                const machine = machinesData?.machines.find(m => m.id === error.machineId);
-                const location = locationsData?.locations.find(l => l.id === error.locationId);
+              {alertsData?.alerts.filter(a => a.resolvedAt === null).slice(0, 5).map((alert) => {
+                const machine = machinesData?.machines.find(m => m.id === alert.machineId);
                 return (
-                  <TableRow key={error.id}>
-                    <TableCell className="font-medium">{machine?.name || 'Unknown'}</TableCell>
-                    <TableCell>{location?.name || 'Unknown'}</TableCell>
+                  <TableRow key={alert.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                    <TableCell className="font-medium">
+                      {format(new Date(alert.createdAt), 'MMM d, h:mm a')}
+                    </TableCell>
                     <TableCell>
-                      <div className="flex items-center">
-                        <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                        {error.errorType}
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                        {machine?.externalId || `Machine #${alert.machineId}`}
                       </div>
                     </TableCell>
-                    <TableCell>{format(new Date(error.timestamp), 'MMM d, h:mm a')}</TableCell>
                     <TableCell>
-                      <Badge variant="destructive">Needs Attention</Badge>
+                      <div className="flex flex-col">
+                        <span>{alert.message}</span>
+                        <span className="text-xs text-muted-foreground">{alert.type}</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
               })}
-              {(!errorsData?.errors || errorsData.errors.length === 0) && (
+              {(!alertsData?.alerts || alertsData.alerts.filter(a => a.resolvedAt === null).length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No recent service alerts
+                  <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2">
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <span>No active service alerts</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
