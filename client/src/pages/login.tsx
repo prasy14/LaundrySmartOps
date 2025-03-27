@@ -81,7 +81,12 @@ export default function LoginPage() {
       {/* Hero Image Section */}
       <div className="hidden md:flex flex-col items-center justify-center bg-[#2f3944] p-8">
         <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Automatic Laundry Solutions</h1>
+          <img 
+            src="/images/automatic-laundry-logo.webp" 
+            alt="Automatic Laundry" 
+            className="h-14 object-contain mx-auto mb-6"
+          />
+          <h1 className="text-3xl font-bold text-white mb-4">SmartOps Platform</h1>
           <p className="text-white/80 mb-8">Advanced enterprise laundry management and monitoring system</p>
           
           <div className="relative overflow-hidden rounded-lg shadow-lg">
@@ -101,7 +106,14 @@ export default function LoginPage() {
       <div className="flex items-center justify-center p-8">
         <Card className="w-full max-w-md shadow-xl border-t-4 border-t-[#73a4b7]">
           <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl font-bold text-center gradient-text">SmartOps Platform</CardTitle>
+            <div className="flex flex-col items-center justify-center mb-4">
+              <img 
+                src="/images/automatic-laundry-logo.webp" 
+                alt="Automatic Laundry" 
+                className="h-12 object-contain mx-auto"
+              />
+              <CardTitle className="text-2xl font-bold text-center gradient-text mt-3">SmartOps Platform</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             {error && (
