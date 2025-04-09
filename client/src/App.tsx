@@ -24,7 +24,7 @@ const PlaceholderPage = ({ title }: { title: string }) => (
   </div>
 );
 
-const AlertsPage = () => <PlaceholderPage title="Alert Issues" />;
+import AlertsPage from "@/pages/alerts";
 const PredictivePage = () => <PlaceholderPage title="Predictive Maintenance" />;
 const VisualizationsPage = () => <PlaceholderPage title="Visualizations" />;
 const CustomReportsPage = () => <PlaceholderPage title="Custom Reports" />;

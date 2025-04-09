@@ -7,6 +7,7 @@ import express from "express";
 import authRoutes from "./routes/auth";
 import syncRoutes from "./routes/sync";
 import reportsRoutes from "./routes/reports";
+import alertsRoutes from "./routes/alerts";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 
 declare module 'express-session' {
@@ -28,6 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Protected routes - Apply middleware here
     apiRouter.use('/sync', isManagerOrAdmin, syncRoutes);
     apiRouter.use('/reports', isManagerOrAdmin, reportsRoutes);
+    apiRouter.use('/alerts', isOperatorOrAbove, alertsRoutes);
 
     // Data access routes
     apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {
