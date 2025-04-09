@@ -90,6 +90,19 @@ export const machines = pgTable("machines", {
   machineNumber: text("machine_number"),
   networkNode: text("network_node"),
   modelNumber: text("model_number"),
+  manufacturer: text("manufacturer"),
+  installDate: timestamp("install_date"),
+  warrantyExpiryDate: timestamp("warranty_expiry_date"),
+  lastMaintenanceDate: timestamp("last_maintenance_date"),
+  nextMaintenanceDate: timestamp("next_maintenance_date"),
+  lifeCycleStatus: text("life_cycle_status"),
+  performanceMetrics: jsonb("performance_metrics").$type<{
+    uptime: number;
+    averageCyclesPerDay: number;
+    averageCycleTime: number;
+    errorFrequency: number;
+    efficiency: number;
+  }>(),
   status: jsonb("status").$type<{
     linkQualityIndicator: number;
     statusId: string;
