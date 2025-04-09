@@ -22,8 +22,10 @@ import {
   Settings, 
   ShieldAlert, 
   Timer, 
-  Wrench
+  Wrench,
+  LineChart
 } from "lucide-react";
+import MachineLifecycleChart from "@/components/visualizations/MachineLifecycleChart";
 
 export default function Machines() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
@@ -284,6 +286,10 @@ export default function Machines() {
                         <Settings className="h-4 w-4 mr-2" />
                         Performance
                       </TabsTrigger>
+                      <TabsTrigger value="lifecycle">
+                        <LineChart className="h-4 w-4 mr-2" />
+                        Lifecycle
+                      </TabsTrigger>
                       <TabsTrigger value="maintenance">
                         <Wrench className="h-4 w-4 mr-2" />
                         Maintenance
@@ -428,6 +434,10 @@ export default function Machines() {
                           </CardContent>
                         </Card>
                       </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="lifecycle">
+                      <MachineLifecycleChart machine={selectedMachine} />
                     </TabsContent>
                     
                     <TabsContent value="maintenance">
