@@ -62,6 +62,7 @@ export const machineTypes = pgTable("machine_types", {
 export const machinePrograms = pgTable("machine_programs", {
   id: serial("id").primaryKey(),
   machineTypeId: integer("machine_type_id").references(() => machineTypes.id),
+  locationId: integer("location_id").references(() => locations.id),
   externalId: text("external_id").notNull(), // e.g. cyc_normal_hot
   name: text("name").notNull(), // e.g. NORMAL_HOT
   type: text("type").notNull(), // washer or dryer program
@@ -74,6 +75,7 @@ export const programModifiers = pgTable("program_modifiers", {
   externalId: text("external_id").notNull(), // e.g. mod_regular
   name: text("name").notNull(), // e.g. REGULAR
   programId: integer("program_id").references(() => machinePrograms.id),
+  locationId: integer("location_id").references(() => locations.id),
 });
 
 // Machine schema
@@ -113,6 +115,7 @@ export const machines = pgTable("machines", {
 export const machineDetails = pgTable("machine_details", {
   id: serial("id").primaryKey(),
   machineId: integer("machine_id").references(() => machines.id).unique(),
+  locationId: integer("location_id").references(() => locations.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   controlId: text("control_id"),
   serialNumber: text("serial_number"),
@@ -146,6 +149,7 @@ export const machineDetails = pgTable("machine_details", {
 export const commandHistory = pgTable("command_history", {
   id: serial("id").primaryKey(),
   machineId: integer("machine_id").references(() => machines.id),
+  locationId: integer("location_id").references(() => locations.id),
   commandId: text("command_id").notNull(), // The generated command ID from API
   command: text("command").notNull(), // START, STOP, etc.
   params: jsonb("params"), // Command parameters
@@ -168,6 +172,7 @@ export const insertCommandHistorySchema = createInsertSchema(commandHistory);
 export const alerts = pgTable("alerts", {
   id: serial("id").primaryKey(),
   machineId: integer("machine_id").notNull(),
+  locationId: integer("location_id").references(() => locations.id),
   type: text("type").notNull(), // error, warning, info
   serviceType: text("service_type"), // mechanical, electrical, software, etc.
   message: text("message").notNull(),
@@ -187,6 +192,7 @@ export const alerts = pgTable("alerts", {
 // Add alert types for better categorization
 export const insertAlertSchema = createInsertSchema(alerts).pick({
   machineId: true,
+  locationId: true,
   type: true,
   serviceType: true,
   message: true,
@@ -270,6 +276,7 @@ export const machineCycles = pgTable("machine_cycles", {
   name: text("name").notNull(),
   cycleType: text("cycle_type").notNull(),
   sortOrder: integer("sort_order"),
+  locationId: integer("location_id").references(() => locations.id),
 });
 
 // Cycle Modifiers schema
@@ -285,6 +292,7 @@ export const machineSupportedCycles = pgTable("machine_supported_cycles", {
   id: serial("id").primaryKey(),
   machineId: integer("machine_id").references(() => machines.id),
   cycleId: integer("cycle_id").references(() => machineCycles.id),
+  locationId: integer("location_id").references(() => locations.id),
   isEnabled: boolean("is_enabled").default(true),
 });
 
@@ -293,6 +301,7 @@ export const machineSupportedModifiers = pgTable("machine_supported_modifiers", 
   id: serial("id").primaryKey(),
   machineId: integer("machine_id").references(() => machines.id),
   modifierId: integer("modifier_id").references(() => cycleModifiers.id),
+  locationId: integer("location_id").references(() => locations.id),
   isEnabled: boolean("is_enabled").default(true),
 });
 
@@ -310,6 +319,7 @@ export const machineCycleSteps = pgTable("machine_cycle_steps", {
   machineId: integer("machine_id").references(() => machines.id),
   cycleId: integer("cycle_id").references(() => machineCycles.id),
   stepId: integer("step_id").references(() => cycleSteps.id),
+  locationId: integer("location_id").references(() => locations.id),
   stepOrder: integer("step_order").notNull(),
   isEnabled: boolean("is_enabled").default(true),
 });

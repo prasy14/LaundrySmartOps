@@ -1,18 +1,41 @@
 import { ResponsiveBar } from "@nivo/bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import type { Location } from "@shared/schema";
 
 interface AlertMetric {
   type: string;
   count: number;
   avgResolutionTime: number;
+  locationId?: number;
 }
 
 interface AlertMetricsChartProps {
   data: AlertMetric[];
+  locations?: Location[];
 }
 
-export function AlertMetricsChart({ data }: AlertMetricsChartProps) {
-  const chartData = data.map(metric => ({
+export function AlertMetricsChart({ data, locations }: AlertMetricsChartProps) {
+  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [filteredData, setFilteredData] = useState(data);
+  
+  useEffect(() => {
+    if (selectedLocation === "all") {
+      setFilteredData(data);
+    } else {
+      const locationId = parseInt(selectedLocation, 10);
+      setFilteredData(data.filter(metric => metric.locationId === locationId));
+    }
+  }, [selectedLocation, data]);
+  
+  const chartData = filteredData.map(metric => ({
     type: metric.type,
     count: metric.count,
     resolutionTime: metric.avgResolutionTime,
@@ -21,8 +44,27 @@ export function AlertMetricsChart({ data }: AlertMetricsChartProps) {
   return (
     <Card className="shadow-md">
       <CardHeader className="gradient-blue text-white border-b">
-        <CardTitle className="text-xl">Alert Metrics by Type</CardTitle>
-        <p className="text-white/80 text-sm">Alert frequency and resolution times</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-xl">Alert Metrics by Type</CardTitle>
+            <p className="text-white/80 text-sm">Alert frequency and resolution times</p>
+          </div>
+          {locations && locations.length > 0 && (
+            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+              <SelectTrigger className="w-[200px] bg-white">
+                <SelectValue placeholder="Select Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {locations.map(location => (
+                  <SelectItem key={location.id} value={location.id.toString()}>
+                    {location.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pt-6">
         <div style={{ height: '300px' }}>

@@ -147,7 +147,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Machine Status Distribution */}
         {machinesData?.machines && (
-          <MachineStatusChart machines={machinesData.machines} />
+          <MachineStatusChart 
+            machines={machinesData.machines} 
+            locations={locationsData?.locations} 
+          />
         )}
 
         {/* System Uptime Trend */}
@@ -164,7 +167,10 @@ export default function Dashboard() {
       {/* Alert Metrics */}
       {performanceData?.alertMetrics && (
         <div className="mt-6">
-          <AlertMetricsChart data={performanceData.alertMetrics} />
+          <AlertMetricsChart 
+            data={performanceData.alertMetrics} 
+            locations={locationsData?.locations}
+          />
         </div>
       )}
 
