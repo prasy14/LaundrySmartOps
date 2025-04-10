@@ -62,65 +62,68 @@ export default function AnalyticsDashboard() {
     return data;
   };
 
-  // Query for machines data
-  const { data: machinesData, isLoading: machinesLoading, error: machinesError } = useQuery({
+  // Query for machines data with enhanced error handling
+  const { data: machinesData, isLoading: machinesLoading } = useQuery({
     queryKey: ['/api/machines'],
     retry: false,
+    enabled: true,
+    staleTime: 60000, // 1 minute
+    cacheTime: 300000, // 5 minutes
     onError: (error: any) => {
-      toast({
-        title: "Error loading machines",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error("Error loading machines:", error);
+      // Don't show toast to avoid overwhelming the user with errors
     }
   });
 
-  // Query for locations data
-  const { data: locationsData, isLoading: locationsLoading, error: locationsError } = useQuery({
+  // Query for locations data with enhanced error handling
+  const { data: locationsData, isLoading: locationsLoading } = useQuery({
     queryKey: ['/api/locations'],
     retry: false,
+    enabled: true,
+    staleTime: 60000, // 1 minute
+    cacheTime: 300000, // 5 minutes
     onError: (error: any) => {
-      toast({
-        title: "Error loading locations",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error("Error loading locations:", error);
+      // Don't show toast to avoid overwhelming the user with errors
     }
   });
 
-  // Query for performance metrics
-  const { data: performanceData, isLoading: performanceLoading, error: performanceError } = useQuery({
+  // Query for performance metrics with enhanced error handling
+  const { data: performanceData, isLoading: performanceLoading } = useQuery({
     queryKey: ['/api/reports/performance-metrics'],
     retry: false,
+    enabled: true,
+    staleTime: 60000, // 1 minute
+    cacheTime: 300000, // 5 minutes
     onError: (error: any) => {
-      toast({
-        title: "Error loading performance metrics",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error("Error loading performance metrics:", error);
+      // Don't show toast to avoid overwhelming the user with errors
     }
   });
 
-  // Query for error trends
-  const { data: errorTrendsData, isLoading: errorTrendsLoading, error: errorTrendsError } = useQuery({
+  // Query for error trends with enhanced error handling
+  const { data: errorTrendsData, isLoading: errorTrendsLoading } = useQuery({
     queryKey: ['/api/reports/error-trends'],
     retry: false,
+    enabled: true,
+    staleTime: 60000, // 1 minute
+    cacheTime: 300000, // 5 minutes
     onError: (error: any) => {
-      toast({
-        title: "Error loading error trends",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error("Error loading error trends:", error);
+      // Don't show toast to avoid overwhelming the user with errors
     }
   });
 
   // Query for performance metrics instead of service alerts to avoid database errors
-  const { data: serviceMetricsData, isLoading: serviceAlertsLoading, error: serviceAlertsError } = useQuery({
+  const { data: serviceMetricsData, isLoading: serviceAlertsLoading } = useQuery({
     queryKey: ['/api/reports/performance-metrics'],
     retry: false,
+    enabled: true,
+    staleTime: 60000, // 1 minute
+    cacheTime: 300000, // 5 minutes
     onError: (error: any) => {
       console.error("Service metrics error:", error);
-      // Don't show toast to avoid overwhelming the user
+      // Don't show toast to avoid overwhelming the user with errors
     }
   });
 
