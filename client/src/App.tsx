@@ -13,6 +13,7 @@ import NotFound from "@/pages/not-found";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
+import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 
 // Placeholder Components for new routes
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -26,7 +27,6 @@ const PlaceholderPage = ({ title }: { title: string }) => (
 
 import AlertsPage from "@/pages/alerts";
 const PredictivePage = () => <PlaceholderPage title="Predictive Maintenance" />;
-const VisualizationsPage = () => <PlaceholderPage title="Visualizations" />;
 const CustomReportsPage = () => <PlaceholderPage title="Custom Reports" />;
 const UsagePatternsPage = () => <PlaceholderPage title="Usage Patterns" />;
 const MachineComparisonPage = () => <PlaceholderPage title="Machine Comparison" />;
@@ -119,10 +119,18 @@ function Router() {
                     />
                   </Route>
 
+                  <Route path="/analytics-dashboard">
+                    <ProtectedRoute 
+                      path="/analytics-dashboard" 
+                      component={AnalyticsDashboardPage}
+                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
+                    />
+                  </Route>
+                  
                   <Route path="/visualizations">
                     <ProtectedRoute 
                       path="/visualizations" 
-                      component={VisualizationsPage}
+                      component={AnalyticsDashboardPage}
                       allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
                     />
                   </Route>
