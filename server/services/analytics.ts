@@ -2,6 +2,11 @@ import { storage } from "../storage";
 import { Alert, Machine } from "@shared/schema";
 
 export class AnalyticsService {
+  // Get all alerts with optional machine filter
+  async getAlerts(machineId?: number): Promise<Alert[]> {
+    return await storage.getAlerts(machineId);
+  }
+  
   // Get service alerts by location
   async getAlertsByLocation(locationId: number): Promise<Alert[]> {
     const machines = await storage.getMachinesByLocation(locationId);

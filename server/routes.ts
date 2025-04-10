@@ -30,6 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Protected routes - Apply middleware here
     apiRouter.use('/sync', isManagerOrAdmin, syncRoutes);
     apiRouter.use('/reports', isManagerOrAdmin, reportsRoutes);
+    apiRouter.use('/reports/email', isManagerOrAdmin, reportEmailRoutes);
     apiRouter.use('/alerts', isOperatorOrAbove, alertsRoutes);
 
     // Data access routes
