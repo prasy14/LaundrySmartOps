@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Heatmap } from "@nivo/heatmap";
+import { ResponsiveHeatMap } from "@nivo/heatmap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -22,8 +22,9 @@ export function ServiceAlertHeatmap({
   isLoading = false,
   onLocationSelect
 }: ServiceAlertHeatmapProps) {
-  const formattedData = useMemo(() => {
-    if (!data.length) return [];
+  // Format data for the heatmap
+  const { formattedData, alertTypes } = useMemo(() => {
+    if (!data.length) return { formattedData: [], alertTypes: [] };
     
     // Get all possible alert types from the data
     const alertTypes = Array.from(
@@ -33,9 +34,9 @@ export function ServiceAlertHeatmap({
     );
     
     // Format for Nivo heatmap
-    return data.map(location => {
+    const formattedData = data.map(location => {
       const result: any = { 
-        location: location.location,
+        id: location.location,
         locationId: location.locationId,
       };
       
@@ -46,16 +47,8 @@ export function ServiceAlertHeatmap({
       
       return result;
     });
-  }, [data]);
-
-  // Get keys for the heatmap (alert types)
-  const keys = useMemo(() => {
-    if (!data.length) return [];
-    return Array.from(
-      new Set(
-        data.flatMap(location => Object.keys(location.counts))
-      )
-    );
+    
+    return { formattedData, alertTypes };
   }, [data]);
 
   if (isLoading) {
@@ -71,7 +64,7 @@ export function ServiceAlertHeatmap({
     );
   }
 
-  if (!data.length || !keys.length) {
+  if (!data.length || !alertTypes.length) {
     return (
       <Card className="w-full h-80">
         <CardHeader>
@@ -90,10 +83,10 @@ export function ServiceAlertHeatmap({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="h-64">
-        <Heatmap
+        <ResponsiveHeatMap
           data={formattedData}
-          keys={keys}
-          indexBy="location"
+          keys={alertTypes}
+          indexBy="id"
           margin={{ top: 20, right: 60, bottom: 30, left: 100 }}
           forceSquare={false}
           axisTop={null}
@@ -130,8 +123,6 @@ export function ServiceAlertHeatmap({
           ]}
           fill={[{ id: 'lines' }]}
           animate={true}
-          motionStiffness={80}
-          motionDamping={9}
           hoverTarget="cell"
           cellHoverOthersOpacity={0.25}
           onClick={(cell: any) => {

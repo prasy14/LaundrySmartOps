@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pie } from "@nivo/pie";
+import { ResponsivePie } from "@nivo/pie";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -96,7 +96,7 @@ export function SLAComplianceChart({
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="h-64">
-            <Pie
+            <ResponsivePie
               data={pieData}
               margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
               innerRadius={0.5}

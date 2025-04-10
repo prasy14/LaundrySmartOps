@@ -68,6 +68,8 @@ export function ConsumptionChart({
       <CardContent className="h-56">
         <Line
           data={chartData}
+          width={800}
+          height={300}
           margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
           xScale={{ type: "point" }}
           yScale={{
