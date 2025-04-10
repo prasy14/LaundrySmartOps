@@ -14,24 +14,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
 import { useState } from "react";
 import type { Alert, Location, MachineError } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-
-interface DateRange {
-  from: Date;
-  to: Date;
-}
 
 export default function Reports() {
   const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedServiceType, setSelectedServiceType] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<DateRange>({
+  // Initial date range for the last 30 days
+  const initialDateRange: DateRange = {
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
-  });
+  };
+  
+  const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
+  
+  // Handle date change while ensuring from/to are defined
+  const handleDateChange = (newRange: DateRange) => {
+    // If both dates are defined, use them directly
+    if (newRange.from && newRange.to) {
+      setDateRange(newRange);
+    }
+    // If only from is defined, keep the current "to" date
+    else if (newRange.from && !newRange.to) {
+      setDateRange({
+        from: newRange.from,
+        to: dateRange.to
+      });
+    }
+    // If only to is defined, keep the current "from" date
+    else if (!newRange.from && newRange.to) {
+      setDateRange({
+        from: dateRange.from,
+        to: newRange.to
+      });
+    }
+    // If neither is defined (shouldn't happen), don't update
+  };
 
   // Auth query to get user role
   const { data: userData } = useQuery<{ user: { role: string } }>({
@@ -141,7 +162,7 @@ export default function Reports() {
         <h1 className="text-3xl font-bold">Reports & Analytics</h1>
         <DateRangePicker
           date={dateRange}
-          onDateChange={setDateRange}
+          onDateChange={handleDateChange}
         />
       </div>
 
