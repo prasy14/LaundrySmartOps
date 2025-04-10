@@ -268,11 +268,19 @@ export class DatabaseStorage implements IStorage {
 
   // Alert methods
   async getAlerts(machineId?: number): Promise<Alert[]> {
-    let query = db.select().from(alerts);
-    if (machineId) {
-      query = query.where(eq(alerts.machineId, machineId));
+    console.log('[storage] Getting alerts', machineId ? `for machine ${machineId}` : 'for all machines');
+    try {
+      let query = db.select().from(alerts);
+      if (machineId) {
+        query = query.where(eq(alerts.machineId, machineId));
+      }
+      const result = await query;
+      console.log(`[storage] Retrieved ${result.length} alerts`);
+      return result;
+    } catch (error) {
+      console.error('[storage] Error getting alerts:', error);
+      throw error;
     }
-    return await query;
   }
 
   async createAlert(insertAlert: InsertAlert): Promise<Alert> {
@@ -346,17 +354,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAlertsByMachines(machineIds: number[]): Promise<Alert[]> {
-    return await db
-      .select()
-      .from(alerts)
-      .where(inArray(alerts.machineId, machineIds));
+    console.log(`[storage] Getting alerts for machines: [${machineIds.join(', ')}]`);
+    try {
+      const result = await db
+        .select()
+        .from(alerts)
+        .where(inArray(alerts.machineId, machineIds));
+      console.log(`[storage] Retrieved ${result.length} alerts for the specified machines`);
+      return result;
+    } catch (error) {
+      console.error('[storage] Error getting alerts by machines:', error);
+      throw error;
+    }
   }
 
   async getAlertsByServiceType(serviceType: string): Promise<Alert[]> {
-    return await db
-      .select()
-      .from(alerts)
-      .where(eq(alerts.serviceType, serviceType));
+    console.log(`[storage] Getting alerts for service type: ${serviceType}`);
+    try {
+      const result = await db
+        .select()
+        .from(alerts)
+        .where(eq(alerts.serviceType, serviceType));
+      console.log(`[storage] Retrieved ${result.length} alerts for service type ${serviceType}`);
+      return result;
+    } catch (error) {
+      console.error(`[storage] Error getting alerts for service type ${serviceType}:`, error);
+      throw error;
+    }
   }
 }
 

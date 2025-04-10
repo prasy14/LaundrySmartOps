@@ -4,25 +4,58 @@ import { Alert, Machine } from "@shared/schema";
 export class AnalyticsService {
   // Get all alerts with optional machine filter
   async getAlerts(machineId?: number): Promise<Alert[]> {
-    return await storage.getAlerts(machineId);
+    console.log('[analytics] Getting alerts', machineId ? `for machine ${machineId}` : 'for all machines');
+    try {
+      const alerts = await storage.getAlerts(machineId);
+      console.log(`[analytics] Retrieved ${alerts.length} alerts`);
+      return alerts;
+    } catch (error) {
+      console.error('[analytics] Error getting alerts:', error);
+      throw error;
+    }
   }
   
   // Get service alerts by location
   async getAlertsByLocation(locationId: number): Promise<Alert[]> {
-    const machines = await storage.getMachinesByLocation(locationId);
-    const machineIds = machines.map(m => m.id);
-    return await storage.getAlertsByMachines(machineIds);
+    console.log(`[analytics] Getting alerts for location ${locationId}`);
+    try {
+      const machines = await storage.getMachinesByLocation(locationId);
+      console.log(`[analytics] Found ${machines.length} machines for location ${locationId}`);
+      const machineIds = machines.map(m => m.id);
+      const alerts = await storage.getAlertsByMachines(machineIds);
+      console.log(`[analytics] Retrieved ${alerts.length} alerts for location ${locationId}`);
+      return alerts;
+    } catch (error) {
+      console.error(`[analytics] Error getting alerts for location ${locationId}:`, error);
+      throw error;
+    }
   }
 
   // Get unresolved alerts by location
   async getUnresolvedAlertsByLocation(locationId: number): Promise<Alert[]> {
-    const alerts = await this.getAlertsByLocation(locationId);
-    return alerts.filter(alert => alert.status !== 'resolved' && alert.status !== 'cleared');
+    console.log(`[analytics] Getting unresolved alerts for location ${locationId}`);
+    try {
+      const alerts = await this.getAlertsByLocation(locationId);
+      const unresolvedAlerts = alerts.filter(alert => alert.status !== 'resolved' && alert.status !== 'cleared');
+      console.log(`[analytics] Found ${unresolvedAlerts.length} unresolved alerts out of ${alerts.length} total`);
+      return unresolvedAlerts;
+    } catch (error) {
+      console.error(`[analytics] Error getting unresolved alerts for location ${locationId}:`, error);
+      throw error;
+    }
   }
 
   // Get alerts by service type
   async getAlertsByServiceType(serviceType: string): Promise<Alert[]> {
-    return await storage.getAlertsByServiceType(serviceType);
+    console.log(`[analytics] Getting alerts for service type ${serviceType}`);
+    try {
+      const alerts = await storage.getAlertsByServiceType(serviceType);
+      console.log(`[analytics] Retrieved ${alerts.length} alerts for service type ${serviceType}`);
+      return alerts;
+    } catch (error) {
+      console.error(`[analytics] Error getting alerts for service type ${serviceType}:`, error);
+      throw error;
+    }
   }
 
   // Calculate response time metrics
