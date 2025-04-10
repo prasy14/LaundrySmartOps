@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, WashingMachine, MapPin, FileBarChart, Settings, History, 
   AlertTriangle, BarChart2, LineChart, BrainCircuit, Users, FileText, 
-  TrendingUp, BarChart, Zap, Building
+  TrendingUp, BarChart, Building
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,6 @@ const navigationCategories = [
       { name: 'Custom Reports', href: '/custom-reports', icon: FileText },
       { name: 'Usage Patterns', href: '/usage-patterns', icon: TrendingUp },
       { name: 'Machine Comparison', href: '/machine-comparison', icon: BarChart },
-      { name: 'Energy Optimizer', href: '/energy', icon: Zap },
     ]
   },
   {
