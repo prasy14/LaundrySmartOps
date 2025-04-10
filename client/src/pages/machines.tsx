@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format, isAfter, isBefore, addMonths, differenceInDays } from "date-fns";
 import type { Machine, MachineError } from "@shared/schema";
 import {
@@ -14,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   AlertTriangle, 
   CheckCircle2, 
@@ -23,7 +25,10 @@ import {
   ShieldAlert, 
   Timer, 
   Wrench,
-  LineChart
+  LineChart,
+  ChevronDown,
+  ChevronUp,
+  Minimize2
 } from "lucide-react";
 import MachineLifecycleChart from "@/components/visualizations/MachineLifecycleChart";
 import MachineCycleAnalysis from "@/components/dashboard/MachineCycleAnalysis";
@@ -32,6 +37,7 @@ export default function Machines() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const [detailsExpanded, setDetailsExpanded] = useState<boolean>(false);
 
   const { data: machinesData, isLoading } = useQuery<{ machines: Machine[] }>({
     queryKey: ['/api/machines'],
@@ -192,6 +198,12 @@ export default function Machines() {
         {/* Machine List */}
         <div className="lg:col-span-3">
           <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Machine Inventory</CardTitle>
+              <CardDescription>
+                Click on a machine to view detailed information
+              </CardDescription>
+            </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -272,244 +284,259 @@ export default function Machines() {
               <Card>
                 <CardHeader className="flex-row items-center justify-between pb-2">
                   <div>
-                    <CardTitle className="text-xl">{selectedMachine.name}</CardTitle>
+                    <CardTitle className="text-xl">Machine Details: {selectedMachine.name}</CardTitle>
                     <CardDescription>
                       {getLocationName(selectedMachine.locationId)} • {selectedMachine.serialNumber || 'S/N: Unknown'}
                     </CardDescription>
                   </div>
-                  <Badge variant={getStatusDisplay(selectedMachine) === 'online' ? 'success' : 'destructive'}>
-                    {getStatusDisplay(selectedMachine)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getStatusDisplay(selectedMachine) === 'online' ? 'success' : 'destructive'}>
+                      {getStatusDisplay(selectedMachine)}
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setDetailsExpanded(!detailsExpanded)}
+                      className="ml-2"
+                    >
+                      {detailsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {detailsExpanded ? "Hide Details" : "Show Details"}
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                    <TabsList>
-                      <TabsTrigger value="overview">
-                        <Info className="h-4 w-4 mr-2" />
-                        Overview
-                      </TabsTrigger>
-                      <TabsTrigger value="performance">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Performance
-                      </TabsTrigger>
-                      <TabsTrigger value="lifecycle">
-                        <LineChart className="h-4 w-4 mr-2" />
-                        Lifecycle
-                      </TabsTrigger>
-                      <TabsTrigger value="maintenance">
-                        <Wrench className="h-4 w-4 mr-2" />
-                        Maintenance
-                      </TabsTrigger>
-                      <TabsTrigger value="errors">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Errors
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="overview" className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Machine Details */}
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Machine Details</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <dl className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Model:</dt>
-                                <dd>{selectedMachine.modelNumber || 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Manufacturer:</dt>
-                                <dd>{selectedMachine.manufacturer || 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Serial Number:</dt>
-                                <dd>{selectedMachine.serialNumber || 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Control ID:</dt>
-                                <dd>{selectedMachine.controlId || 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Machine Number:</dt>
-                                <dd>{selectedMachine.machineNumber || 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Network Node:</dt>
-                                <dd>{selectedMachine.networkNode || 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Last Sync:</dt>
-                                <dd>{selectedMachine.lastSyncAt ? format(new Date(selectedMachine.lastSyncAt), 'MMM d, yyyy HH:mm') : 'Never'}</dd>
-                              </div>
-                            </dl>
-                          </CardContent>
-                        </Card>
+                <Collapsible open={detailsExpanded} onOpenChange={setDetailsExpanded}>
+                  <CollapsibleContent>
+                    <CardContent>
+                      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                        <TabsList>
+                          <TabsTrigger value="overview">
+                            <Info className="h-4 w-4 mr-2" />
+                            Overview
+                          </TabsTrigger>
+                          <TabsTrigger value="performance">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Performance
+                          </TabsTrigger>
+                          <TabsTrigger value="lifecycle">
+                            <LineChart className="h-4 w-4 mr-2" />
+                            Lifecycle
+                          </TabsTrigger>
+                          <TabsTrigger value="maintenance">
+                            <Wrench className="h-4 w-4 mr-2" />
+                            Maintenance
+                          </TabsTrigger>
+                          <TabsTrigger value="errors">
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Errors
+                          </TabsTrigger>
+                        </TabsList>
                         
-                        {/* Warranty Information */}
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Warranty Information</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className="text-center">
-                                {(() => {
-                                  const status = getWarrantyStatus(selectedMachine);
-                                  return (
-                                    <div className="flex flex-col items-center">
-                                      {status.status === 'active' && <CheckCircle2 className="w-10 h-10 text-green-500 mb-2" />}
-                                      {status.status === 'expiring-soon' && <Clock className="w-10 h-10 text-amber-500 mb-2" />}
-                                      {status.status === 'expired' && <ShieldAlert className="w-10 h-10 text-red-500 mb-2" />}
-                                      {status.status === 'unknown' && <Info className="w-10 h-10 text-slate-400 mb-2" />}
-                                      <span className="text-lg font-semibold">{status.label}</span>
-                                      {selectedMachine.warrantyExpiryDate && (
-                                        <span className="text-sm text-muted-foreground">
-                                          {getDaysUntilExpiry(selectedMachine)}
-                                        </span>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                              
-                              <dl className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <dt className="text-muted-foreground">Install Date:</dt>
-                                  <dd>{selectedMachine.installDate ? format(new Date(selectedMachine.installDate), 'MMM d, yyyy') : 'N/A'}</dd>
-                                </div>
-                                <div className="flex justify-between">
-                                  <dt className="text-muted-foreground">Warranty Expiry:</dt>
-                                  <dd>{selectedMachine.warrantyExpiryDate ? format(new Date(selectedMachine.warrantyExpiryDate), 'MMM d, yyyy') : 'N/A'}</dd>
-                                </div>
-                                <div className="flex justify-between">
-                                  <dt className="text-muted-foreground">Life Cycle Status:</dt>
-                                  <dd>{selectedMachine.lifeCycleStatus || 'N/A'}</dd>
-                                </div>
-                              </dl>
-                            </div>
-                          </CardContent>
-                        </Card>
-                        
-                        {/* Current Status */}
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Current Status</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <dl className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Status:</dt>
-                                <dd>
-                                  <Badge variant={selectedMachine.status?.statusId === 'online' ? 'success' : 'destructive'}>
-                                    {getStatusDisplay(selectedMachine)}
-                                  </Badge>
-                                </dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Link Quality:</dt>
-                                <dd>{getLinkQuality(selectedMachine) !== null ? `${getLinkQuality(selectedMachine)}%` : 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Current Cycle:</dt>
-                                <dd>{selectedMachine.status?.selectedCycle?.name || 'None'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Remaining Time:</dt>
-                                <dd>{getRemainingTime(selectedMachine) || 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Door:</dt>
-                                <dd>{selectedMachine.status?.isDoorOpen ? 'Open' : 'Closed'}</dd>
-                              </div>
-                            </dl>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="performance">
-                      <div className="grid grid-cols-1 gap-4">
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Performance Metrics</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            {getPerformanceMetricsDisplay(selectedMachine)}
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="lifecycle">
-                      <MachineLifecycleChart machine={selectedMachine} />
-                    </TabsContent>
-                    
-                    <TabsContent value="maintenance">
-                      <div className="grid grid-cols-1 gap-4">
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Maintenance History</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <dl className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Last Maintenance:</dt>
-                                <dd>{selectedMachine.lastMaintenanceDate ? format(new Date(selectedMachine.lastMaintenanceDate), 'MMM d, yyyy') : 'N/A'}</dd>
-                              </div>
-                              <div className="flex justify-between">
-                                <dt className="text-muted-foreground">Next Scheduled:</dt>
-                                <dd>{selectedMachine.nextMaintenanceDate ? format(new Date(selectedMachine.nextMaintenanceDate), 'MMM d, yyyy') : 'N/A'}</dd>
-                              </div>
-                            </dl>
-                            
-                            <div className="mt-4 text-center text-muted-foreground">
-                              <Wrench className="h-8 w-8 mx-auto mb-2" />
-                              <p>Maintenance records will be displayed here</p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="errors">
-                      <div className="grid grid-cols-1 gap-4">
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Recent Errors</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            {errorsData?.errors && errorsData.errors.length > 0 ? (
-                              <div className="space-y-4">
-                                {errorsData.errors.map((error) => (
-                                  <div 
-                                    key={error.id} 
-                                    className="flex items-start p-3 border border-red-200 rounded-md bg-red-50"
-                                  >
-                                    <AlertTriangle className="w-5 h-5 text-red-600 mr-3 mt-0.5" />
-                                    <div>
-                                      <p className="font-medium">{error.errorName}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        Code: {error.errorCode || 'N/A'} • Type: {error.errorType} • 
-                                        {format(new Date(error.timestamp), 'MMM d, yyyy HH:mm')}
-                                      </p>
-                                    </div>
+                        <TabsContent value="overview" className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Machine Details */}
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Machine Details</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <dl className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Model:</dt>
+                                    <dd>{selectedMachine.modelNumber || 'N/A'}</dd>
                                   </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center text-muted-foreground py-8">
-                                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                                <p>No errors recorded for this machine</p>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Manufacturer:</dt>
+                                    <dd>{selectedMachine.manufacturer || 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Serial Number:</dt>
+                                    <dd>{selectedMachine.serialNumber || 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Control ID:</dt>
+                                    <dd>{selectedMachine.controlId || 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Machine Number:</dt>
+                                    <dd>{selectedMachine.machineNumber || 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Network Node:</dt>
+                                    <dd>{selectedMachine.networkNode || 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Last Sync:</dt>
+                                    <dd>{selectedMachine.lastSyncAt ? format(new Date(selectedMachine.lastSyncAt), 'MMM d, yyyy HH:mm') : 'Never'}</dd>
+                                  </div>
+                                </dl>
+                              </CardContent>
+                            </Card>
+                            
+                            {/* Warranty Information */}
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Warranty Information</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="space-y-4">
+                                  <div className="text-center">
+                                    {(() => {
+                                      const status = getWarrantyStatus(selectedMachine);
+                                      return (
+                                        <div className="flex flex-col items-center">
+                                          {status.status === 'active' && <CheckCircle2 className="w-10 h-10 text-green-500 mb-2" />}
+                                          {status.status === 'expiring-soon' && <Clock className="w-10 h-10 text-amber-500 mb-2" />}
+                                          {status.status === 'expired' && <ShieldAlert className="w-10 h-10 text-red-500 mb-2" />}
+                                          {status.status === 'unknown' && <Info className="w-10 h-10 text-slate-400 mb-2" />}
+                                          <span className="text-lg font-semibold">{status.label}</span>
+                                          {selectedMachine.warrantyExpiryDate && (
+                                            <span className="text-sm text-muted-foreground">
+                                              {getDaysUntilExpiry(selectedMachine)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                  
+                                  <dl className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                      <dt className="text-muted-foreground">Install Date:</dt>
+                                      <dd>{selectedMachine.installDate ? format(new Date(selectedMachine.installDate), 'MMM d, yyyy') : 'N/A'}</dd>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <dt className="text-muted-foreground">Warranty Expiry:</dt>
+                                      <dd>{selectedMachine.warrantyExpiryDate ? format(new Date(selectedMachine.warrantyExpiryDate), 'MMM d, yyyy') : 'N/A'}</dd>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <dt className="text-muted-foreground">Life Cycle Status:</dt>
+                                      <dd>{selectedMachine.lifeCycleStatus || 'N/A'}</dd>
+                                    </div>
+                                  </dl>
+                                </div>
+                              </CardContent>
+                            </Card>
+                            
+                            {/* Current Status */}
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Current Status</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <dl className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Status:</dt>
+                                    <dd>
+                                      <Badge variant={selectedMachine.status?.statusId === 'online' ? 'success' : 'destructive'}>
+                                        {getStatusDisplay(selectedMachine)}
+                                      </Badge>
+                                    </dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Link Quality:</dt>
+                                    <dd>{getLinkQuality(selectedMachine) !== null ? `${getLinkQuality(selectedMachine)}%` : 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Current Cycle:</dt>
+                                    <dd>{selectedMachine.status?.selectedCycle?.name || 'None'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Remaining Time:</dt>
+                                    <dd>{getRemainingTime(selectedMachine) || 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Door:</dt>
+                                    <dd>{selectedMachine.status?.isDoorOpen ? 'Open' : 'Closed'}</dd>
+                                  </div>
+                                </dl>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="performance">
+                          <div className="grid grid-cols-1 gap-4">
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Performance Metrics</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {getPerformanceMetricsDisplay(selectedMachine)}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="lifecycle">
+                          <MachineLifecycleChart machine={selectedMachine} />
+                        </TabsContent>
+                        
+                        <TabsContent value="maintenance">
+                          <div className="grid grid-cols-1 gap-4">
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Maintenance History</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <dl className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Last Maintenance:</dt>
+                                    <dd>{selectedMachine.lastMaintenanceDate ? format(new Date(selectedMachine.lastMaintenanceDate), 'MMM d, yyyy') : 'N/A'}</dd>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Next Scheduled:</dt>
+                                    <dd>{selectedMachine.nextMaintenanceDate ? format(new Date(selectedMachine.nextMaintenanceDate), 'MMM d, yyyy') : 'N/A'}</dd>
+                                  </div>
+                                </dl>
+                                
+                                <div className="mt-4 text-center text-muted-foreground">
+                                  <Wrench className="h-8 w-8 mx-auto mb-2" />
+                                  <p>Maintenance records will be displayed here</p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="errors">
+                          <div className="grid grid-cols-1 gap-4">
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Recent Errors</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {errorsData?.errors && errorsData.errors.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {errorsData.errors.map((error) => (
+                                      <div 
+                                        key={error.id} 
+                                        className="flex items-start p-3 border border-red-200 rounded-md bg-red-50"
+                                      >
+                                        <AlertTriangle className="w-5 h-5 text-red-600 mr-3 mt-0.5" />
+                                        <div>
+                                          <p className="font-medium">{error.errorName}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                            Code: {error.errorCode || 'N/A'} • Type: {error.errorType} • 
+                                            {format(new Date(error.timestamp), 'MMM d, yyyy HH:mm')}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center text-muted-foreground py-8">
+                                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                                    <p>No errors recorded for this machine</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
             </div>
           </>
