@@ -26,6 +26,7 @@ import {
   LineChart
 } from "lucide-react";
 import MachineLifecycleChart from "@/components/visualizations/MachineLifecycleChart";
+import MachineCycleAnalysis from "@/components/dashboard/MachineCycleAnalysis";
 
 export default function Machines() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
@@ -180,6 +181,11 @@ export default function Machines() {
             ))}
           </SelectContent>
         </Select>
+      </div>
+      
+      {/* Machine Cycle Analysis Section */}
+      <div className="lg:col-span-3 mb-4">
+        <MachineCycleAnalysis />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
