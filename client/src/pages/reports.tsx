@@ -161,8 +161,43 @@ export default function Reports() {
           )}
 
           {/* Lease Manager Tabs */}
-          {hasPermission(['lease_manager', 'admin']) && (
+          {hasPermission(['lease_manager', 'admin', 'senior_executive']) && (
             <TabsTrigger value="usage">Usage Trends</TabsTrigger>
+          )}
+          
+          {/* Sustainability Officer Tabs */}
+          {hasPermission(['sustainability_officer', 'admin']) && (
+            <TabsTrigger value="sustainability">Sustainability</TabsTrigger>
+          )}
+          
+          {/* Service Manager Tabs */}
+          {hasPermission(['service_manager', 'admin']) && (
+            <TabsTrigger value="service-alerts">Service Map</TabsTrigger>
+          )}
+          
+          {/* Compliance Officer Tabs */}
+          {hasPermission(['compliance_officer', 'admin']) && (
+            <TabsTrigger value="compliance">SLA Compliance</TabsTrigger>
+          )}
+          
+          {/* Data Analyst Tabs */}
+          {hasPermission(['data_analyst', 'admin', 'business_analyst']) && (
+            <TabsTrigger value="exports">Data Exports</TabsTrigger>
+          )}
+
+          {/* IT Manager Tabs */}
+          {hasPermission(['it_manager', 'admin']) && (
+            <TabsTrigger value="api-usage">API Usage</TabsTrigger>
+          )}
+
+          {/* Executive Tabs */}
+          {hasPermission(['executive', 'senior_executive', 'admin']) && (
+            <TabsTrigger value="executive">Executive KPIs</TabsTrigger>
+          )}
+          
+          {/* Property Manager Tabs */}
+          {hasPermission(['property_manager', 'admin']) && (
+            <TabsTrigger value="property">Property Reports</TabsTrigger>
           )}
         </TabsList>
 
@@ -471,6 +506,470 @@ export default function Reports() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+        {/* Sustainability Tab */}
+        <TabsContent value="sustainability">
+          <div className="space-y-6">
+            <Card className="w-full">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Sustainability Metrics by Location</CardTitle>
+                  <div className="flex items-center gap-4">
+                    <Select
+                      value={selectedLocation}
+                      onValueChange={setSelectedLocation}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Locations</SelectItem>
+                        {locationsData?.locations.map((location) => (
+                          <SelectItem key={location.id} value={location.id.toString()}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {hasPermission(['data_analyst', 'admin']) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => exportToCSV([], 'sustainability-metrics')}
+                      >
+                        <FileDown className="w-4 h-4 mr-2" />
+                        Export
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  {/* Import the ConsumptionChart component */}
+                  <div className="w-full">
+                    <Card className="w-full h-80">
+                      <CardHeader>
+                        <CardTitle>Energy Consumption (kWh)</CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-64">
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-muted-foreground">Loading chart data...</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div className="w-full">
+                    <Card className="w-full h-80">
+                      <CardHeader>
+                        <CardTitle>Water Consumption (gallons)</CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-64">
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-muted-foreground">Loading chart data...</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Energy (kWh)</TableHead>
+                      <TableHead>Water (gallons)</TableHead>
+                      <TableHead>Carbon Footprint</TableHead>
+                      <TableHead>Cycle Count</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No sustainability data available
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Service Map Tab */}
+        <TabsContent value="service-alerts">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Service Alerts by Location</CardTitle>
+                  <div className="flex items-center gap-4">
+                    <Select
+                      value={selectedLocation}
+                      onValueChange={setSelectedLocation}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Locations</SelectItem>
+                        {locationsData?.locations.map((location) => (
+                          <SelectItem key={location.id} value={location.id.toString()}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full mb-6">
+                  <Card className="w-full h-80">
+                    <CardHeader>
+                      <CardTitle>Service Alert Heatmap</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-64">
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Loading heatmap data...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Alert Count</TableHead>
+                      <TableHead>Unresolved</TableHead>
+                      <TableHead>Oldest Alert</TableHead>
+                      <TableHead>Avg Response Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No service alert data available
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* SLA Compliance Tab */}
+        <TabsContent value="compliance">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>SLA Compliance</CardTitle>
+                  <div className="flex items-center gap-4">
+                    <Select
+                      value={selectedLocation}
+                      onValueChange={setSelectedLocation}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Locations</SelectItem>
+                        {locationsData?.locations.map((location) => (
+                          <SelectItem key={location.id} value={location.id.toString()}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full h-[500px] mb-6">
+                  <Card className="w-full h-full">
+                    <CardHeader>
+                      <CardTitle>SLA Compliance by Machine Group</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[400px]">
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Loading SLA compliance data...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        {/* Data Exports Tab */}
+        <TabsContent value="exports">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Export Tools</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Machine Performance Data</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex flex-col space-y-1.5">
+                          <Select
+                            value={selectedLocation}
+                            onValueChange={setSelectedLocation}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select Location" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Locations</SelectItem>
+                              {locationsData?.locations.map((location) => (
+                                <SelectItem key={location.id} value={location.id.toString()}>
+                                  {location.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button className="w-full" onClick={() => exportToCSV([], 'machine-performance')}>
+                          <FileDown className="w-4 h-4 mr-2" />
+                          Export Performance Data
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Service Alert History</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex flex-col space-y-1.5">
+                          <DateRangePicker
+                            date={dateRange}
+                            onDateChange={setDateRange}
+                          />
+                        </div>
+                        <Button className="w-full" onClick={() => exportToCSV([], 'service-alert-history')}>
+                          <FileDown className="w-4 h-4 mr-2" />
+                          Export Alert History
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Sustainability Metrics</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex flex-col space-y-1.5">
+                          <Select
+                            value={selectedLocation}
+                            onValueChange={setSelectedLocation}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select Location" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Locations</SelectItem>
+                              {locationsData?.locations.map((location) => (
+                                <SelectItem key={location.id} value={location.id.toString()}>
+                                  {location.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button className="w-full" onClick={() => exportToCSV([], 'sustainability-metrics')}>
+                          <FileDown className="w-4 h-4 mr-2" />
+                          Export Sustainability Data
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        {/* Executive KPIs Tab */}
+        <TabsContent value="executive">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">System Uptime</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">99.2%</div>
+                  <p className="text-xs text-muted-foreground">+0.1% from last month</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Average Cycles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">1,284</div>
+                  <p className="text-xs text-muted-foreground">+5.2% from last month</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Response Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">28 min</div>
+                  <p className="text-xs text-muted-foreground">-2.3% from last month</p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="w-full h-80">
+                <CardHeader>
+                  <CardTitle>Regional Performance</CardTitle>
+                </CardHeader>
+                <CardContent className="h-64">
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Loading performance data...</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="w-full h-80">
+                <CardHeader>
+                  <CardTitle>Top 5 Locations</CardTitle>
+                </CardHeader>
+                <CardContent className="h-64">
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Loading location data...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+        
+        {/* Property Reports Tab */}
+        <TabsContent value="property">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Monthly Property Report</CardTitle>
+                  <Badge variant="outline">Email Report Scheduled</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <Card className="w-full h-80">
+                    <CardHeader>
+                      <CardTitle>Performance Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-64">
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Loading performance data...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="w-full h-80">
+                    <CardHeader>
+                      <CardTitle>Underperforming Locations</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-64">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Location</TableHead>
+                            <TableHead>Efficiency</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">
+                              No data available
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="flex justify-end mt-6">
+                  <Button>
+                    Schedule Monthly Email
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        {/* API Usage Tab */}
+        <TabsContent value="api-usage">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>API Usage Metrics</CardTitle>
+                  <div className="flex items-center gap-4">
+                    <DateRangePicker
+                      date={dateRange}
+                      onDateChange={setDateRange}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full h-80 mb-6">
+                  <Card className="w-full h-full">
+                    <CardHeader>
+                      <CardTitle>API Calls Over Time</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-64">
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Loading API usage data...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Endpoint</TableHead>
+                      <TableHead>Calls</TableHead>
+                      <TableHead>Avg Response Time</TableHead>
+                      <TableHead>Error Rate</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No API usage data available
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

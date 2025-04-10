@@ -8,7 +8,15 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role", { 
-    enum: ['admin', 'manager', 'operator', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst'] 
+    enum: [
+      'admin', 'manager', 'operator', 
+      'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst',
+      'sustainability_officer', 'property_manager', 'service_manager', 
+      'compliance_officer', 'facilities_manager', 'executive', 
+      'business_analyst', 'it_manager', 'customer_service_lead', 
+      'maintenance_planner', 'service_lead', 'product_dev_analyst', 
+      'senior_executive'
+    ] 
   }).notNull(),
   name: text("name").notNull(),
   email: text("email"),
@@ -28,7 +36,15 @@ export const insertUserSchema = createInsertSchema(users)
     locationId: true,
   })
   .extend({
-    role: z.enum(['admin', 'manager', 'operator', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']),
+    role: z.enum([
+      'admin', 'manager', 'operator', 
+      'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst',
+      'sustainability_officer', 'property_manager', 'service_manager', 
+      'compliance_officer', 'facilities_manager', 'executive', 
+      'business_analyst', 'it_manager', 'customer_service_lead', 
+      'maintenance_planner', 'service_lead', 'product_dev_analyst', 
+      'senior_executive'
+    ]),
     email: z.string().email().optional(),
     locationId: z.number().optional(),
   });
@@ -380,3 +396,31 @@ export type CycleStep = typeof cycleSteps.$inferSelect;
 export type InsertCycleStep = z.infer<typeof insertCycleStepSchema>;
 export type MachineCycleStep = typeof machineCycleSteps.$inferSelect;
 export type InsertMachineCycleStep = z.infer<typeof insertMachineCycleStepSchema>;
+
+// Sustainability metrics schema
+export const sustainabilityMetrics = pgTable("sustainability_metrics", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id),
+  locationId: integer("location_id").references(() => locations.id),
+  date: timestamp("date").notNull(),
+  energyConsumption: numeric("energy_consumption"), // in kWh
+  waterConsumption: numeric("water_consumption"), // in gallons
+  carbonFootprint: numeric("carbon_footprint"), // in kg CO2e
+  cycleCount: integer("cycle_count"),
+  operatingHours: numeric("operating_hours"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSustainabilityMetricsSchema = createInsertSchema(sustainabilityMetrics).pick({
+  machineId: true,
+  locationId: true,
+  date: true,
+  energyConsumption: true,
+  waterConsumption: true,
+  carbonFootprint: true,
+  cycleCount: true,
+  operatingHours: true,
+});
+
+export type SustainabilityMetrics = typeof sustainabilityMetrics.$inferSelect;
+export type InsertSustainabilityMetrics = z.infer<typeof insertSustainabilityMetricsSchema>;

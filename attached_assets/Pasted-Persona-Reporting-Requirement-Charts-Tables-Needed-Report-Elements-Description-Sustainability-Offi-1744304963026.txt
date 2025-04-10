@@ -1,0 +1,33 @@
+Persona	Reporting Requirement	Charts/Tables Needed	Report Elements / Description
+Sustainability Officer	Generate water and energy consumption reports by location	2 charts, 2 tables	- Line or bar chart for energy/water usage over time
+- Table for daily/weekly/monthly consumption by location
+Property Manager	Receive monthly maintenance & sustainability reports via email	1 summary chart, 1 email-friendly table	- Email report with performance summary
+- Embedded chart showing top 5 underperforming locations
+Service Manager	Track unresolved service alerts by location	1 map chart, 1 table	- Heatmap of unresolved alerts by location
+- Drill-down table showing alert age, status, and team notes
+System Analyst	Analyze error trends to predict maintenance	2 trend charts, 1 anomaly table	- Time series of error types
+- Predictive trend line
+- Table with top 5 recurring errors
+Compliance Officer	Review machine uptime to ensure SLA	2 donut/bar charts, 1 SLA compliance table	- Uptime % per machine group
+- Table of machines below SLA threshold
+Facilities Manager	Monitor machine availability by day/time	2 heatmaps, 1 table	- Daily/weekly heatmap of availability
+- Table of downtime intervals per machine
+Executive	View KPI summary dashboards	3 KPI cards, 3 charts	- KPIs: Uptime, Avg. Cycles, Response Time
+- Comparison charts by region
+Business Analyst	Export data for custom reporting	Export tools, 0 charts	- CSV/Excel download of raw logs
+- Filters for date, location, category
+IT Manager	Track API consumption and prevent overload	1 trend chart, 1 alert table	- API usage over time
+- Table of endpoints with high traffic
+Customer Service Lead	Generate user-specific service histories	1 user filter table	- Table of service history by customer ID
+- Filters for time period, issue type
+Maintenance Planner	Automated parts usage reporting	1 usage trend chart, 1 reorder threshold table	- Bar chart of top-used parts
+- Inventory alerts
+Service Lead	View machine model performance metrics	1 comparison chart, 1 model ranking table	- Chart comparing failure rates across models
+- Table ranking machines by reliability
+Product Dev Analyst	Review service request patterns	2 trend charts, 1 keyword/tag table	- Requests over time
+- Table of most common issue tags or categories
+Data Analyst	Analyze long-term machine & maintenance history	3 trend charts, 2 export tables	- Failure trends by month/year
+- Time between failures
+- Raw data export options
+Senior Executive	Compare performance across leases	2 bar charts, 1 ranking table	- Lease comparison chart
+- Top/bottom 5 locations table
