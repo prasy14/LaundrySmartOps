@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth";
 import syncRoutes from "./routes/sync";
 import reportsRoutes from "./routes/reports";
 import alertsRoutes from "./routes/alerts";
+import reportEmailRoutes from "./routes/reports-email";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 
 declare module 'express-session' {

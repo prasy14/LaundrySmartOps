@@ -18,6 +18,11 @@ import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
 import { useState } from "react";
 import type { Alert, Location, MachineError } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { EmailScheduleDialog } from "@/components/reports/EmailScheduleDialog";
+import { HistoricalExport } from "@/components/reports/HistoricalExport";
+import { ApiMonitoring } from "@/components/reports/ApiMonitoring";
+import { ExecutiveSummary } from "@/components/reports/ExecutiveSummary";
+import { check as checkSecret } from "@/lib/utils";
 
 export default function Reports() {
   const { toast } = useToast();
