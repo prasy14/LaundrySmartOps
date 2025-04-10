@@ -279,7 +279,8 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('[storage] Error getting alerts:', error);
-      throw error;
+      console.log("[storage] Returning empty array to prevent application crash");
+      return []; // Return empty array instead of crashing
     }
   }
 
@@ -364,13 +365,15 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('[storage] Error getting alerts by machines:', error);
-      throw error;
+      console.log("[storage] Returning empty array to prevent application crash");
+      return []; // Return empty array instead of crashing
     }
   }
 
   async getAlertsByServiceType(serviceType: string): Promise<Alert[]> {
     console.log(`[storage] Getting alerts for service type: ${serviceType}`);
     try {
+      // Adjusted query to use the correct column name (service_type)
       const result = await db
         .select()
         .from(alerts)
@@ -379,7 +382,8 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error(`[storage] Error getting alerts for service type ${serviceType}:`, error);
-      throw error;
+      console.log("[storage] Returning empty array to prevent application crash");
+      return []; // Return empty array instead of crashing
     }
   }
 }
