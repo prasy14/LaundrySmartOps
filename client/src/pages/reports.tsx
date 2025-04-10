@@ -774,7 +774,7 @@ export default function Reports() {
                         <div className="flex flex-col space-y-1.5">
                           <DateRangePicker
                             date={dateRange}
-                            onDateChange={setDateRange}
+                            onDateChange={handleDateChange}
                           />
                         </div>
                         <Button className="w-full" onClick={() => exportToCSV([], 'service-alert-history')}>
@@ -951,7 +951,7 @@ export default function Reports() {
                   <div className="flex items-center gap-4">
                     <DateRangePicker
                       date={dateRange}
-                      onDateChange={setDateRange}
+                      onDateChange={handleDateChange}
                     />
                   </div>
                 </div>
