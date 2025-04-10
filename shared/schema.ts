@@ -207,8 +207,9 @@ export const alerts = pgTable("alerts", {
   message: text("message").notNull(),
   status: text("status").notNull(), // active, in_progress, resolved, cleared
   createdAt: timestamp("created_at").notNull(),
+  clearedAt: timestamp("cleared_at"),
+  clearedBy: integer("cleared_by"),
   resolvedAt: timestamp("resolved_at"),
-  resolvedBy: integer("resolved_by"),
   assignedTo: integer("assigned_to"),
   priority: text("priority"), // high, medium, low
   category: text("category"), // maintenance, operational, system
