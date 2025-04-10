@@ -424,3 +424,68 @@ export const insertSustainabilityMetricsSchema = createInsertSchema(sustainabili
 
 export type SustainabilityMetrics = typeof sustainabilityMetrics.$inferSelect;
 export type InsertSustainabilityMetrics = z.infer<typeof insertSustainabilityMetricsSchema>;
+
+// Email Report scheduling schema
+export const emailRecipients = pgTable("email_recipients", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  name: text("name"),
+  role: text("role"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const reportSchedules = pgTable("report_schedules", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  reportType: text("report_type").notNull(), // sustainability, maintenance, performance, compliance, executive
+  frequency: text("frequency").notNull(), // daily, weekly, monthly
+  parameters: jsonb("parameters").$type<{
+    locationId?: number;
+    startDate?: string;
+    endDate?: string;
+    serviceType?: string;
+    format?: string;
+    [key: string]: any;
+  }>().default({}),
+  lastSentAt: timestamp("last_sent_at"),
+  nextSendAt: timestamp("next_send_at").notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const reportRecipients = pgTable("report_recipients", {
+  id: serial("id").primaryKey(),
+  reportScheduleId: integer("report_schedule_id").references(() => reportSchedules.id).notNull(),
+  recipientId: integer("recipient_id").references(() => emailRecipients.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertEmailRecipientSchema = createInsertSchema(emailRecipients).pick({
+  email: true,
+  name: true,
+  role: true,
+  active: true,
+});
+
+export const insertReportScheduleSchema = createInsertSchema(reportSchedules).pick({
+  userId: true,
+  reportType: true,
+  frequency: true,
+  parameters: true,
+  nextSendAt: true,
+  active: true,
+});
+
+export const insertReportRecipientSchema = createInsertSchema(reportRecipients).pick({
+  reportScheduleId: true,
+  recipientId: true,
+});
+
+export type EmailRecipient = typeof emailRecipients.$inferSelect;
+export type InsertEmailRecipient = z.infer<typeof insertEmailRecipientSchema>;
+export type ReportSchedule = typeof reportSchedules.$inferSelect;
+export type InsertReportSchedule = z.infer<typeof insertReportScheduleSchema>;
+export type ReportRecipient = typeof reportRecipients.$inferSelect;
+export type InsertReportRecipient = z.infer<typeof insertReportRecipientSchema>;
