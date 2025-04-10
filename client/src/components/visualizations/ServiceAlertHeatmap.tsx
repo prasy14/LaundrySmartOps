@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ResponsiveHeatMap } from "@nivo/heatmap";
+import { ResponsiveHeatMapCanvas } from "@nivo/heatmap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -23,8 +23,8 @@ export function ServiceAlertHeatmap({
   onLocationSelect
 }: ServiceAlertHeatmapProps) {
   // Format data for the heatmap
-  const { formattedData, alertTypes } = useMemo(() => {
-    if (!data.length) return { formattedData: [], alertTypes: [] };
+  const { heatmapData, alertTypes } = useMemo(() => {
+    if (!data.length) return { heatmapData: [], alertTypes: [] };
     
     // Get all possible alert types from the data
     const alertTypes = Array.from(
@@ -33,22 +33,22 @@ export function ServiceAlertHeatmap({
       )
     );
     
-    // Format for Nivo heatmap
-    const formattedData = data.map(location => {
-      const result: any = { 
+    // Format for Nivo heatmap - each location gets a row
+    const heatmapData = data.map(location => {
+      // Create a data point for each alert type
+      const dataPoints = alertTypes.map(type => ({
+        x: type,
+        y: location.counts[type] || 0,
+        locationId: location.locationId
+      }));
+      
+      return {
         id: location.location,
-        locationId: location.locationId,
+        data: dataPoints
       };
-      
-      // Add all alert types, defaulting to 0 if not present
-      alertTypes.forEach(type => {
-        result[type] = location.counts[type] || 0;
-      });
-      
-      return result;
     });
     
-    return { formattedData, alertTypes };
+    return { heatmapData, alertTypes };
   }, [data]);
 
   if (isLoading) {
@@ -64,7 +64,7 @@ export function ServiceAlertHeatmap({
     );
   }
 
-  if (!data.length || !alertTypes.length) {
+  if (!data.length) {
     return (
       <Card className="w-full h-80">
         <CardHeader>
@@ -83,12 +83,12 @@ export function ServiceAlertHeatmap({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="h-64">
-        <ResponsiveHeatMap
-          data={formattedData}
-          keys={alertTypes}
-          indexBy="id"
+        <ResponsiveHeatMapCanvas
+          data={heatmapData}
+          valueFormat=">-.2s"
           margin={{ top: 20, right: 60, bottom: 30, left: 100 }}
-          forceSquare={false}
+          xOuterPadding={0.2}
+          yOuterPadding={0.2}
           axisTop={null}
           axisRight={{
             tickSize: 5,
@@ -106,30 +106,34 @@ export function ServiceAlertHeatmap({
             legendPosition: 'middle',
             legendOffset: -80
           }}
-          cellOpacity={1}
-          cellBorderWidth={1}
-          cellBorderColor={{ from: 'color', modifiers: [['darker', 0.4]] }}
-          labelTextColor={{ from: 'color', modifiers: [['darker', 3]] }}
-          defs={[
-            {
-              id: 'lines',
-              type: 'patternLines',
-              background: 'inherit',
-              color: 'rgba(0, 0, 0, 0.1)',
-              rotation: -45,
-              lineWidth: 4,
-              spacing: 7
-            }
-          ]}
-          fill={[{ id: 'lines' }]}
-          animate={true}
-          hoverTarget="cell"
-          cellHoverOthersOpacity={0.25}
+          colors={{
+            type: 'sequential',
+            scheme: 'oranges'
+          }}
+          emptyColor="#f5f5f5"
+          enableLabels={true}
+          labelTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
+          
           onClick={(cell: any) => {
             if (onLocationSelect && cell.data && cell.data.locationId) {
               onLocationSelect(cell.data.locationId);
             }
           }}
+          tooltip={({ cell }) => (
+            <div
+              style={{
+                padding: '8px 12px',
+                background: 'white',
+                borderRadius: '4px',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.15)',
+                color: '#333'
+              }}
+            >
+              <strong>{cell.serieId}</strong>: {cell.data.x}
+              <br />
+              <strong>Count</strong>: {cell.data.y}
+            </div>
+          )}
         />
       </CardContent>
     </Card>

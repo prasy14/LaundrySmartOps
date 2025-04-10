@@ -98,7 +98,7 @@ export function SLAComplianceChart({
           <div className="h-64">
             <ResponsivePie
               data={pieData}
-              margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+              margin={{ top: 20, right: 20, bottom: 40, left: 20 }}
               innerRadius={0.5}
               padAngle={0.7}
               cornerRadius={3}
