@@ -62,69 +62,25 @@ export default function AnalyticsDashboard() {
     return data;
   };
 
-  // Query for machines data with enhanced error handling
+  // Basic API queries
   const { data: machinesData, isLoading: machinesLoading } = useQuery({
-    queryKey: ['/api/machines'],
-    retry: false,
-    enabled: true,
-    staleTime: 60000, // 1 minute
-    cacheTime: 300000, // 5 minutes
-    onError: (error: any) => {
-      console.error("Error loading machines:", error);
-      // Don't show toast to avoid overwhelming the user with errors
-    }
+    queryKey: ['/api/machines']
   });
 
-  // Query for locations data with enhanced error handling
   const { data: locationsData, isLoading: locationsLoading } = useQuery({
-    queryKey: ['/api/locations'],
-    retry: false,
-    enabled: true,
-    staleTime: 60000, // 1 minute
-    cacheTime: 300000, // 5 minutes
-    onError: (error: any) => {
-      console.error("Error loading locations:", error);
-      // Don't show toast to avoid overwhelming the user with errors
-    }
+    queryKey: ['/api/locations']
   });
 
-  // Query for performance metrics with enhanced error handling
   const { data: performanceData, isLoading: performanceLoading } = useQuery({
-    queryKey: ['/api/reports/performance-metrics'],
-    retry: false,
-    enabled: true,
-    staleTime: 60000, // 1 minute
-    cacheTime: 300000, // 5 minutes
-    onError: (error: any) => {
-      console.error("Error loading performance metrics:", error);
-      // Don't show toast to avoid overwhelming the user with errors
-    }
+    queryKey: ['/api/reports/performance-metrics']
   });
 
-  // Query for error trends with enhanced error handling
   const { data: errorTrendsData, isLoading: errorTrendsLoading } = useQuery({
-    queryKey: ['/api/reports/error-trends'],
-    retry: false,
-    enabled: true,
-    staleTime: 60000, // 1 minute
-    cacheTime: 300000, // 5 minutes
-    onError: (error: any) => {
-      console.error("Error loading error trends:", error);
-      // Don't show toast to avoid overwhelming the user with errors
-    }
+    queryKey: ['/api/reports/error-trends']
   });
 
-  // Query for performance metrics instead of service alerts to avoid database errors
   const { data: serviceMetricsData, isLoading: serviceAlertsLoading } = useQuery({
-    queryKey: ['/api/reports/performance-metrics'],
-    retry: false,
-    enabled: true,
-    staleTime: 60000, // 1 minute
-    cacheTime: 300000, // 5 minutes
-    onError: (error: any) => {
-      console.error("Service metrics error:", error);
-      // Don't show toast to avoid overwhelming the user with errors
-    }
+    queryKey: ['/api/reports/performance-metrics']
   });
 
   // Update locations and machine types when data is available
@@ -229,7 +185,7 @@ export default function AnalyticsDashboard() {
               machines={machinesData || []} 
               locations={locationsData || []}
               isLoading={machinesLoading || locationsLoading}
-              error={machinesError ? "Error loading machine status data" : ""}
+              error={""}
             />
             
             <MachineAvailabilityChart 
@@ -249,7 +205,6 @@ export default function AnalyticsDashboard() {
             <SLAComplianceChart 
               data={performanceData?.slaCompliance || []}
               isLoading={performanceLoading}
-              error={performanceError ? "Error loading SLA compliance data" : ""}
             />
           </div>
         </TabsContent>
@@ -266,7 +221,7 @@ export default function AnalyticsDashboard() {
             <ServiceAlertHeatmap 
               data={[]} // Using empty array instead of potentially undefined data 
               isLoading={false}
-              error={""}
+              title="Service Alert Distribution"
             />
           </div>
           
@@ -299,7 +254,7 @@ export default function AnalyticsDashboard() {
               machines={machinesData || []} 
               locations={locationsData || []}
               isLoading={machinesLoading || locationsLoading}
-              error={machinesError ? "Error loading machine status data" : ""}
+              error={""}
             />
           </div>
         </TabsContent>
