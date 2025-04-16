@@ -29,7 +29,7 @@ export function Header() {
           />
         </Link>
         <h2 className="text-xl font-semibold hidden md:block">
-          {data?.user.role === 'admin' ? 'Administrator Dashboard' : 'SmartOps Dashboard'}
+          {data?.user.role === 'admin' ? '' : 'SmartOps Dashboard'}
         </h2>
       </div>
       
