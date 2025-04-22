@@ -51,18 +51,33 @@ export default function Admin() {
   const { data: errorsData } = useQuery<{ errors: MachineError[] }>({
     queryKey: ['/api/machine-errors'],
   });
+  console.log("error Data:", errorsData?.errors);
 
-  const { data: cyclesData } = useQuery<{ cycles: MachineCycle[] }>({
-    queryKey: ['/api/machine-cycles'],
-  });
+//   const { data: cyclesData } = useQuery<{ cycles: MachineCycle[] }>({
+//   queryKey: ['/api/machine-cycles'],
+//   queryFn: async () => {
+//     const res = await fetch('/api/machine-cycles');
+//     if (!res.ok) throw new Error('Failed to fetch machine cycles');
+//     return res.json();
+//   },
+// });
+// console.log("Cycle Data:", cyclesData?.cycles);
+
+const { data: cyclesData } = useQuery<{ machineCycles: MachineCycle[] }>({
+  queryKey: ['/api/machine-cycles'],
+});
+console.log("Cycle Data:", cyclesData?.machineCycles);
+
+
 
   const { data: stepsData } = useQuery<{ steps: CycleStep[] }>({
     queryKey: ['/api/cycle-steps'],
   });
 
-  const { data: modifiersData } = useQuery<{ modifiers: CycleModifier[] }>({
+  const { data: modifiersData } = useQuery<{ cycleModifiers: CycleModifier[] }>({
     queryKey: ['/api/cycle-modifiers'],
   });
+  console.log("modifiers Data:", modifiersData?.cycleModifiers);
 
   const { data: syncInfo } = useQuery<SyncInfo>({
     queryKey: ['/api/admin/sync-info'],
@@ -364,37 +379,43 @@ export default function Admin() {
 
               {/* Machine Errors Tab */}
               <TabsContent value="errors">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Machine</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Error Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Timestamp</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {errorsData?.errors.map((error) => {
-                      const machine = machinesData?.machines.find(m => m.id === error.machineId);
-                      const location = locationsData?.locations.find(l => l.id === error.locationId);
-                      return (
-                        <TableRow key={error.id}>
-                          <TableCell className="font-medium">{machine?.name || 'Unknown'}</TableCell>
-                          <TableCell>{location?.name || 'Unknown'}</TableCell>
-                          <TableCell>{error.errorName}</TableCell>
-                          <TableCell>{error.errorType}</TableCell>
-                          <TableCell>{error.errorCode}</TableCell>
-                          <TableCell>
-                            {format(new Date(error.timestamp), 'MMM d, h:mm a')}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TabsContent>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Machine</TableHead>
+        <TableHead>Location</TableHead>
+        <TableHead>Error Name</TableHead>
+        <TableHead>Type</TableHead>
+        <TableHead>Code</TableHead>
+        <TableHead>Timestamp</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {errorsData?.errors?.length ? (
+        errorsData.errors.map((error) => {
+          const machine = machinesData?.machines.find(m => m.id === error.machineId);
+          const location = locationsData?.locations.find(l => l.id === error.locationId);
+          return (
+            <TableRow key={error.id}>
+              <TableCell className="font-medium">{machine?.name || 'Unknown'}</TableCell>
+              <TableCell>{location?.name || 'Unknown'}</TableCell>
+              <TableCell>{error.errorName}</TableCell>
+              <TableCell>{error.errorType}</TableCell>
+              <TableCell>{error.errorCode}</TableCell>
+              <TableCell>{format(new Date(error.timestamp), 'MMM d, h:mm a')}</TableCell>
+            </TableRow>
+          );
+        })
+      ) : (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center">
+            No errors found.
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+</TabsContent>
 
               {/* Machine Cycles Tab */}
               <TabsContent value="cycles">
@@ -407,14 +428,24 @@ export default function Admin() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cyclesData?.cycles.map((cycle) => (
-                      <TableRow key={cycle.id}>
-                        <TableCell className="font-medium">{cycle.name}</TableCell>
-                        <TableCell>{cycle.cycleType}</TableCell>
-                        <TableCell>{cycle.sortOrder || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
+                  {cyclesData?.machineCycles?.length ? (
+  cyclesData.machineCycles.map((cycle) => (
+    <TableRow key={cycle.id}>
+      <TableCell>{cycle.name}</TableCell>
+      <TableCell>{cycle.cycleType}</TableCell>
+      <TableCell>{cycle.sortOrder}</TableCell>
+    </TableRow>
+  ))
+) : (
+  <TableRow>
+    <TableCell colSpan={3} className="text-center">
+      No cycles available.
+    </TableCell>
+  </TableRow>
+)}
+</TableBody>
+
+
                 </Table>
               </TabsContent>
 
@@ -450,12 +481,20 @@ export default function Admin() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {modifiersData?.modifiers.map((modifier) => (
-                      <TableRow key={modifier.id}>
-                        <TableCell className="font-medium">{modifier.name}</TableCell>
-                        <TableCell>{modifier.sortOrder || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
+                  {modifiersData?.cycleModifiers?.length ? (
+  modifiersData.cycleModifiers.map((cycleModifiers) => (
+    <TableRow key={cycleModifiers.id}>
+      <TableCell className="font-medium">{cycleModifiers.name}</TableCell>
+      <TableCell className="font-medium">{cycleModifiers.sortOrder}</TableCell>
+    </TableRow>
+  ))
+) : (
+  <TableRow>
+    <TableCell colSpan={3} className="text-center">
+      No modifiers available.
+    </TableCell>
+  </TableRow>
+)}
                   </TableBody>
                 </Table>
               </TabsContent>

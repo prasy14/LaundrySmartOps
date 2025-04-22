@@ -53,6 +53,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ message: 'Failed to fetch machines' });
       }
     });
+    
+//machine-cycles
+    apiRouter.get('/machine-cycles', isOperatorOrAbove, async (req, res) => {
+      try {
+        const machineCycles = await storage.getMachineCycles();
+        res.json({ machineCycles });
+      } catch (error) {
+        log(`Error fetching machine cycles: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to fetch machine cycles' });
+      }
+    });
+
+    //cycle-modifiers
+    apiRouter.get('/cycle-modifiers', isOperatorOrAbove, async (req, res) => {
+      try {
+        const cycleModifiers = await storage.getCycleModifiers(); 
+        res.json({ cycleModifiers }); 
+      } catch (error) {
+        log(`Error fetching cycle modifiers: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api'); 
+        res.status(500).json({ message: 'Failed to fetch cycle modifiers' }); 
+      }
+    });
+    
+    // machine-errors
+// apiRouter.get('/machine-errors', isOperatorOrAbove, async (req, res) => {
+//   try {
+//     const machineErrors = await storage.getMachineErrorsWithDetails(); 
+//     res.json({ machineErrors }); 
+//   } catch (error) {
+//     log(`Error fetching machine errors: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api'); 
+//     res.status(500).json({ message: 'Failed to fetch machine errors' }); 
+//   }
+// });
+
 
     // Current user endpoint for authentication check
     apiRouter.get('/auth/me', async (req, res) => {
