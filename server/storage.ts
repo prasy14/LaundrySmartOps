@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { eq, desc, inArray } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers,machineErrors } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
@@ -10,8 +10,11 @@ import type {
   MachineProgram, InsertMachineProgram,
   MachineType, InsertMachineType,
   ProgramModifier, InsertProgramModifier,
-  CommandHistory, InsertCommandHistory
+  CommandHistory, InsertCommandHistory,
+  MachineCycle,
+  CycleModifier,MachineError 
 } from "@shared/schema";
+import { machine } from "os";
 
 export interface IStorage {
   // User operations
@@ -202,6 +205,32 @@ export class DatabaseStorage implements IStorage {
 
     const [modifier] = await db.insert(programModifiers).values(insertModifier).returning();
     return modifier;
+  }
+// async getMachineErrorsWithDetails(): Promise<any[]> {
+//   return await db
+//     .select({
+//       id: machineErrors.id,
+//       machineId: machineErrors.machineId,
+//       locationId: machineErrors.locationId,
+//       errorName: machineErrors.errorName,
+//       errorType: machineErrors.errorType,
+//       errorCode: machineErrors.errorCode,
+//       timestamp: machineErrors.timestamp,
+//       createdAt: machineErrors.createdAt,
+//       machineName: machines.name,
+//       locationName: locations.name,
+//     })
+//     .from(machineErrors)
+//     .leftJoin(machines, eq(machineErrors.machineId, machines.id))
+//     .leftJoin(locations, eq(machineErrors.locationId, locations.id));
+// }
+
+  async getMachineCycles(): Promise<MachineCycle[]> {
+    return await db.select().from(machineCycles);
+  }
+                        
+  async getCycleModifiers(): Promise<CycleModifier[]> {
+    return await db.select().from(cycleModifiers);
   }
 
   // Machine methods

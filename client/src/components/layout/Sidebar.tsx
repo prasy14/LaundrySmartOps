@@ -71,7 +71,7 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col gap-y-5 bg-background border-r border-border p-4 overflow-y-auto">
       <div className="flex h-16 shrink-0 items-center">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">SmartOps</h1>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text">SmartOps</h1>
       </div>
 
       <nav className="flex flex-1 flex-col">
