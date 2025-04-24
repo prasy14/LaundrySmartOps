@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// Import cell type for tooltip
+// We won't use DefaultHeatMapDatum as it's not generic
 
 const DAYS_OF_WEEK = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
@@ -45,11 +47,20 @@ interface HeatMapSerie {
   data: HeatMapDatum[];
 }
 
-// Type for the valuesByDayAndHour object
-interface ValuesByDayAndHour {
-  [day: string]: {
-    [hour: number]: number;
-  };
+// Separate interface for the _count property
+interface CountMap {
+  [timeSlot: string]: number;
+}
+
+// Type for the heatmapData object with _count property for averaging
+// Use type instead of interface to avoid index signature conflicts
+type HeatmapDataDay = {
+  [timeSlot: string]: number;
+  _count?: CountMap;
+}
+
+interface HeatmapData {
+  [day: string]: HeatmapDataDay;
 }
 
 export function UsagePatternChart() {
@@ -67,51 +78,84 @@ export function UsagePatternChart() {
     }
     
     try {
-      let filteredData = data.usageData;
+      let filteredData = [...data.usageData]; // Create a copy to avoid mutation
       
       // Filter by location if not "all"
       if (selectedLocation !== "all") {
-        filteredData = data.usageData.filter(d => d.location === selectedLocation);
+        filteredData = filteredData.filter(d => d.location === selectedLocation);
       }
       
-      // Create a map for data aggregation
-      const valuesByDayAndHour: ValuesByDayAndHour = {};
+      // If no data after filtering, return empty array
+      if (filteredData.length === 0) {
+        return [];
+      }
       
-      // Initialize the map with zeros
+      // Create a simple object for lookup
+      const heatmapData: HeatmapData = {};
+      
+      // Initialize days
       DAYS_OF_WEEK.forEach(day => {
-        valuesByDayAndHour[day] = {};
-        TIME_SLOTS.forEach((_, index) => {
-          valuesByDayAndHour[day][index] = 0;
+        heatmapData[day] = {} as HeatmapDataDay;
+        // Initialize hours with 0
+        TIME_SLOTS.forEach((slot) => {
+          heatmapData[day][slot] = 0;
         });
       });
       
-      // Fill in the data
+      // Populate with actual data
       filteredData.forEach(item => {
-        if (item.day && item.hour >= 0 && item.hour < 24) {
-          // If multiple entries for same day/hour, we'll use the average
-          if (selectedLocation === "all") {
-            const currentValue = valuesByDayAndHour[item.day][item.hour];
-            valuesByDayAndHour[item.day][item.hour] = currentValue ? 
-              (currentValue + item.value) / 2 : item.value;
-          } else {
-            valuesByDayAndHour[item.day][item.hour] = item.value;
+        if (item.day && DAYS_OF_WEEK.includes(item.day) && 
+            item.hour >= 0 && item.hour < TIME_SLOTS.length) {
+          const timeSlot = TIME_SLOTS[item.hour];
+          if (heatmapData[item.day] && timeSlot) {
+            if (selectedLocation === "all") {
+              // For "all" locations, average the values
+              const currentCount = heatmapData[item.day]._count?.[timeSlot] || 0;
+              const currentValue = heatmapData[item.day][timeSlot] || 0;
+              
+              // Store count in a special _count property
+              if (!heatmapData[item.day]._count) {
+                heatmapData[item.day]._count = {};
+              }
+              heatmapData[item.day]._count[timeSlot] = currentCount + 1;
+              
+              // Sum up values for later averaging
+              heatmapData[item.day][timeSlot] = currentValue + item.value;
+            } else {
+              // For specific location, just use the value
+              heatmapData[item.day][timeSlot] = item.value;
+            }
           }
         }
       });
       
-      // Format in the way the Nivo heatmap expects
-      // Each item in the array needs an id and a data array with x,y values
-      return DAYS_OF_WEEK.map(day => {
-        return {
+      // Create the series data structure that Nivo needs
+      const result: HeatMapSerie[] = [];
+      
+      for (const day of DAYS_OF_WEEK) {
+        const seriesData: HeatMapDatum[] = [];
+        
+        for (const timeSlot of TIME_SLOTS) {
+          let value = heatmapData[day][timeSlot];
+          
+          // Average the value if needed for "all" locations
+          if (selectedLocation === "all" && heatmapData[day]._count && heatmapData[day]._count[timeSlot] > 0) {
+            value = value / heatmapData[day]._count[timeSlot];
+          }
+          
+          seriesData.push({
+            x: timeSlot,
+            y: value / 100  // Convert to 0-1 scale (percentage to decimal)
+          });
+        }
+        
+        result.push({
           id: day,
-          data: TIME_SLOTS.map((timeSlot, hourIndex) => {
-            return {
-              x: timeSlot,
-              y: valuesByDayAndHour[day][hourIndex] / 100 // Convert to 0-1 scale
-            };
-          })
-        };
-      });
+          data: seriesData
+        });
+      }
+      
+      return result;
     } catch (err) {
       console.error("Error processing usage data:", err);
       return [];
@@ -243,8 +287,16 @@ export function UsagePatternChart() {
               }
             }}
             tooltip={({ cell }) => {
-              // Extract the data from the cell
-              const { serieId, data, value } = cell;
+              // Define a custom interface for the cell props based on Nivo's structure
+              type CellProps = {
+                serieId: string | number;
+                data: { x: string; y: number };
+                value: number | null;
+              };
+              
+              // Type-cast the cell prop
+              const cellData = cell as unknown as CellProps;
+              
               return (
                 <div
                   style={{
@@ -254,10 +306,10 @@ export function UsagePatternChart() {
                     boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
                   }}
                 >
-                  <div><strong>Day:</strong> {serieId}</div>
-                  <div><strong>Time:</strong> {data.x}</div>
+                  <div><strong>Day:</strong> {String(cellData.serieId)}</div>
+                  <div><strong>Time:</strong> {cellData.data.x}</div>
                   <div>
-                    <strong>Usage:</strong> {value !== null ? `${Math.round(value * 100)}%` : 'N/A'}
+                    <strong>Usage:</strong> {cellData.value !== null ? `${Math.round(cellData.value * 100)}%` : 'N/A'}
                   </div>
                 </div>
               );
