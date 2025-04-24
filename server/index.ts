@@ -5,13 +5,16 @@ import passport from "passport";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { SyncScheduler } from "./services/scheduler";
+import { fileURLToPath } from 'url';
+import path from "path";
 
 declare module 'express-session' {
   interface SessionData {
     userId: number;
   }
 }
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const app = express();
 
 // Set trust proxy before session middleware
@@ -105,11 +108,13 @@ app.use((req, res, next) => {
     } else {
       log('Warning: SQ_INSIGHTS_API_KEY not provided, sync scheduler not started', 'scheduler');
     }
-
+   app.use(express.static(path.join(process.cwd(), "public"))); 
     // Setup Vite or serve static files last
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
+      // Production: serve /public assets
+    
       serveStatic(app);
     }
 
