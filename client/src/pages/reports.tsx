@@ -22,11 +22,13 @@ import { EmailScheduleDialog } from "@/components/reports/EmailScheduleDialog";
 import { HistoricalExport } from "@/components/reports/HistoricalExport";
 import { ApiMonitoring } from "@/components/reports/ApiMonitoring";
 import { ExecutiveSummary } from "@/components/reports/ExecutiveSummary";
+import { MachineSelector } from "@/components/reports/MachineSelector";
 import { check as checkSecret } from "@/lib/utils";
 
 export default function Reports() {
   const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [selectedMachine, setSelectedMachine] = useState<string>("all");
   const [selectedServiceType, setSelectedServiceType] = useState<string>("all");
   // Initial date range for the last 30 days
   const initialDateRange: DateRange = {
@@ -76,19 +78,19 @@ export default function Reports() {
     queryKey: ['/api/locations'],
   });
 
-  // Service alerts with date range and location filter
+  // Service alerts with date range, location and machine filter
   const { data: serviceAlerts, isLoading: alertsLoading } = useQuery<{ alerts: Alert[] }>({
-    queryKey: ['/api/reports/service-alerts', selectedLocation, dateRange],
+    queryKey: ['/api/reports/service-alerts', selectedLocation, selectedMachine, dateRange],
     enabled: !locationsLoading,
   });
 
-  // Service issues with type filter
+  // Service issues with type filter and machine filter
   const { data: serviceIssues, isLoading: issuesLoading } = useQuery<{ alerts: Alert[] }>({
-    queryKey: ['/api/reports/service-issues', selectedServiceType],
+    queryKey: ['/api/reports/service-issues', selectedServiceType, selectedMachine],
     enabled: !locationsLoading,
   });
 
-  // Performance metrics with location and date range filter
+  // Performance metrics with location, machine and date range filter
   const { data: performanceMetrics, isLoading: metricsLoading } = useQuery<{
     machines: Array<{
       id: number;
@@ -108,11 +110,11 @@ export default function Reports() {
       status: 'met' | 'warning' | 'breached';
     };
   }>({
-    queryKey: ['/api/reports/performance-metrics', selectedLocation, dateRange],
+    queryKey: ['/api/reports/performance-metrics', selectedLocation, selectedMachine, dateRange],
     enabled: !locationsLoading,
   });
 
-  // Error trends data
+  // Error trends data with machine filter
   const { data: errorTrends, isLoading: trendsLoading } = useQuery<{
     trends: Array<{
       errorType: string;
@@ -121,7 +123,7 @@ export default function Reports() {
       trend: 'increasing' | 'decreasing' | 'stable';
     }>;
   }>({
-    queryKey: ['/api/reports/error-trends', dateRange],
+    queryKey: ['/api/reports/error-trends', selectedMachine, dateRange],
     enabled: !locationsLoading,
   });
 
@@ -250,6 +252,11 @@ export default function Reports() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
                   {hasPermission(['data_analyst', 'admin']) && (
                     <Button
                       variant="outline"
@@ -314,15 +321,22 @@ export default function Reports() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Error Trends Analysis</CardTitle>
-                {hasPermission(['data_analyst', 'admin']) && (
-                  <Button
-                    variant="outline"
-                    onClick={() => exportToCSV(errorTrends?.trends || [], 'error-trends')}
-                  >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
-                )}
+                <div className="flex items-center gap-4">
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(errorTrends?.trends || [], 'error-trends')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -371,15 +385,38 @@ export default function Reports() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Machine Performance Metrics</CardTitle>
-                {hasPermission(['data_analyst', 'admin']) && (
-                  <Button
-                    variant="outline"
-                    onClick={() => exportToCSV(performanceMetrics?.machines || [], 'performance-metrics')}
+                <div className="flex items-center gap-4">
+                  <Select
+                    value={selectedLocation}
+                    onValueChange={setSelectedLocation}
                   >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
-                )}
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select Location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Locations</SelectItem>
+                      {locationsData?.locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id.toString()}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(performanceMetrics?.machines || [], 'performance-metrics')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -478,6 +515,11 @@ export default function Reports() {
                       <SelectItem value="software">Software</SelectItem>
                     </SelectContent>
                   </Select>
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
                   {hasPermission(['data_analyst', 'admin']) && (
                     <Button
                       variant="outline"
@@ -557,6 +599,11 @@ export default function Reports() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <MachineSelector
+                      selectedMachine={selectedMachine}
+                      onMachineChange={setSelectedMachine}
+                      locationId={selectedLocation}
+                    />
                     {hasPermission(['data_analyst', 'admin']) && (
                       <Button
                         variant="outline"
@@ -645,6 +692,11 @@ export default function Reports() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <MachineSelector
+                      selectedMachine={selectedMachine}
+                      onMachineChange={setSelectedMachine}
+                      locationId={selectedLocation}
+                    />
                   </div>
                 </div>
               </CardHeader>
@@ -708,6 +760,11 @@ export default function Reports() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <MachineSelector
+                      selectedMachine={selectedMachine}
+                      onMachineChange={setSelectedMachine}
+                      locationId={selectedLocation}
+                    />
                   </div>
                 </div>
               </CardHeader>
