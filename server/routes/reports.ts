@@ -67,6 +67,22 @@ reportsRouter.get('/sustainability-metrics/:locationId?', async (req, res) => {
   }
 });
 
+// Get machine status distribution
+reportsRouter.get('/machine-status', async (req, res) => {
+  try {
+    const locationId = req.query.locationId ? parseInt(req.query.locationId as string) : undefined;
+    const machineId = req.query.machineId ? parseInt(req.query.machineId as string) : undefined;
+    
+    const distribution = await analyticsService.getMachineStatusDistribution(locationId, machineId);
+    
+    res.json(distribution);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch machine status distribution'
+    });
+  }
+});
+
 // Get alert response time metrics
 reportsRouter.get('/response-time-metrics', async (req, res) => {
   try {

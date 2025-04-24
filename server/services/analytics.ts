@@ -2,6 +2,83 @@ import { storage } from "../storage";
 import { Alert, Machine } from "@shared/schema";
 
 export class AnalyticsService {
+  // Get machine status distribution
+  async getMachineStatusDistribution(locationId?: number, machineId?: number): Promise<{
+    statusCounts: Record<string, number>;
+    total: number;
+    location?: string;
+  }> {
+    console.log('[analytics] Getting machine status distribution', 
+      locationId ? `for location ${locationId}` : 'for all locations',
+      machineId ? `and machine ${machineId}` : '');
+      
+    try {
+      // Get machines based on location and machine filters
+      let machines = await storage.getMachines();
+      
+      // Apply location filter if specified
+      if (locationId) {
+        machines = machines.filter(machine => machine.locationId === locationId);
+      }
+      
+      // Apply machine filter if specified
+      if (machineId) {
+        machines = machines.filter(machine => machine.id === machineId);
+      }
+      
+      // Initialize default status counts
+      const statusCounts: Record<string, number> = {
+        'AVAILABLE': 0,
+        'IN_USE': 0,
+        'MAINTENANCE_REQUIRED': 0,
+        'OFFLINE': 0,
+        'ERROR': 0,
+        'UNKNOWN': 0
+      };
+      
+      // Count machine status distribution
+      machines.forEach(machine => {
+        let status = 'UNKNOWN';
+        
+        try {
+          if (machine && machine.status) {
+            if (typeof machine.status === 'object' && machine.status !== null) {
+              status = machine.status.statusId || 'UNKNOWN';
+            } else if (typeof machine.status === 'string') {
+              status = machine.status;
+            }
+          }
+        } catch (err) {
+          console.error('[analytics] Error extracting machine status:', err);
+        }
+        
+        // Increment the appropriate status count
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+      
+      // Get location name if locationId is provided
+      let locationName: string | undefined = undefined;
+      if (locationId) {
+        try {
+          const location = await storage.getLocation(locationId);
+          locationName = location?.name;
+        } catch (err) {
+          console.error(`[analytics] Error getting location name for ID ${locationId}:`, err);
+        }
+      }
+      
+      console.log(`[analytics] Machine status distribution calculated: ${JSON.stringify(statusCounts)}`);
+      
+      return {
+        statusCounts,
+        total: machines.length,
+        location: locationName
+      };
+    } catch (error) {
+      console.error('[analytics] Error getting machine status distribution:', error);
+      throw error;
+    }
+  }
   // Get all alerts with optional machine filter
   async getAlerts(machineId?: number): Promise<Alert[]> {
     console.log('[analytics] Getting alerts', machineId ? `for machine ${machineId}` : 'for all machines');
