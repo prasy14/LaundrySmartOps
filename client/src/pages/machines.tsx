@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format, isAfter, isBefore, addMonths, differenceInDays } from "date-fns";
@@ -189,41 +189,51 @@ export default function Machines() {
         </Select>
       </div>
       
-      {/* Machine Cycle Analysis Section */}
-      <div className="lg:col-span-3 mb-4">
-        <MachineCycleAnalysis />
-      </div>
+      <Tabs defaultValue="analysis" className="space-y-4">
+  <TabsList>
+    <TabsTrigger value="analysis">Cycle Analysis</TabsTrigger>
+    <TabsTrigger value="inventory">Machine Inventory</TabsTrigger>
+  </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Machine List */}
-        <div className="lg:col-span-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Machine Inventory</CardTitle>
-              <CardDescription>
-                Click on a machine to view detailed information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Model</TableHead>
-                    <TableHead>Serial Number</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Warranty Status</TableHead>
-                    <TableHead>Link Quality</TableHead>
-                    <TableHead>Remaining Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredMachines?.map((machine) => {
+  {/* Machine Cycle Analysis Section */}
+  <TabsContent value="analysis">
+    <div className="lg:col-span-3 mb-4">
+      <MachineCycleAnalysis />
+    </div>
+  </TabsContent>
+
+  {/* Machine Inventory Section */}
+  <TabsContent value="inventory">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Machine Inventory</CardTitle>
+            <CardDescription>
+              Click on a machine to view detailed information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Model</TableHead>
+                  <TableHead>Serial Number</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Warranty Status</TableHead>
+                  <TableHead>Link Quality</TableHead>
+                  <TableHead>Remaining Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+              {Array.isArray(filteredMachines) && filteredMachines.length > 0 ? (
+                 filteredMachines.map((machine) => {
                     const warrantyStatus = getWarrantyStatus(machine);
                     return (
-                      <TableRow 
-                        key={machine.id} 
+                      <TableRow
+                        key={machine.id}
                         onClick={() => setSelectedMachine(machine)}
                         className="cursor-pointer hover:bg-accent/50"
                       >
@@ -262,20 +272,24 @@ export default function Machines() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No machines found. Contact an administrator to sync machines from SQ Insights.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </div> {/* ✅ This closing div was missing */}
+  </TabsContent>
+</Tabs>
 
-                  {(!filteredMachines || filteredMachines.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No machines found. Contact an administrator to sync machines from SQ Insights.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
+      
 
         {/* Machine Details Section - Show when a machine is selected */}
         {selectedMachine && (
@@ -542,6 +556,5 @@ export default function Machines() {
           </>
         )}
       </div>
-    </div>
   );
 }
