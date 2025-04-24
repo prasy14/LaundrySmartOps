@@ -34,6 +34,24 @@ interface UsageApiResponse {
   locations: string[];
 }
 
+// Define types for Nivo heatmap
+interface HeatMapDatum {
+  x: string;
+  y: number;
+}
+
+interface HeatMapSerie {
+  id: string;
+  data: HeatMapDatum[];
+}
+
+// Type for the valuesByDayAndHour object
+interface ValuesByDayAndHour {
+  [day: string]: {
+    [hour: number]: number;
+  };
+}
+
 export function UsagePatternChart() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   
@@ -43,7 +61,7 @@ export function UsagePatternChart() {
   });
   
   // Process the data for visualization
-  const getChartData = () => {
+  const getChartData = (): HeatMapSerie[] => {
     if (!data || !data.usageData || !data.usageData.length) {
       return [];
     }
@@ -56,51 +74,44 @@ export function UsagePatternChart() {
         filteredData = data.usageData.filter(d => d.location === selectedLocation);
       }
       
-      // Create a map for all days and hours
-      const usageMap: Record<string, Record<string, number>> = {};
+      // Create a map for data aggregation
+      const valuesByDayAndHour: ValuesByDayAndHour = {};
       
-      // Initialize the map with zeros for all days and hours
+      // Initialize the map with zeros
       DAYS_OF_WEEK.forEach(day => {
-        usageMap[day] = {};
-        TIME_SLOTS.forEach(timeSlot => {
-          usageMap[day][timeSlot] = 0;
+        valuesByDayAndHour[day] = {};
+        TIME_SLOTS.forEach((_, index) => {
+          valuesByDayAndHour[day][index] = 0;
         });
       });
       
       // Fill in the data
       filteredData.forEach(item => {
-        if (usageMap[item.day] && item.hour >= 0 && item.hour < 24) {
-          const timeSlot = TIME_SLOTS[item.hour];
-          
-          // If multiple entries for same day/hour (from different locations),
-          // we'll average or take the max depending on business logic
+        if (item.day && item.hour >= 0 && item.hour < 24) {
+          // If multiple entries for same day/hour, we'll use the average
           if (selectedLocation === "all") {
-            // For "all" locations, we'll take the average
-            const currentValue = usageMap[item.day][timeSlot];
-            usageMap[item.day][timeSlot] = currentValue ? (currentValue + item.value) / 2 : item.value;
+            const currentValue = valuesByDayAndHour[item.day][item.hour];
+            valuesByDayAndHour[item.day][item.hour] = currentValue ? 
+              (currentValue + item.value) / 2 : item.value;
           } else {
-            // For specific location, just use the value
-            usageMap[item.day][timeSlot] = item.value;
+            valuesByDayAndHour[item.day][item.hour] = item.value;
           }
         }
       });
       
-      // Format data for Nivo heatmap
-      const formattedData = [];
-      
-      for (const day of Object.keys(usageMap)) {
-        const dayData = { id: day };
-        
-        // Add each time slot as a property
-        for (const timeSlot of Object.keys(usageMap[day])) {
-          // Convert to decimal for proper formatting (0-100% -> 0-1)
-          dayData[timeSlot] = usageMap[day][timeSlot] / 100;
-        }
-        
-        formattedData.push(dayData);
-      }
-      
-      return formattedData;
+      // Format in the way the Nivo heatmap expects
+      // Each item in the array needs an id and a data array with x,y values
+      return DAYS_OF_WEEK.map(day => {
+        return {
+          id: day,
+          data: TIME_SLOTS.map((timeSlot, hourIndex) => {
+            return {
+              x: timeSlot,
+              y: valuesByDayAndHour[day][hourIndex] / 100 // Convert to 0-1 scale
+            };
+          })
+        };
+      });
     } catch (err) {
       console.error("Error processing usage data:", err);
       return [];
@@ -194,7 +205,8 @@ export function UsagePatternChart() {
             data={chartData}
             valueFormat=">-.2p"
             margin={{ top: 20, right: 90, bottom: 60, left: 90 }}
-            forceSquare={false}
+            xOuterPadding={0.1}
+            yOuterPadding={0.1}
             axisTop={{
               tickSize: 5,
               tickPadding: 5,
@@ -213,13 +225,14 @@ export function UsagePatternChart() {
               legendPosition: 'middle',
               legendOffset: -70
             }}
-            cellOpacity={1}
             colors={{
               type: 'sequential',
               scheme: 'blues'
             }}
-            borderColor={{ from: 'color', modifiers: [['darker', 0.4]] }}
-            labelTextColor={{ from: 'color', modifiers: [['darker', 1.8]] }}
+            borderWidth={1}
+            borderColor="#ffffff"
+            enableLabels={false}
+            hoverTarget="cell"
             animate={true}
             theme={{
               tooltip: {
@@ -229,8 +242,9 @@ export function UsagePatternChart() {
                 }
               }
             }}
-            tooltip={(props) => {
-              const { id, value, indexValue } = props;
+            tooltip={({ cell }) => {
+              // Extract the data from the cell
+              const { serieId, data, value } = cell;
               return (
                 <div
                   style={{
@@ -240,8 +254,8 @@ export function UsagePatternChart() {
                     boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
                   }}
                 >
-                  <div><strong>Day:</strong> {indexValue}</div>
-                  <div><strong>Time:</strong> {id}</div>
+                  <div><strong>Day:</strong> {serieId}</div>
+                  <div><strong>Time:</strong> {data.x}</div>
                   <div>
                     <strong>Usage:</strong> {value !== null ? `${Math.round(value * 100)}%` : 'N/A'}
                   </div>
