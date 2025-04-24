@@ -33,7 +33,6 @@ const navigationCategories = [
       { name: 'Reports & Analytics', href: '/reports', icon: FileBarChart },
       { name: 'Visualizations', href: '/visualizations', icon: LineChart },
       { name: 'Custom Reports', href: '/custom-reports', icon: FileText },
-      { name: 'Usage Patterns', href: '/usage-patterns', icon: TrendingUp },
       { name: 'Machine Comparison', href: '/machine-comparison', icon: BarChart },
     ]
   },
