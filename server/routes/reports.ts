@@ -83,6 +83,21 @@ reportsRouter.get('/machine-status', async (req, res) => {
   }
 });
 
+// Get machine usage patterns
+reportsRouter.get('/usage-patterns', async (req, res) => {
+  try {
+    const locationId = req.query.locationId ? parseInt(req.query.locationId as string) : undefined;
+    
+    const usageData = await analyticsService.getMachineUsagePatterns(locationId);
+    
+    res.json(usageData);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch machine usage patterns'
+    });
+  }
+});
+
 // Get alert response time metrics
 reportsRouter.get('/response-time-metrics', async (req, res) => {
   try {

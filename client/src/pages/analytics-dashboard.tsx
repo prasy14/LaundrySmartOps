@@ -8,6 +8,7 @@ import { MachineStatusChart } from "@/components/visualizations/MachineStatusCha
 import { SLAComplianceChart } from "@/components/visualizations/SLAComplianceChart";
 import { AlertMetricsChart } from "@/components/visualizations/AlertMetricsChart";
 import { ServiceAlertHeatmap } from "@/components/visualizations/ServiceAlertHeatmap";
+import { UsagePatternChart } from "@/components/visualizations/UsagePatternChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
@@ -247,11 +248,7 @@ export default function AnalyticsDashboard() {
         
         <TabsContent value="usage" className="space-y-6">
           <div className="grid grid-cols-1 gap-6">
-            <UsageByTimeChart 
-              data={generateUsageData()}
-              locations={getLocationNames()}
-              title="Machine Usage Patterns by Time"
-            />
+            <UsagePatternChart />
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

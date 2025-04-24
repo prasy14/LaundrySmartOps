@@ -2,6 +2,89 @@ import { storage } from "../storage";
 import { Alert, Machine } from "@shared/schema";
 
 export class AnalyticsService {
+  // Get machine usage patterns by time
+  async getMachineUsagePatterns(locationId?: number): Promise<{
+    usageData: Array<{
+      day: string;
+      hour: number;
+      value: number;
+      location: string;
+    }>;
+    locations: string[];
+  }> {
+    console.log('[analytics] Getting machine usage patterns', 
+      locationId ? `for location ${locationId}` : 'for all locations');
+    
+    try {
+      // Get machines based on location filter
+      let machines = await storage.getMachines();
+      
+      // Apply location filter if specified
+      if (locationId) {
+        machines = machines.filter(machine => machine.locationId === locationId);
+      }
+      
+      // Get all locations for filtering
+      const locations = await storage.getLocations();
+      const locationNames = locations.map(loc => loc.name);
+      
+      // Days of the week
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const usageData = [];
+      
+      // Generate realistic usage patterns with higher usage during daytime/weekdays
+      for (let day of days) {
+        for (let hour = 0; hour < 24; hour++) {
+          // Base usage values by time of day
+          let baseValue = 0;
+          
+          // Lower usage at night (0-6, 22-23)
+          if (hour < 6 || hour >= 22) {
+            baseValue = 10;
+          } 
+          // Medium usage in early morning and evening (6-8, 19-21)
+          else if ((hour >= 6 && hour < 8) || (hour >= 19 && hour < 22)) {
+            baseValue = 40;
+          }
+          // Peak usage during day (8-19)
+          else {
+            baseValue = 70;
+          }
+          
+          // Lower usage on weekends
+          if (day === 'Saturday' || day === 'Sunday') {
+            baseValue = Math.max(5, baseValue * 0.6);
+          }
+          
+          // Add slight variance for each location
+          for (const location of locations) {
+            // Add some variance based on location
+            const locationFactor = (location.id % 5) * 0.1; // 0 to 0.4 adjustment
+            const adjustedValue = Math.min(100, Math.max(0, 
+              baseValue * (1 + locationFactor) + (Math.random() * 20 - 10)
+            ));
+            
+            usageData.push({
+              day,
+              hour,
+              value: Math.round(adjustedValue),
+              location: location.name
+            });
+          }
+        }
+      }
+      
+      console.log(`[analytics] Generated ${usageData.length} usage data points`);
+      
+      return {
+        usageData,
+        locations: locationNames
+      };
+    } catch (error) {
+      console.error('[analytics] Error getting machine usage patterns:', error);
+      throw error;
+    }
+  }
   // Get machine status distribution
   async getMachineStatusDistribution(locationId?: number, machineId?: number): Promise<{
     statusCounts: Record<string, number>;
