@@ -57,42 +57,48 @@ export function UsagePatternChart() {
       }
       
       // Create a map for all days and hours
-      const usageMap: Record<string, Record<number, number>> = {};
+      const usageMap: Record<string, Record<string, number>> = {};
       
       // Initialize the map with zeros for all days and hours
       DAYS_OF_WEEK.forEach(day => {
         usageMap[day] = {};
-        for (let i = 0; i < 24; i++) {
-          usageMap[day][i] = 0;
-        }
+        TIME_SLOTS.forEach(timeSlot => {
+          usageMap[day][timeSlot] = 0;
+        });
       });
       
       // Fill in the data
       filteredData.forEach(item => {
         if (usageMap[item.day] && item.hour >= 0 && item.hour < 24) {
+          const timeSlot = TIME_SLOTS[item.hour];
+          
           // If multiple entries for same day/hour (from different locations),
           // we'll average or take the max depending on business logic
           if (selectedLocation === "all") {
             // For "all" locations, we'll take the average
-            const currentValue = usageMap[item.day][item.hour];
-            usageMap[item.day][item.hour] = currentValue ? (currentValue + item.value) / 2 : item.value;
+            const currentValue = usageMap[item.day][timeSlot];
+            usageMap[item.day][timeSlot] = currentValue ? (currentValue + item.value) / 2 : item.value;
           } else {
             // For specific location, just use the value
-            usageMap[item.day][item.hour] = item.value;
+            usageMap[item.day][timeSlot] = item.value;
           }
         }
       });
       
       // Format data for Nivo heatmap
-      const formattedData = DAYS_OF_WEEK.map(day => {
-        const dayData: Record<string, any> = { day };
+      const formattedData = [];
+      
+      for (const day of Object.keys(usageMap)) {
+        const dayData = { id: day };
         
-        TIME_SLOTS.forEach((timeSlot, hourIndex) => {
-          dayData[timeSlot] = usageMap[day][hourIndex] || 0;
-        });
+        // Add each time slot as a property
+        for (const timeSlot of Object.keys(usageMap[day])) {
+          // Convert to decimal for proper formatting (0-100% -> 0-1)
+          dayData[timeSlot] = usageMap[day][timeSlot] / 100;
+        }
         
-        return dayData;
-      });
+        formattedData.push(dayData);
+      }
       
       return formattedData;
     } catch (err) {
@@ -165,7 +171,7 @@ export function UsagePatternChart() {
             <CardTitle className="text-xl">Machine Usage Patterns by Time</CardTitle>
             <p className="text-white/80 text-sm">Machine usage patterns by day of week and time</p>
           </div>
-          {data.locations && data.locations.length > 0 && (
+          {data?.locations && data.locations.length > 0 && (
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
               <SelectTrigger className="w-[200px] bg-white">
                 <SelectValue placeholder="Select Location" />
@@ -186,8 +192,7 @@ export function UsagePatternChart() {
         {chartData.length > 0 ? (
           <ResponsiveHeatMap
             data={chartData}
-            keys={TIME_SLOTS}
-            indexBy="day"
+            valueFormat=">-.2p"
             margin={{ top: 20, right: 90, bottom: 60, left: 90 }}
             forceSquare={false}
             axisTop={{
@@ -209,22 +214,13 @@ export function UsagePatternChart() {
               legendOffset: -70
             }}
             cellOpacity={1}
-            cellBorderColor={{ from: 'color', modifiers: [['darker', 0.4]] }}
+            colors={{
+              type: 'sequential',
+              scheme: 'blues'
+            }}
+            borderColor={{ from: 'color', modifiers: [['darker', 0.4]] }}
             labelTextColor={{ from: 'color', modifiers: [['darker', 1.8]] }}
-            defs={[
-              {
-                id: 'gradient',
-                type: 'linearGradient',
-                colors: colorScale.map((color, i, colors) => ({
-                  offset: (i / (colors.length - 1)) * 100 + '%',
-                  color,
-                })),
-              },
-            ]}
-            fill={[{ id: 'gradient' }]}
             animate={true}
-            hoverTarget="cell"
-            cellHoverOthersOpacity={0.5}
             theme={{
               tooltip: {
                 container: {
@@ -233,22 +229,25 @@ export function UsagePatternChart() {
                 }
               }
             }}
-            tooltip={({ xKey, yKey, value }) => (
-              <div
-                style={{
-                  background: 'white',
-                  padding: '9px 12px',
-                  border: '1px solid #ccc',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-                }}
-              >
-                <div><strong>Day:</strong> {yKey}</div>
-                <div><strong>Time:</strong> {xKey}</div>
-                <div>
-                  <strong>Usage:</strong> {value !== null ? `${value}%` : 'N/A'}
+            tooltip={(props) => {
+              const { id, value, indexValue } = props;
+              return (
+                <div
+                  style={{
+                    background: 'white',
+                    padding: '9px 12px',
+                    border: '1px solid #ccc',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  <div><strong>Day:</strong> {indexValue}</div>
+                  <div><strong>Time:</strong> {id}</div>
+                  <div>
+                    <strong>Usage:</strong> {value !== null ? `${Math.round(value * 100)}%` : 'N/A'}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            }}
           />
         ) : (
           <div className="flex items-center justify-center h-full">
