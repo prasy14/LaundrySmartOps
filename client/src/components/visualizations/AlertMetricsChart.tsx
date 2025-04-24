@@ -15,11 +15,12 @@ interface MetricsData {
 }
 
 interface AlertMetricsChartProps {
-  data?: MetricsData[];
+  data?: MetricsData[] | null;
   title?: string;
   isLoading?: boolean;
   type?: 'volume' | 'response';
   errorMessage?: string;
+  selectedMachineId?: string; // Add support for selected machine
 }
 
 type VolumeData = {
@@ -40,24 +41,28 @@ export function AlertMetricsChart({
   title = "Alert Metrics",
   isLoading = false,
   type = 'volume',
-  errorMessage = ""
+  errorMessage = "",
+  selectedMachineId = 'all'
 }: AlertMetricsChartProps) {
   const [hasError, setHasError] = useState(false);
   
+  // Ensure data is an array
+  const safeData = Array.isArray(data) ? data : [];
+  
   // Validate data integrity
   useEffect(() => {
-    if (data && data.length > 0) {
+    if (safeData.length > 0) {
       try {
         // Check if the required fields exist in the data
         if (type === 'volume') {
-          const missingFields = data.some(item => 
+          const missingFields = safeData.some(item => 
             typeof item.critical === 'undefined' || 
             typeof item.major === 'undefined' || 
             typeof item.minor === 'undefined'
           );
           setHasError(missingFields);
         } else {
-          const missingFields = data.some(item => 
+          const missingFields = safeData.some(item => 
             typeof item.resolved === 'undefined' || 
             typeof item.responseTime === 'undefined'
           );
@@ -68,7 +73,7 @@ export function AlertMetricsChart({
         setHasError(true);
       }
     }
-  }, [data, type]);
+  }, [safeData, type]);
   
   if (isLoading) {
     return (
@@ -99,7 +104,7 @@ export function AlertMetricsChart({
     );
   }
   
-  if (!data.length) {
+  if (safeData.length === 0) {
     return (
       <Card className="w-full h-80 shadow-md">
         <CardHeader className="gradient-blue text-white border-b">
@@ -114,7 +119,7 @@ export function AlertMetricsChart({
   
   if (type === 'volume') {
     // Safely map data with fallbacks for missing fields
-    const volumeData = data.map(item => ({
+    const volumeData = safeData.map(item => ({
       month: item.month || 'Unknown',
       critical: item.critical || 0,
       major: item.major || 0,
@@ -133,7 +138,7 @@ export function AlertMetricsChart({
     );
   } else {
     // Safely map data with fallbacks for missing fields
-    const responseData = data.map(item => ({
+    const responseData = safeData.map(item => ({
       month: item.month || 'Unknown',
       "Resolved": item.resolved || 0,
       "Avg. Response Time": item.responseTime || 0

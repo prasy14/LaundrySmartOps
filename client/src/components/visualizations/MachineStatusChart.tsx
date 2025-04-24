@@ -12,10 +12,11 @@ import {
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface MachineStatusChartProps {
-  machines: Machine[];
+  machines: Machine[] | null | undefined;
   locations?: Location[];
   isLoading?: boolean;
   error?: string;
+  selectedMachineId?: string; // Add support for selected machine
 }
 
 // Status names to display-friendly labels mapping
@@ -32,26 +33,39 @@ export function MachineStatusChart({
   machines = [], 
   locations = [], 
   isLoading = false,
-  error = ''
+  error = '',
+  selectedMachineId = 'all'
 }: MachineStatusChartProps) {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [filteredMachines, setFilteredMachines] = useState<Machine[]>([]);
   const [chartData, setChartData] = useState<Array<{id: string, label: string, value: number, color: string}>>([]);
   
-  // Filter machines when location selection changes
+  // Ensure machines is an array
+  const safetyMachines = Array.isArray(machines) ? machines : [];
+  
+  // Filter machines when location selection or selected machine changes
   useEffect(() => {
     try {
-      if (selectedLocation === "all") {
-        setFilteredMachines(machines);
-      } else {
+      let filtered = [...safetyMachines];
+      
+      // Filter by location if needed
+      if (selectedLocation !== "all") {
         const locationId = parseInt(selectedLocation, 10);
-        setFilteredMachines(machines.filter(machine => machine.locationId === locationId));
+        filtered = filtered.filter(machine => machine.locationId === locationId);
       }
+      
+      // Filter by specific machine if needed
+      if (selectedMachineId !== 'all') {
+        const machineId = parseInt(selectedMachineId, 10);
+        filtered = filtered.filter(machine => machine.id === machineId);
+      }
+      
+      setFilteredMachines(filtered);
     } catch (err) {
-      console.error("Error filtering machines by location:", err);
+      console.error("Error filtering machines:", err);
       setFilteredMachines([]);
     }
-  }, [selectedLocation, machines]);
+  }, [selectedLocation, selectedMachineId, safetyMachines]);
   
   // Calculate status distribution
   useEffect(() => {
@@ -66,10 +80,14 @@ export function MachineStatusChart({
         let status = 'UNKNOWN';
         
         try {
-          if (machine && machine.status && typeof machine.status === 'object') {
-            status = machine.status.statusId || 'UNKNOWN';
-          } else if (typeof machine.status === 'string') {
-            status = machine.status;
+          if (machine && machine.status) {
+            if (typeof machine.status === 'object' && machine.status !== null) {
+              // Handle status as object with statusId
+              status = machine.status.statusId || 'UNKNOWN';
+            } else if (typeof machine.status === 'string') {
+              // Handle status as string
+              status = machine.status;
+            }
           }
         } catch (err) {
           console.error("Error extracting machine status:", err);
@@ -114,7 +132,7 @@ export function MachineStatusChart({
   }
 
   // Error state
-  if (error || machines.length === 0) {
+  if (error || !safetyMachines || safetyMachines.length === 0) {
     return (
       <Card className="shadow-md">
         <CardHeader className="gradient-blue text-white border-b">
