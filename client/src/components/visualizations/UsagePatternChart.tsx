@@ -52,10 +52,8 @@ interface CountMap {
   [timeSlot: string]: number;
 }
 
-// Type for the heatmapData object with _count property for averaging
-// Use type instead of interface to avoid index signature conflicts
-type HeatmapDataDay = {
-  [timeSlot: string]: number;
+// Type that combines string-indexed values with the special _count property
+type HeatmapDataDay = Record<string, number> & {
   _count?: CountMap;
 }
 
@@ -114,10 +112,14 @@ export function UsagePatternChart() {
               const currentValue = heatmapData[item.day][timeSlot] || 0;
               
               // Store count in a special _count property
+              // First create the _count object if it doesn't exist
               if (!heatmapData[item.day]._count) {
-                heatmapData[item.day]._count = {};
+                heatmapData[item.day]._count = {} as CountMap;
               }
-              heatmapData[item.day]._count[timeSlot] = currentCount + 1;
+              
+              // At this point we can be certain that _count exists
+              const countMap = heatmapData[item.day]._count!;
+              countMap[timeSlot] = currentCount + 1;
               
               // Sum up values for later averaging
               heatmapData[item.day][timeSlot] = currentValue + item.value;
