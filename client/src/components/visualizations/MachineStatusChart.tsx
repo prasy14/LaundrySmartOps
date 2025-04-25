@@ -158,7 +158,7 @@ export function MachineStatusChart({
           </div>
           {locations && locations.length > 0 && (
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[200px] bg-white">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Select Location" />
               </SelectTrigger>
               <SelectContent>
