@@ -45,6 +45,7 @@ export function UsageByTimeChart({
 }: UsageByTimeChartProps) {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [chartData, setChartData] = useState<any[]>([]);
+
   
   // Filter and format data when location selection changes
   useEffect(() => {
@@ -220,6 +221,14 @@ export function UsageByTimeChart({
             hoverTarget="cell"
             cellHoverOthersOpacity={0.5}
             theme={{
+              axis: {
+                legend: {
+                  text: {
+                    fontSize: 16,
+                    fontWeight: 700, 
+                  },
+                },
+              },
               tooltip: {
                 container: {
                   background: '#ffffff',
