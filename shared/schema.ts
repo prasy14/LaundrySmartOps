@@ -79,6 +79,7 @@ export const machinePrograms = pgTable("machine_programs", {
   id: serial("id").primaryKey(),
   machineTypeId: integer("machine_type_id").references(() => machineTypes.id),
   locationId: integer("location_id").references(() => locations.id),
+  machineId: integer("machine_id").references(() => machines.id), // Added machine ID reference
   externalId: text("external_id").notNull(), // e.g. cyc_normal_hot
   name: text("name").notNull(), // e.g. NORMAL_HOT
   type: text("type").notNull(), // washer or dryer program

@@ -377,6 +377,48 @@ console.log("Cycle Data:", cyclesData?.machineCycles);
                 </Table>
               </TabsContent>
 
+              {/* Machine Programs Tab */}
+              <TabsContent value="programs">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Machine ID</TableHead>
+                      <TableHead>Machine Name</TableHead>
+                      <TableHead>Program Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Sort Order</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {programsData?.programs ? (
+                      programsData.programs.map((program) => {
+                        const machine = machinesData?.machines.find(m => m.id === program.machineId);
+                        const location = locationsData?.locations.find(l => l.id === program.locationId);
+                        return (
+                          <TableRow key={program.id}>
+                            <TableCell>{program.id}</TableCell>
+                            <TableCell>{program.machineId || 'N/A'}</TableCell>
+                            <TableCell>{machine?.name || 'N/A'}</TableCell>
+                            <TableCell className="font-medium">{program.name}</TableCell>
+                            <TableCell>{program.type}</TableCell>
+                            <TableCell>{location?.name || 'N/A'}</TableCell>
+                            <TableCell>{program.sortOrder || 'N/A'}</TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center">
+                          No machine programs found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
               {/* Machine Errors Tab */}
               <TabsContent value="errors">
   <Table>
