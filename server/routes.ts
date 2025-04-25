@@ -88,6 +88,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    //cycle-steps
+    apiRouter.get('/cycle-steps', isOperatorOrAbove, async (req, res) => {
+      try {
+        const cycleSteps = await storage.getCycleSteps(); 
+        res.json({ cycleSteps }); 
+      } catch (error) {
+        log(`Error fetching cycle modifiers: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api'); 
+        res.status(500).json({ message: 'Failed to fetch cycle modifiers' }); 
+      }
+    });
+
     // machine-errors
     apiRouter.get('/machine-errors', isOperatorOrAbove, async (req, res) => {
       try {

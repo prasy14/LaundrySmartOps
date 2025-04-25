@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { eq, desc, inArray } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers,machineErrors } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers,machineErrors, CycleStep, cycleSteps } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
@@ -224,6 +224,10 @@ export class DatabaseStorage implements IStorage {
 //     .leftJoin(machines, eq(machineErrors.machineId, machines.id))
 //     .leftJoin(locations, eq(machineErrors.locationId, locations.id));
 // }
+
+async getCycleSteps(): Promise<CycleStep[]> {
+  return await db.select().from(cycleSteps);
+}
 
   async getMachineCycles(): Promise<MachineCycle[]> {
     return await db.select().from(machineCycles);

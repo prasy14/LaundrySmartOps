@@ -51,28 +51,16 @@ export default function Admin() {
   const { data: errorsData } = useQuery<{ errors: MachineError[] }>({
     queryKey: ['/api/machine-errors'],
   });
-  console.log("error Data:", errorsData?.errors);
-
-//   const { data: cyclesData } = useQuery<{ cycles: MachineCycle[] }>({
-//   queryKey: ['/api/machine-cycles'],
-//   queryFn: async () => {
-//     const res = await fetch('/api/machine-cycles');
-//     if (!res.ok) throw new Error('Failed to fetch machine cycles');
-//     return res.json();
-//   },
-// });
-// console.log("Cycle Data:", cyclesData?.cycles);
+  
 
 const { data: cyclesData } = useQuery<{ machineCycles: MachineCycle[] }>({
   queryKey: ['/api/machine-cycles'],
 });
-console.log("Cycle Data:", cyclesData?.machineCycles);
 
 
-
-  const { data: stepsData } = useQuery<{ steps: CycleStep[] }>({
-    queryKey: ['/api/cycle-steps'],
-  });
+const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
+  queryKey: ['/api/cycle-steps'],
+});
 
   const { data: modifiersData } = useQuery<{ cycleModifiers: CycleModifier[] }>({
     queryKey: ['/api/cycle-modifiers'],
@@ -502,11 +490,11 @@ console.log("Cycle Data:", cyclesData?.machineCycles);
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {stepsData?.steps.map((step) => (
-                      <TableRow key={step.id}>
-                        <TableCell className="font-medium">{step.stepName}</TableCell>
-                        <TableCell>{step.description || 'N/A'}</TableCell>
-                        <TableCell>{step.sortOrder || 'N/A'}</TableCell>
+                  {stepsData?.cycleSteps && stepsData.cycleSteps.map((cycleSteps) => (
+                  <TableRow key={cycleSteps.id}>
+                  <TableCell className="font-medium">{cycleSteps.stepName}</TableCell>
+                  <TableCell>{cycleSteps.description || 'N/A'}</TableCell>
+                  <TableCell>{cycleSteps.sortOrder || 'N/A'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
