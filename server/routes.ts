@@ -10,6 +10,8 @@ import reportsRoutes from "./routes/reports";
 import alertsRoutes from "./routes/alerts";
 import reportEmailRoutes from "./routes/reports-email";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
+import { db } from "./db";
+import { machineErrors } from "@shared/schema";
 
 declare module 'express-session' {
   interface SessionData {
@@ -54,6 +56,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    apiRouter.get('/machine-programs', isOperatorOrAbove, async (req, res) => {
+      try {
+        const programs = await storage.getMachinePrograms();
+        res.json({ programs });
+      } catch (error) {
+        log(`Error fetching machine programs: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to fetch machine programs' });
+      }
+    });
+    
 //machine-cycles
     apiRouter.get('/machine-cycles', isOperatorOrAbove, async (req, res) => {
       try {
@@ -77,15 +89,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     
     // machine-errors
-// apiRouter.get('/machine-errors', isOperatorOrAbove, async (req, res) => {
-//   try {
-//     const machineErrors = await storage.getMachineErrorsWithDetails(); 
-//     res.json({ machineErrors }); 
-//   } catch (error) {
-//     log(`Error fetching machine errors: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api'); 
-//     res.status(500).json({ message: 'Failed to fetch machine errors' }); 
-//   }
-// });
+    apiRouter.get('/machine-errors', isOperatorOrAbove, async (req, res) => {
+      try {
+        const errors = await db.select().from(machineErrors);
+        res.json({ errors }); 
+      } catch (error) {
+        log(`Error fetching machine errors: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api'); 
+        res.status(500).json({ message: 'Failed to fetch machine errors' }); 
+      }
+    });
 
 
     // Current user endpoint for authentication check
