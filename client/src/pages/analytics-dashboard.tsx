@@ -251,19 +251,19 @@ export default function AnalyticsDashboard() {
             <UsagePatternChart />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
             <MachineAvailabilityChart 
               data={availabilityData}
               locations={getLocationNames()}
               title="Machine Availability by Location"
             />
             
-            <MachineStatusChart 
+            {/* <MachineStatusChart 
               machines={Array.isArray(machinesData) ? machinesData : []} 
               locations={Array.isArray(locationsData) ? locationsData : []}
               isLoading={machinesLoading || locationsLoading}
               error={""}
-            />
+            /> */}
           </div>
         </TabsContent>
         
