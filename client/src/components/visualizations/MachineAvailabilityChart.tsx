@@ -141,7 +141,7 @@ export function MachineAvailabilityChart({
           </div>
           {locations.length > 0 && (
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[200px] bg-white">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Select Location" />
               </SelectTrigger>
               <SelectContent>
@@ -160,7 +160,7 @@ export function MachineAvailabilityChart({
         {chartData.length > 0 && chartData[0].data.length > 0 ? (
           <ResponsiveLine
             data={chartData}
-            margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
+            margin={{ top: 20, right: 20, bottom: 70, left: 60 }}
             xScale={{ type: 'point' }}
             yScale={{
               type: 'linear',
@@ -177,8 +177,9 @@ export function MachineAvailabilityChart({
               tickPadding: 5,
               tickRotation: -45,
               legend: 'Date',
-              legendOffset: 40,
-              legendPosition: 'middle'
+              legendOffset: 65,
+              legendPosition: 'middle',
+              
             }}
             axisLeft={{
               tickSize: 5,
@@ -268,12 +269,12 @@ export function MachineAvailabilityChart({
                   boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
                 }}
               >
-                <div style={{ marginBottom: 5 }}>
-                  <strong>Date:</strong> {point.data.x}
-                </div>
-                <div>
-                  <strong>Availability:</strong> {point.data.y.toFixed(1)}%
-                </div>
+               <div style={{ marginBottom: 5 }}>
+                  <strong>Date:</strong> {point.data.x instanceof Date ? point.data.x.toLocaleDateString() : point.data.x}
+              </div>
+              <div>
+               <strong>Availability:</strong> {(point.data.y as number).toFixed(1)}%
+             </div>
               </div>
             )}
           />
