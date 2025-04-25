@@ -10,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// Import cell type for tooltip
-// We won't use DefaultHeatMapDatum as it's not generic
 
 const DAYS_OF_WEEK = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
@@ -36,31 +34,6 @@ interface UsageApiResponse {
   locations: string[];
 }
 
-// Define types for Nivo heatmap
-interface HeatMapDatum {
-  x: string;
-  y: number;
-}
-
-interface HeatMapSerie {
-  id: string;
-  data: HeatMapDatum[];
-}
-
-// Separate interface for the _count property
-interface CountMap {
-  [timeSlot: string]: number;
-}
-
-// Type that combines string-indexed values with the special _count property
-type HeatmapDataDay = Record<string, number> & {
-  _count?: CountMap;
-}
-
-interface HeatmapData {
-  [day: string]: HeatmapDataDay;
-}
-
 export function UsagePatternChart() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   
@@ -68,96 +41,67 @@ export function UsagePatternChart() {
   const { data, isLoading, error } = useQuery<UsageApiResponse>({
     queryKey: ['/api/reports/usage-patterns'],
   });
-  
+  console.log("API Data:", data);
+
   // Process the data for visualization
-  const getChartData = (): HeatMapSerie[] => {
+  const getChartData = () => {
     if (!data || !data.usageData || !data.usageData.length) {
       return [];
     }
     
     try {
-      let filteredData = [...data.usageData]; // Create a copy to avoid mutation
+      let filteredData = data.usageData;
       
       // Filter by location if not "all"
       if (selectedLocation !== "all") {
-        filteredData = filteredData.filter(d => d.location === selectedLocation);
+        filteredData = data.usageData.filter(d => d.location === selectedLocation);
       }
       
-      // If no data after filtering, return empty array
-      if (filteredData.length === 0) {
-        return [];
-      }
+      // Create a map for all days and hours
+      const usageMap: Record<string, Record<string, number>> = {};
       
-      // Create a simple object for lookup
-      const heatmapData: HeatmapData = {};
-      
-      // Initialize days
+      // Initialize the map with zeros for all days and hours
       DAYS_OF_WEEK.forEach(day => {
-        heatmapData[day] = {} as HeatmapDataDay;
-        // Initialize hours with 0
-        TIME_SLOTS.forEach((slot) => {
-          heatmapData[day][slot] = 0;
+        usageMap[day] = {};
+        TIME_SLOTS.forEach(timeSlot => {
+          usageMap[day][timeSlot] = 0;
         });
       });
       
-      // Populate with actual data
+      // Fill in the data
       filteredData.forEach(item => {
-        if (item.day && DAYS_OF_WEEK.includes(item.day) && 
-            item.hour >= 0 && item.hour < TIME_SLOTS.length) {
+        if (usageMap[item.day] && item.hour >= 0 && item.hour < 24) {
           const timeSlot = TIME_SLOTS[item.hour];
-          if (heatmapData[item.day] && timeSlot) {
-            if (selectedLocation === "all") {
-              // For "all" locations, average the values
-              const currentCount = heatmapData[item.day]._count?.[timeSlot] || 0;
-              const currentValue = heatmapData[item.day][timeSlot] || 0;
-              
-              // Store count in a special _count property
-              // First create the _count object if it doesn't exist
-              if (!heatmapData[item.day]._count) {
-                heatmapData[item.day]._count = {} as CountMap;
-              }
-              
-              // At this point we can be certain that _count exists
-              const countMap = heatmapData[item.day]._count!;
-              countMap[timeSlot] = currentCount + 1;
-              
-              // Sum up values for later averaging
-              heatmapData[item.day][timeSlot] = currentValue + item.value;
-            } else {
-              // For specific location, just use the value
-              heatmapData[item.day][timeSlot] = item.value;
-            }
+          
+          // If multiple entries for same day/hour (from different locations),
+          // we'll average or take the max depending on business logic
+          if (selectedLocation === "all") {
+            // For "all" locations, we'll take the average
+            const currentValue = usageMap[item.day][timeSlot];
+            usageMap[item.day][timeSlot] = currentValue ? (currentValue + item.value) / 2 : item.value;
+          } else {
+            // For specific location, just use the value
+            usageMap[item.day][timeSlot] = item.value;
           }
         }
       });
       
-      // Create the series data structure that Nivo needs
-      const result: HeatMapSerie[] = [];
+      // Format data for Nivo heatmap
+      const formattedData = [];
       
-      for (const day of DAYS_OF_WEEK) {
-        const seriesData: HeatMapDatum[] = [];
-        
-        for (const timeSlot of TIME_SLOTS) {
-          let value = heatmapData[day][timeSlot];
-          
-          // Average the value if needed for "all" locations
-          if (selectedLocation === "all" && heatmapData[day]._count && heatmapData[day]._count[timeSlot] > 0) {
-            value = value / heatmapData[day]._count[timeSlot];
-          }
-          
-          seriesData.push({
-            x: timeSlot,
-            y: value / 100  // Convert to 0-1 scale (percentage to decimal)
-          });
+      for (const day of Object.keys(usageMap)) {
+        //const dayData = { id: day };
+        const dayData: { id: string; [key: string]: number | string } = { id: day };
+        // Add each time slot as a property
+        for (const timeSlot of Object.keys(usageMap[day])) {
+          // Convert to decimal for proper formatting (0-100% -> 0-1)
+          dayData[timeSlot] = usageMap[day][timeSlot] / 100;
         }
         
-        result.push({
-          id: day,
-          data: seriesData
-        });
+        formattedData.push(dayData);
       }
       
-      return result;
+      return formattedData;
     } catch (err) {
       console.error("Error processing usage data:", err);
       return [];
@@ -165,6 +109,17 @@ export function UsagePatternChart() {
   };
   
   const chartData = getChartData();
+  const transformedChartData = chartData.map((item) => {
+    const { id, ...rest } = item;
+    return {
+      id,
+      data: Object.entries(rest).map(([key, value]) => ({
+        x: key,
+        y: typeof value === 'number' ? value : parseFloat(value),
+      })),
+    };
+  });
+  
   
   // Error from API
   if (error) {
@@ -230,7 +185,7 @@ export function UsagePatternChart() {
           </div>
           {data?.locations && data.locations.length > 0 && (
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[200px] bg-white">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Select Location" />
               </SelectTrigger>
               <SelectContent>
@@ -248,11 +203,10 @@ export function UsagePatternChart() {
       <CardContent className="h-96 pt-6">
         {chartData.length > 0 ? (
           <ResponsiveHeatMap
-            data={chartData}
+            data={transformedChartData}
             valueFormat=">-.2p"
             margin={{ top: 20, right: 90, bottom: 60, left: 90 }}
-            xOuterPadding={0.1}
-            yOuterPadding={0.1}
+            forceSquare={false}
             axisTop={{
               tickSize: 5,
               tickPadding: 5,
@@ -269,53 +223,41 @@ export function UsagePatternChart() {
               tickRotation: 0,
               legend: 'Day of Week',
               legendPosition: 'middle',
-              legendOffset: -70
+              legendOffset: -80,
+              legendRotation: -90
             }}
-            colors={{
-              type: 'sequential',
-              scheme: 'blues'
-            }}
-            borderWidth={1}
-            borderColor="#ffffff"
-            enableLabels={false}
-            hoverTarget="cell"
+            colors={{ type: 'sequential', scheme: 'blues' }}
+            borderColor={{ from: 'color', modifiers: [['darker', 0.4]] }}
+            labelTextColor={{ from: 'color', modifiers: [['darker', 1.8]] }}
             animate={true}
             theme={{
               tooltip: {
                 container: {
                   background: '#ffffff',
                   fontSize: 12,
-                }
-              }
+                },
+              },
             }}
-            tooltip={({ cell }) => {
-              // Define a custom interface for the cell props based on Nivo's structure
-              type CellProps = {
-                serieId: string | number;
-                data: { x: string; y: number };
-                value: number | null;
-              };
-              
-              // Type-cast the cell prop
-              const cellData = cell as unknown as CellProps;
-              
-              return (
-                <div
-                  style={{
-                    background: 'white',
-                    padding: '9px 12px',
-                    border: '1px solid #ccc',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  <div><strong>Day:</strong> {String(cellData.serieId)}</div>
-                  <div><strong>Time:</strong> {cellData.data.x}</div>
-                  <div>
-                    <strong>Usage:</strong> {cellData.value !== null ? `${Math.round(cellData.value * 100)}%` : 'N/A'}
-                  </div>
-                </div>
-              );
-            }}
+           tooltip={(props) => {
+  const datum = props.cell;
+  return (
+    <div
+      style={{
+        background: 'white',
+        padding: '9px 12px',
+        border: '1px solid #ccc',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+      }}
+    >
+      <div><strong>Day:</strong> {datum.serieId}</div>
+      <div><strong>Time:</strong> {datum.id}</div>
+      <div>
+        <strong>Usage:</strong> {datum.value !== null ? `${Math.round(datum.value * 100)}%` : 'N/A'}
+      </div>
+    </div>
+  );
+}}
+
           />
         ) : (
           <div className="flex items-center justify-center h-full">
