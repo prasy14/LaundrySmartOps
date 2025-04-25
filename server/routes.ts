@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // machine-errors
     apiRouter.get('/machine-errors', isOperatorOrAbove, async (req, res) => {
       try {
-        const errors = await db.select().from(machineErrors);
+        const errors = await storage.getMachineErrorsWithDetails();
         res.json({ errors }); 
       } catch (error) {
         log(`Error fetching machine errors: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api'); 

@@ -477,6 +477,20 @@ export class DatabaseStorage implements IStorage {
       return []; // Return empty array instead of crashing
     }
   }
+
+  // Machine Error methods
+  async getMachineErrorsWithDetails(): Promise<MachineError[]> {
+    console.log('[storage] Getting machine errors');
+    try {
+      const errors = await db.select().from(machineErrors);
+      console.log(`[storage] Retrieved ${errors.length} machine errors`);
+      return errors;
+    } catch (error) {
+      console.error('[storage] Error getting machine errors:', error);
+      console.log("[storage] Returning empty array to prevent application crash");
+      return []; // Return empty array instead of crashing
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
