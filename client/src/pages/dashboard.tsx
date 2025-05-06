@@ -144,7 +144,7 @@ export default function Dashboard() {
       </div>
 
       {/* Visualization Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
         {/* Machine Status Distribution */}
         {machinesData?.machines && (
           <MachineStatusChart 
