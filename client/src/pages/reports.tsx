@@ -24,6 +24,7 @@ import { ApiMonitoring } from "@/components/reports/ApiMonitoring";
 import { ExecutiveSummary } from "@/components/reports/ExecutiveSummary";
 import { MachineSelector } from "@/components/reports/MachineSelector";
 import { check as checkSecret } from "@/lib/utils";
+import SearchableDropdown from "@/pages/SearchableDropdown";
 
 export default function Reports() {
   const { toast } = useToast();
@@ -236,22 +237,12 @@ export default function Reports() {
               <div className="flex justify-between items-center">
                 <CardTitle>Service Alerts by Location</CardTitle>
                 <div className="flex items-center gap-4">
-                  <Select
-                    value={selectedLocation}
-                    onValueChange={setSelectedLocation}
-                  >
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Select Location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Locations</SelectItem>
-                      {locationsData?.locations.map((location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <SearchableDropdown
+                             className="w-[300px]" 
+                             value={selectedLocation}
+                             onChange={setSelectedLocation}
+                             options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                          />
                   <MachineSelector
                     selectedMachine={selectedMachine}
                     onMachineChange={setSelectedMachine}
@@ -386,22 +377,12 @@ export default function Reports() {
               <div className="flex justify-between items-center">
                 <CardTitle>Machine Performance Metrics</CardTitle>
                 <div className="flex items-center gap-4">
-                  <Select
-                    value={selectedLocation}
-                    onValueChange={setSelectedLocation}
-                  >
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Select Location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Locations</SelectItem>
-                      {locationsData?.locations.map((location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <SearchableDropdown
+                             className="w-[300px]" 
+                             value={selectedLocation}
+                             onChange={setSelectedLocation}
+                             options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                          />
                   <MachineSelector
                     selectedMachine={selectedMachine}
                     onMachineChange={setSelectedMachine}
@@ -583,22 +564,12 @@ export default function Reports() {
                 <div className="flex justify-between items-center">
                   <CardTitle>Sustainability Metrics by Location</CardTitle>
                   <div className="flex items-center gap-4">
-                    <Select
-                      value={selectedLocation}
-                      onValueChange={setSelectedLocation}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Select Location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Locations</SelectItem>
-                        {locationsData?.locations.map((location) => (
-                          <SelectItem key={location.id} value={location.id.toString()}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <SearchableDropdown
+                             className="w-[300px]" 
+                             value={selectedLocation}
+                             onChange={setSelectedLocation}
+                             options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                          />
                     <MachineSelector
                       selectedMachine={selectedMachine}
                       onMachineChange={setSelectedMachine}
@@ -676,22 +647,12 @@ export default function Reports() {
                 <div className="flex justify-between items-center">
                   <CardTitle>Service Alerts by Location</CardTitle>
                   <div className="flex items-center gap-4">
-                    <Select
-                      value={selectedLocation}
-                      onValueChange={setSelectedLocation}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Select Location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Locations</SelectItem>
-                        {locationsData?.locations.map((location) => (
-                          <SelectItem key={location.id} value={location.id.toString()}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <SearchableDropdown
+                             className="w-[300px]" 
+                             value={selectedLocation}
+                             onChange={setSelectedLocation}
+                             options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                          />
                     <MachineSelector
                       selectedMachine={selectedMachine}
                       onMachineChange={setSelectedMachine}
@@ -744,22 +705,12 @@ export default function Reports() {
                 <div className="flex justify-between items-center">
                   <CardTitle>SLA Compliance</CardTitle>
                   <div className="flex items-center gap-4">
-                    <Select
-                      value={selectedLocation}
-                      onValueChange={setSelectedLocation}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Select Location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Locations</SelectItem>
-                        {locationsData?.locations.map((location) => (
-                          <SelectItem key={location.id} value={location.id.toString()}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <SearchableDropdown
+                             className="w-[300px]" 
+                             value={selectedLocation}
+                             onChange={setSelectedLocation}
+                             options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                          />
                     <MachineSelector
                       selectedMachine={selectedMachine}
                       onMachineChange={setSelectedMachine}
@@ -802,22 +753,12 @@ export default function Reports() {
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex flex-col space-y-1.5">
-                          <Select
-                            value={selectedLocation}
-                            onValueChange={setSelectedLocation}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select Location" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Locations</SelectItem>
-                              {locationsData?.locations.map((location) => (
-                                <SelectItem key={location.id} value={location.id.toString()}>
-                                  {location.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                        <SearchableDropdown
+                             className="w-[300px]" 
+                             value={selectedLocation}
+                             onChange={setSelectedLocation}
+                             options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                          />
                         </div>
                         <Button className="w-full" onClick={() => exportToCSV([], 'machine-performance')}>
                           <FileDown className="w-4 h-4 mr-2" />
@@ -854,22 +795,12 @@ export default function Reports() {
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex flex-col space-y-1.5">
-                          <Select
-                            value={selectedLocation}
-                            onValueChange={setSelectedLocation}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select Location" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Locations</SelectItem>
-                              {locationsData?.locations.map((location) => (
-                                <SelectItem key={location.id} value={location.id.toString()}>
-                                  {location.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                        <SearchableDropdown
+                             className="w-[300px]" 
+                             value={selectedLocation}
+                             onChange={setSelectedLocation}
+                             options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                          />
                         </div>
                         <Button className="w-full" onClick={() => exportToCSV([], 'sustainability-metrics')}>
                           <FileDown className="w-4 h-4 mr-2" />
