@@ -15,6 +15,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { utils, writeFile } from "xlsx";
+import { forwardRef, useImperativeHandle } from "react";
+
+export interface MachineCycleAnalysisHandle {
+  exportData: () => void;
+}
 
 // Machine type definition
 interface Machine {
@@ -35,11 +42,17 @@ interface Location {
   id: number;
   name: string;
 }
+// interface MachineCycleAnalysisProps {
+//   onExport: (machines: Machine[]) => void;
+//   onDataUpdate?: (data: Machine[]) => void;
+// }
 
-// Component for machine cycle analysis
-export default function MachineCycleAnalysis() {
-  const { toast } = useToast();
+// const MachineCycleAnalysis: React.FC<MachineCycleAnalysisProps> = ({ onExport }) => {
+
+const MachineCycleAnalysis = forwardRef<MachineCycleAnalysisHandle>((_, ref) => {
+const { toast } = useToast();
   const queryClient = useQueryClient();
+
   
   // State for date selection
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -79,6 +92,7 @@ export default function MachineCycleAnalysis() {
       });
     },
   });
+  
   
   // Function to handle flagging a machine for maintenance
   const handleFlagMachine = (machineId: number, currentFlag: boolean) => {
@@ -128,6 +142,37 @@ export default function MachineCycleAnalysis() {
     return location?.name || 'Unknown';
   };
 
+  // Expose exportData function to parent via ref
+  useImperativeHandle(ref, () => ({
+    exportData() {
+      if (!highCycleMachines || highCycleMachines.length === 0) {
+        console.log("No data to export.");
+        return;
+      }
+
+      const formattedData = highCycleMachines.map((machine) => ({
+        Name: machine.name,
+        Location: getLocationName(machine.locationId),
+        "Today's Cycle Count": machine.cycleStats?.todayCount || 'N/A',
+        "Weekly Average": machine.cycleStats?.weeklyAverage || 'N/A',
+        "Monthly Average": machine.cycleStats?.monthlyAverage || 'N/A',
+        "Last Maintenance": machine.lastMaintenanceDate
+          ? format(new Date(machine.lastMaintenanceDate), "MMM d, yyyy")
+          : "N/A",
+      }));
+
+      const ws = utils.json_to_sheet(formattedData);
+      const wb = utils.book_new();
+      utils.book_append_sheet(wb, ws, "Cycle Analysis");
+      writeFile(wb, "Machine_Cycle_Analysis.xlsx");
+    }
+  }));
+  console.log('machinesData:', machinesData);
+console.log('cycleThreshold:', cycleThreshold);
+console.log('highCycleMachines:', highCycleMachines);
+
+  
+  
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
@@ -230,8 +275,7 @@ export default function MachineCycleAnalysis() {
                     <TableCell className="text-center">
                       <Badge 
                         variant={machine.cycleStats.todayCount > 10 ? "destructive" : 
-                               machine.cycleStats.todayCount > 8 ? "warning" : "outline"}
-                      >
+                         machine.cycleStats.todayCount > 8 ? "warning" : "outline"}>
                         {machine.cycleStats.todayCount} cycles
                       </Badge>
                     </TableCell>
@@ -245,8 +289,7 @@ export default function MachineCycleAnalysis() {
                         <Checkbox 
                           id={`flag-${machine.id}`}
                           checked={machine.flaggedForMaintenance}
-                          onCheckedChange={() => handleFlagMachine(machine.id, !!machine.flaggedForMaintenance)}
-                        />
+                          onCheckedChange={() => handleFlagMachine(machine.id, !!machine.flaggedForMaintenance)}/>
                         <Label htmlFor={`flag-${machine.id}`} className="text-xs">
                           Flag for maintenance
                         </Label>
@@ -272,4 +315,6 @@ export default function MachineCycleAnalysis() {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default MachineCycleAnalysis;
