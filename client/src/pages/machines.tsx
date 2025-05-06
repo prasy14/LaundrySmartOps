@@ -28,17 +28,23 @@ import {
   LineChart,
   ChevronDown,
   ChevronUp,
-  Minimize2
+  Minimize2,
+  Download
 } from "lucide-react";
 import MachineLifecycleChart from "@/components/visualizations/MachineLifecycleChart";
-import MachineCycleAnalysis from "@/components/dashboard/MachineCycleAnalysis";
+import MachineCycleAnalysis,{MachineCycleAnalysisHandle} from "@/components/dashboard/MachineCycleAnalysis";
+import { useRef } from "react";
+import { writeFile, utils } from 'xlsx';
+import SearchableDropdown from "./SearchableDropdown";
 
 export default function Machines() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [activeTab, setActiveTab] = useState<string>("overview");
-  const [detailsExpanded, setDetailsExpanded] = useState<boolean>(false);
+  const [activeTab2, setActiveTab2] = useState<string>("inventory");
 
+  const [detailsExpanded, setDetailsExpanded] = useState<boolean>(false);
+  
   const { data: machinesData, isLoading } = useQuery<{ machines: Machine[] }>({
     queryKey: ['/api/machines'],
   });
@@ -120,7 +126,7 @@ export default function Machines() {
         </div>
       );
     }
-
+   
     return (
       <div className="space-y-4">
         <div className="space-y-2">
@@ -161,46 +167,86 @@ export default function Machines() {
       </div>
     );
   };
-
+  const cycleRef = useRef<MachineCycleAnalysisHandle>(null);
+  const handleExport = () => {
+    if (activeTab2 === "cycleanalysis") {
+      cycleRef.current?.exportData();
+    } 
+  };
   const filteredMachines = machinesData?.machines.filter(machine =>
     selectedLocation === "all" ||
     (machine.locationId && machine.locationId.toString() === selectedLocation)
   );
 
+ // Export functions
+ const exportInventoryData = (machines: Machine[] | undefined) => {
+  if (!machines || machines.length === 0) {
+    console.log("No machines available to export.");
+    return;
+  }
+
+  const formattedData = machines.map((machine: Machine) => ({
+    Name: machine.name,
+    Location: getLocationName(machine.locationId),
+    Model: machine.modelNumber || 'N/A',
+    'Serial Number': machine.serialNumber || 'N/A',
+    Status: getStatusDisplay(machine),
+    'Warranty Status': getWarrantyStatus(machine).label,
+    'Link Quality': getLinkQuality(machine) !== null ? `${getLinkQuality(machine)}%` : 'N/A',
+    'Remaining Time': getRemainingTime(machine) || 'N/A',
+  }));
+
+  const ws = utils.json_to_sheet(formattedData);
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, ws, 'Machine Inventory');
+  writeFile(wb, 'Machine_Inventory.xlsx');
+};
+  
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Machine Management</h1>
-        <Select
-          value={selectedLocation}
-          onValueChange={(value: string) => setSelectedLocation(value)}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select Location" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Locations</SelectItem>
-            {locationsData?.locations.map((location) => (
-              <SelectItem key={location.id} value={location.id.toString()}>
-                {location.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center space-x-4">
+        <SearchableDropdown
+           className="w-[300px]" 
+           value={selectedLocation}
+           onChange={setSelectedLocation}
+           options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+        />
+<Button
+  variant="outline"
+  onClick={() => {
+    if (activeTab2 === 'inventory') {
+      exportInventoryData(filteredMachines);
+    } else if (activeTab2 === 'cycleanalysis') {
+      {
+         handleExport();
+      }
+    }
+  }}>
+  <Download className="h-4 w-4 mr-2" />
+  Export Data
+</Button>
+
       </div>
-      
-      <Tabs defaultValue="analysis" className="space-y-4">
+      </div>
+      <Tabs
+  value={activeTab2}
+  onValueChange={(value) => setActiveTab2(value)}
+  className="space-y-4"
+>
+
   <TabsList>
-    <TabsTrigger value="analysis">Cycle Analysis</TabsTrigger>
+    <TabsTrigger value="cycleanalysis">Cycle Analysis</TabsTrigger>
     <TabsTrigger value="inventory">Machine Inventory</TabsTrigger>
   </TabsList>
 
   {/* Machine Cycle Analysis Section */}
-  <TabsContent value="analysis">
+  <TabsContent value="cycleanalysis">
     <div className="lg:col-span-3 mb-4">
-      <MachineCycleAnalysis />
-    </div>
-  </TabsContent>
+    <MachineCycleAnalysis ref={cycleRef} />
+</div>
+</TabsContent>
 
   {/* Machine Inventory Section */}
   <TabsContent value="inventory">
@@ -558,3 +604,4 @@ export default function Machines() {
       </div>
   );
 }
+
