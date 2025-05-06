@@ -44,6 +44,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
+import SearchableDropdown from "@/pages/SearchableDropdown";
 
 export default function AlertsPage() {
   // State management
@@ -247,19 +248,12 @@ export default function AlertsPage() {
                   </div>
                 </div>
                 
-                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Locations</SelectItem>
-                    {locationsData?.locations?.map((location) => (
-                      <SelectItem key={location.id} value={location.id.toString()}>
-                        {location.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                 <SearchableDropdown
+                      className="w-[300px]" 
+                      value={selectedLocation}
+                      onChange={setSelectedLocation}
+                       options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                  />
                 
                 <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
                   <SelectTrigger className="w-[150px]">
