@@ -208,7 +208,7 @@ export function ComponentReliabilityChart({
               data={chartData}
               keys={[selectedMetric]}
               indexBy="component"
-              margin={{ top: 10, right: 10, bottom: 50, left: 80 }}
+              margin={{ top: 10, right: 10, bottom: 80, left: 80 }}
               padding={0.3}
               valueScale={{ type: 'linear' }}
               indexScale={{ type: 'band', round: true }}
@@ -220,10 +220,11 @@ export function ComponentReliabilityChart({
               axisBottom={{
                 tickSize: 5,
                 tickPadding: 5,
-                tickRotation: -45,
+                tickRotation: -25,
                 legend: 'Component',
                 legendPosition: 'middle',
-                legendOffset: 40
+                legendOffset: 65
+
               }}
               axisLeft={{
                 tickSize: 5,
