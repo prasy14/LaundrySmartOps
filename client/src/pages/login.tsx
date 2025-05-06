@@ -59,6 +59,7 @@ export default function LoginPage() {
       toast({
         title: "Success",
         description: "Successfully logged in",
+        duration: 500,
       });
 
       // Add a small delay to ensure the session is properly set
