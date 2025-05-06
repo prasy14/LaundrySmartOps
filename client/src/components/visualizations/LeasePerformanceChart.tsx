@@ -192,12 +192,12 @@ export function LeasePerformanceChart({
         </div>
         
         {chartData.length > 0 ? (
-          <div className="h-[400px]">
+          <div className="h-[400px] overflow-x-auto text-sm">
             <ResponsiveBar
               data={chartData}
               keys={['value']}
               indexBy="location"
-              margin={{ top: 10, right: 20, bottom: 70, left: 80 }}
+              margin={{ top: 10, right: 20, bottom: 70, left: 140 }}
               padding={0.3}
               layout="horizontal"
               valueScale={{ type: 'linear' }}
@@ -216,11 +216,12 @@ export function LeasePerformanceChart({
               }}
               axisLeft={{
                 tickSize: 5,
-                tickPadding: 5,
-                tickRotation: 0,
+                tickPadding: 8,
+                tickRotation: -15,
                 legend: 'Location',
                 legendPosition: 'middle',
-                legendOffset: -60
+                legendOffset: -130,
+                //legendRotation: -90
               }}
               labelSkipWidth={12}
               labelSkipHeight={12}
