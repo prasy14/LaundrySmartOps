@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableDropdown from "@/pages/SearchableDropdown";
 
 // Define the data structure for machine availability
 interface AvailabilityDataPoint {
@@ -140,19 +141,17 @@ export function MachineAvailabilityChart({
             <p className="text-white/80 text-sm">Machine uptime percentage over time</p>
           </div>
           {locations.length > 0 && (
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {locations.map(location => (
-                  <SelectItem key={location} value={location}>
-                    {location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+             <SearchableDropdown
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                    options={[
+                    { id: "all", name: "All Locations" },
+                    ...locations.map(location => ({
+                    id: location,
+                    name: location
+                    }))
+                   ]}
+                 />
           )}
         </div>
       </CardHeader>
@@ -179,7 +178,6 @@ export function MachineAvailabilityChart({
               legend: 'Date',
               legendOffset: 65,
               legendPosition: 'middle',
-              
             }}
             axisLeft={{
               tickSize: 5,
