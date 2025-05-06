@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import SearchableDropdown from "@/pages/SearchableDropdown";
 
 interface MachineStatusChartProps {
   machines: Machine[] | null | undefined;
@@ -157,21 +158,19 @@ export function MachineStatusChart({
             <p className="text-white/80 text-sm">Current machine operational states</p>
           </div>
           {locations && locations.length > 0 && (
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {locations.map(location => (
-                  <SelectItem key={location.id} value={location.id.toString()}>
-                    {location.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+  <SearchableDropdown
+    value={selectedLocation}
+    onChange={setSelectedLocation}
+    options={[
+      { id: "all", name: "All Locations" },
+      ...locations.map((location) => ({
+        id: location.id.toString(), 
+        name: location.name,
+      })),
+    ]}
+  />
+)}
+</div>
       </CardHeader>
       <CardContent className="pt-6">
         {chartData.length > 0 ? (
