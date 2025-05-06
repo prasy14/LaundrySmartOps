@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableDropdown from "@/pages/SearchableDropdown";
 
 const DAYS_OF_WEEK = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
@@ -184,36 +185,34 @@ export function UsagePatternChart() {
             <p className="text-white/80 text-sm">Machine usage patterns by day of week and time</p>
           </div>
           {data?.locations && data.locations.length > 0 && (
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {data.locations.map(location => (
-                  <SelectItem key={location} value={location}>
-                    {location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+      <SearchableDropdown
+        value={selectedLocation}
+        onChange={setSelectedLocation}
+        options={[
+        { id: "all", name: "All Locations" },
+        ...data.locations.map(location => ({
+        id: location,
+        name: location
+        }))
+       ]}
+     />
+  )}
+</div>
       </CardHeader>
       <CardContent className="h-96 pt-6">
         {chartData.length > 0 ? (
           <ResponsiveHeatMap
             data={transformedChartData}
             valueFormat=">-.2p"
-            margin={{ top: 20, right: 90, bottom: 60, left: 90 }}
+            margin={{ top: 50, right: 90, bottom: 60, left: 90 }}
             forceSquare={false}
             axisTop={{
               tickSize: 5,
               tickPadding: 5,
-              tickRotation: -45,
+              tickRotation: 0,
               legend: 'Time of Day',
               legendPosition: 'middle',
-              legendOffset: -30
+              legendOffset: -40
             }}
             axisRight={null}
             axisBottom={null}
