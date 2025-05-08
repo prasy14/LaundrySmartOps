@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { eq, desc, inArray } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers,machineErrors, CycleStep, cycleSteps } from "@shared/schema";
+import { eq, desc, inArray, and, gte, lte, sql, between, asc } from "drizzle-orm";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
@@ -12,9 +12,12 @@ import type {
   ProgramModifier, InsertProgramModifier,
   CommandHistory, InsertCommandHistory,
   MachineCycle,
-  CycleModifier,MachineError 
+  CycleModifier,
+  MachineError,
+  CycleStep,
+  MachinePerformanceMetrics,
+  InsertMachinePerformanceMetrics
 } from "@shared/schema";
-import { machine } from "os";
 
 export interface IStorage {
   // User operations
@@ -67,6 +70,14 @@ export interface IStorage {
   getMachinesByLocation(locationId: number): Promise<Machine[]>;
   getAlertsByMachines(machineIds: number[]): Promise<Alert[]>;
   getAlertsByServiceType(serviceType: string): Promise<Alert[]>;
+  
+  // Machine Performance Metrics methods
+  getMachinePerformanceMetrics(machineId: number, startDate?: Date, endDate?: Date): Promise<MachinePerformanceMetrics[]>;
+  getMachinePerformanceMetricsForLocation(locationId: number, startDate?: Date, endDate?: Date): Promise<MachinePerformanceMetrics[]>;
+  getMachinePerformanceMetricsByType(machineTypeId: number, startDate?: Date, endDate?: Date): Promise<MachinePerformanceMetrics[]>;
+  addMachinePerformanceMetrics(metrics: InsertMachinePerformanceMetrics): Promise<MachinePerformanceMetrics>;
+  updateMachinePerformanceMetrics(id: number, metrics: Partial<InsertMachinePerformanceMetrics>): Promise<MachinePerformanceMetrics>;
+  getComparableMachineMetrics(machineIds: number[], startDate: Date, endDate: Date): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -494,6 +505,241 @@ async getCycleSteps(): Promise<CycleStep[]> {
       console.log("[storage] Returning empty array to prevent application crash");
       return []; // Return empty array instead of crashing
     }
+  }
+
+  // Machine Performance Metrics methods
+  async getMachinePerformanceMetrics(machineId: number, startDate?: Date, endDate?: Date): Promise<MachinePerformanceMetrics[]> {
+    try {
+      let query = db.select().from(machinePerformanceMetrics).where(eq(machinePerformanceMetrics.machineId, machineId));
+      
+      if (startDate) {
+        query = query.where(gte(machinePerformanceMetrics.date, startDate));
+      }
+      
+      if (endDate) {
+        query = query.where(lte(machinePerformanceMetrics.date, endDate));
+      }
+      
+      const metrics = await query.orderBy(asc(machinePerformanceMetrics.date));
+      console.log(`[storage] Retrieved ${metrics.length} performance metrics for machine ${machineId}`);
+      return metrics;
+    } catch (error) {
+      console.error(`[storage] Error getting machine performance metrics for machine ${machineId}:`, error);
+      return [];
+    }
+  }
+  
+  async getMachinePerformanceMetricsForLocation(locationId: number, startDate?: Date, endDate?: Date): Promise<MachinePerformanceMetrics[]> {
+    try {
+      let query = db.select().from(machinePerformanceMetrics).where(eq(machinePerformanceMetrics.locationId, locationId));
+      
+      if (startDate) {
+        query = query.where(gte(machinePerformanceMetrics.date, startDate));
+      }
+      
+      if (endDate) {
+        query = query.where(lte(machinePerformanceMetrics.date, endDate));
+      }
+      
+      const metrics = await query.orderBy(asc(machinePerformanceMetrics.machineId), asc(machinePerformanceMetrics.date));
+      console.log(`[storage] Retrieved ${metrics.length} performance metrics for location ${locationId}`);
+      return metrics;
+    } catch (error) {
+      console.error(`[storage] Error getting machine performance metrics for location ${locationId}:`, error);
+      return [];
+    }
+  }
+  
+  async getMachinePerformanceMetricsByType(machineTypeId: number, startDate?: Date, endDate?: Date): Promise<MachinePerformanceMetrics[]> {
+    try {
+      // First get all machines of this type
+      const machineList = await db
+        .select()
+        .from(machines)
+        .where(eq(machines.machineTypeId, machineTypeId));
+      
+      if (!machineList.length) {
+        return [];
+      }
+      
+      const machineIds = machineList.map(m => m.id);
+      
+      let query = db
+        .select()
+        .from(machinePerformanceMetrics)
+        .where(inArray(machinePerformanceMetrics.machineId, machineIds));
+      
+      if (startDate) {
+        query = query.where(gte(machinePerformanceMetrics.date, startDate));
+      }
+      
+      if (endDate) {
+        query = query.where(lte(machinePerformanceMetrics.date, endDate));
+      }
+      
+      const metrics = await query.orderBy(asc(machinePerformanceMetrics.machineId), asc(machinePerformanceMetrics.date));
+      console.log(`[storage] Retrieved ${metrics.length} performance metrics for machine type ${machineTypeId}`);
+      return metrics;
+    } catch (error) {
+      console.error(`[storage] Error getting machine performance metrics for machine type ${machineTypeId}:`, error);
+      return [];
+    }
+  }
+  
+  async addMachinePerformanceMetrics(metrics: InsertMachinePerformanceMetrics): Promise<MachinePerformanceMetrics> {
+    try {
+      const [result] = await db
+        .insert(machinePerformanceMetrics)
+        .values({
+          ...metrics,
+          createdAt: new Date(),
+          lastUpdatedAt: new Date()
+        })
+        .returning();
+      
+      console.log(`[storage] Added performance metrics for machine ${metrics.machineId}`);
+      return result;
+    } catch (error) {
+      console.error(`[storage] Error adding machine performance metrics:`, error);
+      throw error;
+    }
+  }
+  
+  async updateMachinePerformanceMetrics(id: number, metricsUpdate: Partial<InsertMachinePerformanceMetrics>): Promise<MachinePerformanceMetrics> {
+    try {
+      const [result] = await db
+        .update(machinePerformanceMetrics)
+        .set({
+          ...metricsUpdate,
+          lastUpdatedAt: new Date()
+        })
+        .where(eq(machinePerformanceMetrics.id, id))
+        .returning();
+      
+      console.log(`[storage] Updated performance metrics with ID ${id}`);
+      return result;
+    } catch (error) {
+      console.error(`[storage] Error updating machine performance metrics:`, error);
+      throw error;
+    }
+  }
+  
+  async getComparableMachineMetrics(machineIds: number[], startDate: Date, endDate: Date): Promise<any[]> {
+    try {
+      // Get the metrics for all requested machines
+      const metrics = await db
+        .select({
+          id: machinePerformanceMetrics.id,
+          machineId: machinePerformanceMetrics.machineId,
+          date: machinePerformanceMetrics.date,
+          uptimeMinutes: machinePerformanceMetrics.uptimeMinutes,
+          downtimeMinutes: machinePerformanceMetrics.downtimeMinutes,
+          availabilityPercentage: machinePerformanceMetrics.availabilityPercentage,
+          cyclesCompleted: machinePerformanceMetrics.cyclesCompleted,
+          totalLoadsProcessed: machinePerformanceMetrics.totalLoadsProcessed,
+          averageCycleTime: machinePerformanceMetrics.averageCycleTime,
+          errorCount: machinePerformanceMetrics.errorCount,
+          failureRate: machinePerformanceMetrics.failureRate,
+          meanTimeBetweenFailures: machinePerformanceMetrics.meanTimeBetweenFailures,
+          energyConsumption: machinePerformanceMetrics.energyConsumption,
+          energyEfficiency: machinePerformanceMetrics.energyEfficiency,
+          maintenanceCount: machinePerformanceMetrics.maintenanceCount,
+          oeeScore: machinePerformanceMetrics.oeeScore,
+          machineName: machines.name,
+          machineType: machineTypes.name,
+          locationName: locations.name,
+          manufacturer: machines.manufacturer,
+          modelNumber: machines.modelNumber,
+        })
+        .from(machinePerformanceMetrics)
+        .leftJoin(machines, eq(machinePerformanceMetrics.machineId, machines.id))
+        .leftJoin(machineTypes, eq(machines.machineTypeId, machineTypes.id))
+        .leftJoin(locations, eq(machines.locationId, locations.id))
+        .where(and(
+          inArray(machinePerformanceMetrics.machineId, machineIds),
+          gte(machinePerformanceMetrics.date, startDate),
+          lte(machinePerformanceMetrics.date, endDate)
+        ))
+        .orderBy(asc(machinePerformanceMetrics.machineId), asc(machinePerformanceMetrics.date));
+      
+      // Group metrics by machine to calculate averages
+      const groupedByMachine: Record<number, any> = {};
+      
+      metrics.forEach(metric => {
+        if (!groupedByMachine[metric.machineId]) {
+          groupedByMachine[metric.machineId] = {
+            machineId: metric.machineId,
+            machineName: metric.machineName,
+            machineType: metric.machineType,
+            locationName: metric.locationName,
+            manufacturer: metric.manufacturer,
+            modelNumber: metric.modelNumber,
+            metrics: [],
+            averages: {
+              availabilityPercentage: 0,
+              cyclesCompleted: 0,
+              averageCycleTime: 0,
+              failureRate: 0,
+              energyConsumption: 0,
+              energyEfficiency: 0,
+              oeeScore: 0,
+              maintenanceCount: 0
+            }
+          };
+        }
+        
+        groupedByMachine[metric.machineId].metrics.push(metric);
+      });
+      
+      // Calculate averages for each machine
+      Object.keys(groupedByMachine).forEach(machineIdStr => {
+        const machineData = groupedByMachine[Number(machineIdStr)];
+        const metricsCount = machineData.metrics.length;
+        
+        if (metricsCount > 0) {
+          machineData.averages = {
+            availabilityPercentage: this.calculateAverage(machineData.metrics, 'availabilityPercentage'),
+            cyclesCompleted: this.calculateSum(machineData.metrics, 'cyclesCompleted'),
+            averageCycleTime: this.calculateAverage(machineData.metrics, 'averageCycleTime'),
+            failureRate: this.calculateAverage(machineData.metrics, 'failureRate'),
+            energyConsumption: this.calculateSum(machineData.metrics, 'energyConsumption'),
+            energyEfficiency: this.calculateAverage(machineData.metrics, 'energyEfficiency'),
+            oeeScore: this.calculateAverage(machineData.metrics, 'oeeScore'),
+            maintenanceCount: this.calculateSum(machineData.metrics, 'maintenanceCount')
+          };
+          
+          // Add total uptime and downtime
+          machineData.totals = {
+            uptimeMinutes: this.calculateSum(machineData.metrics, 'uptimeMinutes'),
+            downtimeMinutes: this.calculateSum(machineData.metrics, 'downtimeMinutes'),
+            totalLoadsProcessed: this.calculateSum(machineData.metrics, 'totalLoadsProcessed'),
+            errorCount: this.calculateSum(machineData.metrics, 'errorCount')
+          };
+        }
+      });
+      
+      return Object.values(groupedByMachine);
+    } catch (error) {
+      console.error(`[storage] Error getting comparable machine metrics:`, error);
+      return [];
+    }
+  }
+  
+  // Helper methods for metric calculations
+  private calculateAverage(items: any[], property: string): number {
+    const validItems = items.filter(item => item[property] !== null && item[property] !== undefined);
+    if (validItems.length === 0) return 0;
+    
+    const sum = validItems.reduce((acc, item) => acc + Number(item[property]), 0);
+    return sum / validItems.length;
+  }
+  
+  private calculateSum(items: any[], property: string): number {
+    return items.reduce((acc, item) => {
+      const value = item[property];
+      if (value === null || value === undefined) return acc;
+      return acc + Number(value);
+    }, 0);
   }
 }
 
