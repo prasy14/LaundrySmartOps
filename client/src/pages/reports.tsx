@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Alert, Location, MachineError } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { EmailScheduleDialog } from "@/components/reports/EmailScheduleDialog";
@@ -25,6 +25,8 @@ import { ExecutiveSummary } from "@/components/reports/ExecutiveSummary";
 import { MachineSelector } from "@/components/reports/MachineSelector";
 import { check as checkSecret } from "@/lib/utils";
 import SearchableDropdown from "@/pages/SearchableDropdown";
+import { ConsumptionChart } from "@/components/visualizations/ConsumptionChart";
+import { CarbonFootprintChart } from "@/components/visualizations/CarbonFootprintChart";
 
 export default function Reports() {
   const { toast } = useToast();
@@ -127,8 +129,54 @@ export default function Reports() {
     queryKey: ['/api/reports/error-trends', selectedMachine, dateRange],
     enabled: !locationsLoading,
   });
+  
+  // Sustainability data with location filter
+  const { data: sustainabilityData, isLoading: isSustainabilityLoading, error: sustainabilityError } = useQuery<{
+    data: Array<{
+      date: string;
+      location: string;
+      energy: number;
+      water: number;
+      carbon: number;
+      cycles: number;
+    }>;
+  }>({
+    queryKey: ['/api/reports/sustainability', selectedLocation, selectedMachine, dateRange],
+    enabled: !locationsLoading,
+  });
+  
+  // Prepare data for consumption charts
+  const energyData = useMemo(() => {
+    if (!sustainabilityData?.data) return [];
+    return sustainabilityData.data.map(item => ({
+      date: new Date(item.date).toLocaleDateString(),
+      value: item.energy
+    }));
+  }, [sustainabilityData]);
+  
+  const waterData = useMemo(() => {
+    if (!sustainabilityData?.data) return [];
+    return sustainabilityData.data.map(item => ({
+      date: new Date(item.date).toLocaleDateString(),
+      value: item.water
+    }));
+  }, [sustainabilityData]);
+  
+  const carbonData = useMemo(() => {
+    if (!sustainabilityData?.data) return [];
+    return sustainabilityData.data.map(item => ({
+      date: new Date(item.date).toLocaleDateString(),
+      value: item.carbon
+    }));
+  }, [sustainabilityData]);
+  
+  // Calculate total cycle count
+  const cycleCount = useMemo(() => {
+    if (!sustainabilityData?.data) return 0;
+    return sustainabilityData.data.reduce((total, item) => total + item.cycles, 0);
+  }, [sustainabilityData]);
 
-  if (locationsLoading || alertsLoading || issuesLoading || metricsLoading || trendsLoading) {
+  if (locationsLoading || alertsLoading || issuesLoading || metricsLoading || trendsLoading || isSustainabilityLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -578,7 +626,7 @@ export default function Reports() {
                     {hasPermission(['data_analyst', 'admin']) && (
                       <Button
                         variant="outline"
-                        onClick={() => exportToCSV([], 'sustainability-metrics')}
+                        onClick={() => exportToCSV(sustainabilityData?.data || [], 'sustainability-metrics')}
                       >
                         <FileDown className="w-4 h-4 mr-2" />
                         Export
@@ -589,31 +637,84 @@ export default function Reports() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  {/* Import the ConsumptionChart component */}
-                  <div className="w-full">
-                    <Card className="w-full h-80">
-                      <CardHeader>
-                        <CardTitle>Energy Consumption (kWh)</CardTitle>
-                      </CardHeader>
-                      <CardContent className="h-64">
-                        <div className="flex items-center justify-center h-full">
-                          <p className="text-muted-foreground">Loading chart data...</p>
+                  <ConsumptionChart
+                    data={energyData}
+                    title="Energy Consumption"
+                    unitLabel="kWh"
+                    isLoading={isSustainabilityLoading}
+                    error={sustainabilityError}
+                    type="energy"
+                  />
+                  <ConsumptionChart
+                    data={waterData}
+                    title="Water Consumption"
+                    unitLabel="Gallons"
+                    isLoading={isSustainabilityLoading}
+                    error={sustainabilityError}
+                    type="water"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <CarbonFootprintChart
+                    data={carbonData}
+                    isLoading={isSustainabilityLoading}
+                    error={sustainabilityError}
+                  />
+                  <Card className="w-full h-80 shadow-md">
+                    <CardHeader className="gradient-blue text-white border-b">
+                      <CardTitle>Sustainability Metrics Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-5">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-muted/30 p-4 rounded-lg">
+                            <h3 className="text-lg font-medium mb-1">Total Energy</h3>
+                            <p className="text-2xl font-bold text-[#e95f2a]">
+                              {isSustainabilityLoading ? (
+                                <Loader2 className="w-6 h-6 animate-spin inline-block mr-2" />
+                              ) : (
+                                energyData?.reduce((total, item) => total + item.value, 0)?.toLocaleString() || "0"
+                              )} 
+                              <span className="text-sm font-normal text-muted-foreground ml-1">kWh</span>
+                            </p>
+                          </div>
+                          <div className="bg-muted/30 p-4 rounded-lg">
+                            <h3 className="text-lg font-medium mb-1">Total Water</h3>
+                            <p className="text-2xl font-bold text-[#73a4b7]">
+                              {isSustainabilityLoading ? (
+                                <Loader2 className="w-6 h-6 animate-spin inline-block mr-2" />
+                              ) : (
+                                waterData?.reduce((total, item) => total + item.value, 0)?.toLocaleString() || "0"
+                              )}
+                              <span className="text-sm font-normal text-muted-foreground ml-1">gallons</span>
+                            </p>
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <div className="w-full">
-                    <Card className="w-full h-80">
-                      <CardHeader>
-                        <CardTitle>Water Consumption (gallons)</CardTitle>
-                      </CardHeader>
-                      <CardContent className="h-64">
-                        <div className="flex items-center justify-center h-full">
-                          <p className="text-muted-foreground">Loading chart data...</p>
+                        <div className="bg-muted/30 p-4 rounded-lg">
+                          <h3 className="text-lg font-medium mb-1">Carbon Footprint</h3>
+                          <p className="text-2xl font-bold text-[#647991]">
+                            {isSustainabilityLoading ? (
+                              <Loader2 className="w-6 h-6 animate-spin inline-block mr-2" />
+                            ) : (
+                              carbonData?.reduce((total, item) => total + item.value, 0)?.toLocaleString() || "0"
+                            )}
+                            <span className="text-sm font-normal text-muted-foreground ml-1">kg CO₂e</span>
+                          </p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                        <div className="bg-muted/30 p-4 rounded-lg">
+                          <h3 className="text-lg font-medium mb-1">Total Machine Cycles</h3>
+                          <p className="text-2xl font-bold">
+                            {isSustainabilityLoading ? (
+                              <Loader2 className="w-6 h-6 animate-spin inline-block mr-2" />
+                            ) : (
+                              cycleCount?.toLocaleString() || "0"
+                            )}
+                            <span className="text-sm font-normal text-muted-foreground ml-1">cycles</span>
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
                 <Table>
                   <TableHeader>
@@ -627,11 +728,24 @@ export default function Reports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">
-                        No sustainability data available
-                      </TableCell>
-                    </TableRow>
+                    {sustainabilityData?.data && sustainabilityData.data.length > 0 ? (
+                      sustainabilityData.data.map((item, index) => (
+                        <TableRow key={`sustainability-${index}`}>
+                          <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{item.location}</TableCell>
+                          <TableCell>{item.energy.toLocaleString()}</TableCell>
+                          <TableCell>{item.water.toLocaleString()}</TableCell>
+                          <TableCell>{item.carbon.toLocaleString()} kg CO₂e</TableCell>
+                          <TableCell>{item.cycles}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          No sustainability data available
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -802,7 +916,7 @@ export default function Reports() {
                              options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
                           />
                         </div>
-                        <Button className="w-full" onClick={() => exportToCSV([], 'sustainability-metrics')}>
+                        <Button className="w-full" onClick={() => exportToCSV(sustainabilityData?.data || [], 'sustainability-metrics')}>
                           <FileDown className="w-4 h-4 mr-2" />
                           Export Sustainability Data
                         </Button>
