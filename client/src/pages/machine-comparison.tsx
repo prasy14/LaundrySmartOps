@@ -88,6 +88,10 @@ interface ComparisonData {
     cyclesCompleted: number;
     errorCount: number;
     energyConsumption: number;
+    energyEfficiency: number;
+    failureRate: number;
+    oeeScore: number;
+    averageCycleTime: number;
   }>;
 }
 
@@ -129,12 +133,23 @@ export default function MachineComparisonPage() {
   } = useQuery<ComparisonData[]>({
     queryKey: [
       "/api/machine-performance/machine-comparison", 
-      {
-        machineIds: selectedMachines.join(','),
-        startDate: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
-        endDate: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined
-      }
+      selectedMachines.join(','),
+      dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : '',
+      dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : ''
     ],
+    queryFn: async ({ queryKey }) => {
+      const [path, machineIds, startDate, endDate] = queryKey as string[];
+      if (!startDate || !endDate) {
+        throw new Error("Start date and end date are required");
+      }
+      const url = `${path}?machineIds=${machineIds}&startDate=${startDate}&endDate=${endDate}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch comparison data");
+      }
+      return response.json();
+    },
     enabled: selectedMachines.length > 0 && !!dateRange.from && !!dateRange.to,
   });
 
