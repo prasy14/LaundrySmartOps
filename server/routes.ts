@@ -35,6 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     apiRouter.use('/reports', isManagerOrAdmin, reportsRoutes);
     apiRouter.use('/reports/email', isManagerOrAdmin, reportEmailRoutes);
     apiRouter.use('/alerts', isOperatorOrAbove, alertsRoutes);
+    apiRouter.use('/machine-performance', isOperatorOrAbove, machinePerformanceRoutes);
 
     // Data access routes
     apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {

@@ -26,10 +26,10 @@ const PlaceholderPage = ({ title }: { title: string }) => (
 );
 
 import AlertsPage from "@/pages/alerts";
+import MachineComparisonPage from "@/pages/machine-comparison";
 const PredictivePage = () => <PlaceholderPage title="Predictive Maintenance" />;
 const CustomReportsPage = () => <PlaceholderPage title="Custom Reports" />;
 const UsagePatternsPage = () => <PlaceholderPage title="Usage Patterns" />;
-const MachineComparisonPage = () => <PlaceholderPage title="Machine Comparison" />;
 const EnergyOptimizerPage = () => <PlaceholderPage title="Energy Optimizer" />;
 const LocationAdminPage = () => <PlaceholderPage title="Location Administration" />;
 const UserManagementPage = () => <PlaceholderPage title="User Management" />;
