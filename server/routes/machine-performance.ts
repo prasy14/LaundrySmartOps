@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../storage';
 import { z } from 'zod';
-import { isAuthenticated } from '../middlewares/auth';
+import { isManagerOrAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ const machineIdsSchema = z.object({
 });
 
 // Get metrics for a specific machine
-router.get('/machines/:machineId/metrics', isAuthenticated, async (req, res) => {
+router.get('/machines/:machineId/metrics', isManagerOrAdmin, async (req, res) => {
   try {
     const machineId = parseInt(req.params.machineId, 10);
     
@@ -35,7 +35,7 @@ router.get('/machines/:machineId/metrics', isAuthenticated, async (req, res) => 
 });
 
 // Get metrics for a specific location
-router.get('/locations/:locationId/metrics', isAuthenticated, async (req, res) => {
+router.get('/locations/:locationId/metrics', isManagerOrAdmin, async (req, res) => {
   try {
     const locationId = parseInt(req.params.locationId, 10);
     
@@ -54,7 +54,7 @@ router.get('/locations/:locationId/metrics', isAuthenticated, async (req, res) =
 });
 
 // Get metrics for a specific machine type
-router.get('/machine-types/:machineTypeId/metrics', isAuthenticated, async (req, res) => {
+router.get('/machine-types/:machineTypeId/metrics', isManagerOrAdmin, async (req, res) => {
   try {
     const machineTypeId = parseInt(req.params.machineTypeId, 10);
     
@@ -73,7 +73,7 @@ router.get('/machine-types/:machineTypeId/metrics', isAuthenticated, async (req,
 });
 
 // Get comparable metrics for multiple machines
-router.get('/machine-comparison', isAuthenticated, async (req, res) => {
+router.get('/machine-comparison', isManagerOrAdmin, async (req, res) => {
   try {
     const { machineIds } = machineIdsSchema.parse(req.query);
     const { startDate, endDate } = dateRangeSchema.parse(req.query);
@@ -95,7 +95,7 @@ router.get('/machine-comparison', isAuthenticated, async (req, res) => {
 });
 
 // Add metrics for a machine
-router.post('/machines/:machineId/metrics', isAuthenticated, async (req, res) => {
+router.post('/machines/:machineId/metrics', isManagerOrAdmin, async (req, res) => {
   try {
     const machineId = parseInt(req.params.machineId, 10);
     
@@ -118,7 +118,7 @@ router.post('/machines/:machineId/metrics', isAuthenticated, async (req, res) =>
 });
 
 // Update metrics for a machine
-router.patch('/metrics/:metricId', isAuthenticated, async (req, res) => {
+router.patch('/metrics/:metricId', isManagerOrAdmin, async (req, res) => {
   try {
     const metricId = parseInt(req.params.metricId, 10);
     
