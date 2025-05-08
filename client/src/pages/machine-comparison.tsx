@@ -181,6 +181,51 @@ export default function MachineComparisonPage() {
       averageCycleTime: "Avg. Cycle Time (min)"
     };
 
+    // If "all" is selected, return data for all metrics in separate series
+    if (comparisonMetric === 'all') {
+      const result: any[] = [];
+      comparisonData.forEach(item => {
+        // Add each metric as a separate data point
+        result.push({
+          name: item.machineName,
+          metric: 'Energy Efficiency',
+          value: item.aggregated.energyEfficiency || 0,
+          location: item.locationName,
+          machineType: item.machineType
+        });
+        result.push({
+          name: item.machineName,
+          metric: 'OEE Score',
+          value: item.aggregated.oeeScore || 0,
+          location: item.locationName,
+          machineType: item.machineType
+        });
+        result.push({
+          name: item.machineName,
+          metric: 'Availability',
+          value: item.aggregated.availability || 0,
+          location: item.locationName,
+          machineType: item.machineType
+        });
+        result.push({
+          name: item.machineName,
+          metric: 'Failure Rate',
+          value: item.aggregated.failureRate || 0,
+          location: item.locationName,
+          machineType: item.machineType
+        });
+        result.push({
+          name: item.machineName,
+          metric: 'Avg. Cycle Time',
+          value: item.aggregated.averageCycleTime || 0,
+          location: item.locationName,
+          machineType: item.machineType
+        });
+      });
+      return result;
+    }
+
+    // Otherwise return data for the selected metric
     return comparisonData.map(item => ({
       name: item.machineName,
       value: item.aggregated[comparisonMetric as keyof typeof item.aggregated] || 0,
@@ -349,6 +394,7 @@ export default function MachineComparisonPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
+                      <SelectItem value="all">All Metrics</SelectItem>
                       <SelectItem value="energyEfficiency">Energy Efficiency</SelectItem>
                       <SelectItem value="oeeScore">OEE Score</SelectItem>
                       <SelectItem value="availability">Availability</SelectItem>
@@ -501,41 +547,61 @@ export default function MachineComparisonPage() {
                 <CardContent>
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={getChartData()}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip 
-                          formatter={(value, name, props) => [
-                            value,
-                            comparisonMetric === "energyEfficiency" 
-                              ? "Energy Efficiency (kWh/cycle)" 
-                              : comparisonMetric === "oeeScore" 
-                                ? "OEE Score (%)" 
-                                : comparisonMetric === "availability" 
-                                  ? "Availability (%)" 
-                                  : comparisonMetric === "failureRate"
-                                    ? "Failure Rate (%)"
-                                    : "Avg. Cycle Time (min)"
-                          ]}
-                        />
-                        <Legend />
-                        <Bar 
-                          dataKey="value" 
-                          fill="#73a4b7" 
-                          name={
-                            comparisonMetric === "energyEfficiency" 
-                              ? "Energy Efficiency (kWh/cycle)" 
-                              : comparisonMetric === "oeeScore" 
-                                ? "OEE Score (%)" 
-                                : comparisonMetric === "availability" 
-                                  ? "Availability (%)" 
-                                  : comparisonMetric === "failureRate"
-                                    ? "Failure Rate (%)"
-                                    : "Avg. Cycle Time (min)"
-                          }
-                        />
-                      </BarChart>
+                      {comparisonMetric === "all" ? (
+                        <BarChart data={getChartData()} 
+                          barSize={20}
+                          barGap={5}
+                          barCategoryGap={10}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar 
+                            dataKey="value" 
+                            fill="#73a4b7" 
+                            name="Metric Value"
+                            stackId="a"
+                          />
+                        </BarChart>
+                      ) : (
+                        <BarChart data={getChartData()}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip 
+                            formatter={(value, name, props) => [
+                              value,
+                              comparisonMetric === "energyEfficiency" 
+                                ? "Energy Efficiency (kWh/cycle)" 
+                                : comparisonMetric === "oeeScore" 
+                                  ? "OEE Score (%)" 
+                                  : comparisonMetric === "availability" 
+                                    ? "Availability (%)" 
+                                    : comparisonMetric === "failureRate"
+                                      ? "Failure Rate (%)"
+                                      : "Avg. Cycle Time (min)"
+                            ]}
+                          />
+                          <Legend />
+                          <Bar 
+                            dataKey="value" 
+                            fill="#73a4b7" 
+                            name={
+                              comparisonMetric === "energyEfficiency" 
+                                ? "Energy Efficiency (kWh/cycle)" 
+                                : comparisonMetric === "oeeScore" 
+                                  ? "OEE Score (%)" 
+                                  : comparisonMetric === "availability" 
+                                    ? "Availability (%)" 
+                                    : comparisonMetric === "failureRate"
+                                      ? "Failure Rate (%)"
+                                      : "Avg. Cycle Time (min)"
+                            }
+                          />
+                        </BarChart>
+                      )}
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
