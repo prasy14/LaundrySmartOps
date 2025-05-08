@@ -9,6 +9,7 @@ import syncRoutes from "./routes/sync";
 import reportsRoutes from "./routes/reports";
 import alertsRoutes from "./routes/alerts";
 import reportEmailRoutes from "./routes/reports-email";
+import machinePerformanceRoutes from "./routes/machine-performance";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 import { db } from "./db";
 import { machineErrors } from "@shared/schema";
