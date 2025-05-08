@@ -427,6 +427,83 @@ export const insertSustainabilityMetricsSchema = createInsertSchema(sustainabili
 export type SustainabilityMetrics = typeof sustainabilityMetrics.$inferSelect;
 export type InsertSustainabilityMetrics = z.infer<typeof insertSustainabilityMetricsSchema>;
 
+// Machine Performance Metrics schema for detailed comparison
+export const machinePerformanceMetrics = pgTable("machine_performance_metrics", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id),
+  locationId: integer("location_id").references(() => locations.id),
+  date: timestamp("date").notNull(),
+  // Uptime/Downtime metrics
+  uptimeMinutes: numeric("uptime_minutes"),
+  downtimeMinutes: numeric("downtime_minutes"),
+  availabilityPercentage: numeric("availability_percentage"), // (uptime / (uptime + downtime)) * 100
+  
+  // Output/Throughput metrics
+  cyclesCompleted: integer("cycles_completed"),
+  totalLoadsProcessed: integer("total_loads_processed"),
+  averageCycleTime: numeric("average_cycle_time"), // in minutes
+  
+  // Error and reliability metrics
+  errorCount: integer("error_count"),
+  failureRate: numeric("failure_rate"), // errors per 100 cycles
+  meanTimeBetweenFailures: numeric("mtbf"), // in hours
+  
+  // Energy metrics
+  energyConsumption: numeric("energy_consumption"), // in kWh
+  energyEfficiency: numeric("energy_efficiency"), // kWh per cycle
+  
+  // Maintenance metrics
+  maintenanceCount: integer("maintenance_count"),
+  plannedMaintenanceCount: integer("planned_maintenance_count"),
+  unplannedMaintenanceCount: integer("unplanned_maintenance_count"),
+  
+  // OEE (Overall Equipment Effectiveness)
+  oeeScore: numeric("oee_score"), // percentage (0-100)
+  performanceEfficiency: numeric("performance_efficiency"), // percentage (0-100)
+  qualityRate: numeric("quality_rate"), // percentage (0-100)
+  
+  // Utilization metrics
+  utilizationRate: numeric("utilization_rate"), // percentage (0-100)
+  peakUtilizationTime: text("peak_utilization_time"), // e.g., "9AM-11AM"
+  
+  // Additional metrics
+  costPerCycle: numeric("cost_per_cycle"),
+  revenueGenerated: numeric("revenue_generated"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUpdatedAt: timestamp("last_updated_at").defaultNow().notNull(),
+});
+
+export const insertMachinePerformanceMetricsSchema = createInsertSchema(machinePerformanceMetrics).pick({
+  machineId: true,
+  locationId: true,
+  date: true,
+  uptimeMinutes: true,
+  downtimeMinutes: true,
+  availabilityPercentage: true,
+  cyclesCompleted: true,
+  totalLoadsProcessed: true,
+  averageCycleTime: true,
+  errorCount: true,
+  failureRate: true,
+  meanTimeBetweenFailures: true,
+  energyConsumption: true,
+  energyEfficiency: true,
+  maintenanceCount: true,
+  plannedMaintenanceCount: true,
+  unplannedMaintenanceCount: true,
+  oeeScore: true,
+  performanceEfficiency: true,
+  qualityRate: true,
+  utilizationRate: true,
+  peakUtilizationTime: true,
+  costPerCycle: true,
+  revenueGenerated: true,
+});
+
+export type MachinePerformanceMetrics = typeof machinePerformanceMetrics.$inferSelect;
+export type InsertMachinePerformanceMetrics = z.infer<typeof insertMachinePerformanceMetricsSchema>;
+
 // Email Report scheduling schema
 export const emailRecipients = pgTable("email_recipients", {
   id: serial("id").primaryKey(),
