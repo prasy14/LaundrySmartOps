@@ -626,6 +626,19 @@ async getCycleSteps(): Promise<CycleStep[]> {
   
   async getComparableMachineMetrics(machineIds: number[], startDate: Date, endDate: Date): Promise<any[]> {
     try {
+      // Validate inputs
+      if (!machineIds || machineIds.length === 0) {
+        console.log('[storage] No machine IDs provided for comparison');
+        return [];
+      }
+
+      // Filter out any invalid machine IDs
+      const validMachineIds = machineIds.filter(id => !isNaN(id) && id > 0);
+      if (validMachineIds.length === 0) {
+        console.log('[storage] No valid machine IDs provided for comparison');
+        return [];
+      }
+
       // Get the metrics for all requested machines
       const metrics = await db
         .select({
@@ -656,67 +669,121 @@ async getCycleSteps(): Promise<CycleStep[]> {
         .leftJoin(machineTypes, eq(machines.machineTypeId, machineTypes.id))
         .leftJoin(locations, eq(machines.locationId, locations.id))
         .where(and(
-          inArray(machinePerformanceMetrics.machineId, machineIds),
+          inArray(machinePerformanceMetrics.machineId, validMachineIds),
           gte(machinePerformanceMetrics.date, startDate),
           lte(machinePerformanceMetrics.date, endDate)
         ))
         .orderBy(asc(machinePerformanceMetrics.machineId), asc(machinePerformanceMetrics.date));
       
+      console.log(`[storage] Retrieved ${metrics.length} metrics for comparison`);
+      
+      // If no metrics found, get basic machine info to return empty comparison objects
+      if (metrics.length === 0) {
+        console.log('[storage] No metrics found, retrieving basic machine info');
+        
+        const machineInfo = await db
+          .select({
+            id: machines.id,
+            name: machines.name,
+            type: machineTypes.name,
+            locationName: locations.name,
+            manufacturer: machines.manufacturer,
+            modelNumber: machines.modelNumber,
+          })
+          .from(machines)
+          .leftJoin(machineTypes, eq(machines.machineTypeId, machineTypes.id))
+          .leftJoin(locations, eq(machines.locationId, locations.id))
+          .where(inArray(machines.id, validMachineIds));
+        
+        // Return empty comparison data structure for each machine
+        const result = machineInfo.map(machine => ({
+          machineId: machine.id,
+          machineName: machine.name,
+          machineType: machine.type || 'Unknown',
+          locationName: machine.locationName || 'Unknown',
+          manufacturer: machine.manufacturer,
+          modelNumber: machine.modelNumber,
+          metrics: [],
+          aggregated: {
+            availability: 0,
+            cyclesCompleted: 0,
+            errorCount: 0,
+            energyConsumption: 0,
+            energyEfficiency: 0,
+            failureRate: 0,
+            oeeScore: 0,
+            averageCycleTime: 0,
+          },
+          timeSeriesData: []
+        }));
+        return result;
+      }
+      
       // Group metrics by machine to calculate averages
       const groupedByMachine: Record<number, any> = {};
       
       metrics.forEach(metric => {
+        if (!metric.machineId) return;
+        
         if (!groupedByMachine[metric.machineId]) {
           groupedByMachine[metric.machineId] = {
             machineId: metric.machineId,
-            machineName: metric.machineName,
-            machineType: metric.machineType,
-            locationName: metric.locationName,
+            machineName: metric.machineName || `Machine ${metric.machineId}`,
+            machineType: metric.machineType || 'Unknown',
+            locationName: metric.locationName || 'Unknown',
             manufacturer: metric.manufacturer,
             modelNumber: metric.modelNumber,
             metrics: [],
-            averages: {
-              availabilityPercentage: 0,
+            timeSeriesData: [],
+            aggregated: {
+              availability: 0,
               cyclesCompleted: 0,
-              averageCycleTime: 0,
-              failureRate: 0,
+              errorCount: 0,
               energyConsumption: 0,
               energyEfficiency: 0,
+              failureRate: 0,
               oeeScore: 0,
-              maintenanceCount: 0
+              averageCycleTime: 0
             }
           };
         }
         
         groupedByMachine[metric.machineId].metrics.push(metric);
+        
+        // Prepare time series data format
+        const dateObj = new Date(metric.date);
+        const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        groupedByMachine[metric.machineId].timeSeriesData.push({
+          date: dateStr,
+          availability: metric.availabilityPercentage || 0,
+          cyclesCompleted: metric.cyclesCompleted || 0,
+          errorCount: metric.errorCount || 0,
+          energyConsumption: metric.energyConsumption || 0,
+          energyEfficiency: metric.energyEfficiency || 0,
+          failureRate: metric.failureRate || 0,
+          oeeScore: metric.oeeScore || 0,
+          averageCycleTime: metric.averageCycleTime || 0
+        });
       });
       
-      // Calculate averages for each machine
-      Object.keys(groupedByMachine).forEach(machineIdStr => {
+      // Calculate aggregated metrics for each machine
+      for (const machineIdStr of Object.keys(groupedByMachine)) {
         const machineData = groupedByMachine[Number(machineIdStr)];
         const metricsCount = machineData.metrics.length;
         
         if (metricsCount > 0) {
-          machineData.averages = {
-            availabilityPercentage: this.calculateAverage(machineData.metrics, 'availabilityPercentage'),
+          machineData.aggregated = {
+            availability: this.calculateAverage(machineData.metrics, 'availabilityPercentage'),
             cyclesCompleted: this.calculateSum(machineData.metrics, 'cyclesCompleted'),
             averageCycleTime: this.calculateAverage(machineData.metrics, 'averageCycleTime'),
             failureRate: this.calculateAverage(machineData.metrics, 'failureRate'),
             energyConsumption: this.calculateSum(machineData.metrics, 'energyConsumption'),
             energyEfficiency: this.calculateAverage(machineData.metrics, 'energyEfficiency'),
             oeeScore: this.calculateAverage(machineData.metrics, 'oeeScore'),
-            maintenanceCount: this.calculateSum(machineData.metrics, 'maintenanceCount')
-          };
-          
-          // Add total uptime and downtime
-          machineData.totals = {
-            uptimeMinutes: this.calculateSum(machineData.metrics, 'uptimeMinutes'),
-            downtimeMinutes: this.calculateSum(machineData.metrics, 'downtimeMinutes'),
-            totalLoadsProcessed: this.calculateSum(machineData.metrics, 'totalLoadsProcessed'),
             errorCount: this.calculateSum(machineData.metrics, 'errorCount')
           };
         }
-      });
+      }
       
       return Object.values(groupedByMachine);
     } catch (error) {

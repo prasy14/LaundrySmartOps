@@ -12,7 +12,10 @@ const dateRangeSchema = z.object({
 });
 
 const machineIdsSchema = z.object({
-  machineIds: z.string().transform(ids => ids.split(',').map(id => parseInt(id, 10))),
+  machineIds: z.string().optional().default('').transform(ids => {
+    if (!ids) return [];
+    return ids.split(',').filter(id => id.trim()).map(id => parseInt(id.trim(), 10));
+  }),
 });
 
 // Get metrics for a specific machine
