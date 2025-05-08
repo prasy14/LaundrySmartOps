@@ -48,7 +48,7 @@ export default function SearchableDropdown({ options, value, onChange, placehold
           setSearch(e.target.value);
           setIsOpen(true);
         }}
-        className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 border border-black rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {isOpen && (
         <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white border border-gray-300 shadow-md">
