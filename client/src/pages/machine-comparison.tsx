@@ -183,46 +183,17 @@ export default function MachineComparisonPage() {
 
     // If "all" is selected, return data for all metrics in separate series
     if (comparisonMetric === 'all') {
-      const result: any[] = [];
-      comparisonData.forEach(item => {
-        // Add each metric as a separate data point
-        result.push({
-          name: item.machineName,
-          metric: 'Energy Efficiency',
-          value: item.aggregated.energyEfficiency || 0,
-          location: item.locationName,
-          machineType: item.machineType
-        });
-        result.push({
-          name: item.machineName,
-          metric: 'OEE Score',
-          value: item.aggregated.oeeScore || 0,
-          location: item.locationName,
-          machineType: item.machineType
-        });
-        result.push({
-          name: item.machineName,
-          metric: 'Availability',
-          value: item.aggregated.availability || 0,
-          location: item.locationName,
-          machineType: item.machineType
-        });
-        result.push({
-          name: item.machineName,
-          metric: 'Failure Rate',
-          value: item.aggregated.failureRate || 0,
-          location: item.locationName,
-          machineType: item.machineType
-        });
-        result.push({
-          name: item.machineName,
-          metric: 'Avg. Cycle Time',
-          value: item.aggregated.averageCycleTime || 0,
-          location: item.locationName,
-          machineType: item.machineType
-        });
-      });
-      return result;
+      // Create one data item per machine with all metrics as properties
+      return comparisonData.map(item => ({
+        name: item.machineName,
+        energyEfficiency: item.aggregated.energyEfficiency || 0,
+        oeeScore: item.aggregated.oeeScore || 0,
+        availability: item.aggregated.availability || 0,
+        failureRate: item.aggregated.failureRate || 0,
+        averageCycleTime: item.aggregated.averageCycleTime || 0,
+        location: item.locationName,
+        machineType: item.machineType
+      }));
     }
 
     // Otherwise return data for the selected metric
@@ -247,9 +218,20 @@ export default function MachineComparisonPage() {
           timeSeriesMap[dataPoint.date] = { date: dataPoint.date };
         }
         
-        // Add machine-specific data for this date
-        timeSeriesMap[dataPoint.date][`${machine.machineName}_${comparisonMetric}`] = 
-          dataPoint[comparisonMetric as keyof typeof dataPoint] || 0;
+        if (comparisonMetric === "all") {
+          // Add all metrics for the first machine
+          if (machine === comparisonData[0]) {
+            timeSeriesMap[dataPoint.date][`${machine.machineName}_energyEfficiency`] = dataPoint.energyEfficiency || 0;
+            timeSeriesMap[dataPoint.date][`${machine.machineName}_oeeScore`] = dataPoint.oeeScore || 0;
+            timeSeriesMap[dataPoint.date][`${machine.machineName}_availability`] = dataPoint.availability || 0;
+            timeSeriesMap[dataPoint.date][`${machine.machineName}_failureRate`] = dataPoint.failureRate || 0;
+            timeSeriesMap[dataPoint.date][`${machine.machineName}_averageCycleTime`] = dataPoint.averageCycleTime || 0;
+          }
+        } else {
+          // Add the selected metric for each machine
+          timeSeriesMap[dataPoint.date][`${machine.machineName}_${comparisonMetric}`] = 
+            dataPoint[comparisonMetric as keyof typeof dataPoint] || 0;
+        }
       });
     });
     
@@ -559,10 +541,29 @@ export default function MachineComparisonPage() {
                           <Tooltip />
                           <Legend />
                           <Bar 
-                            dataKey="value" 
+                            dataKey="energyEfficiency" 
                             fill="#73a4b7" 
-                            name="Metric Value"
-                            stackId="a"
+                            name="Energy Efficiency (kWh/cycle)"
+                          />
+                          <Bar 
+                            dataKey="oeeScore" 
+                            fill="#e95f2a" 
+                            name="OEE Score (%)"
+                          />
+                          <Bar 
+                            dataKey="availability" 
+                            fill="#647991" 
+                            name="Availability (%)"
+                          />
+                          <Bar 
+                            dataKey="failureRate" 
+                            fill="#2f3944" 
+                            name="Failure Rate (%)"
+                          />
+                          <Bar 
+                            dataKey="averageCycleTime" 
+                            fill="#8884d8" 
+                            name="Avg. Cycle Time (min)"
                           />
                         </BarChart>
                       ) : (
@@ -611,7 +612,7 @@ export default function MachineComparisonPage() {
             <TabsContent value="timeSeries" className="pt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>{`${comparisonMetric} Over Time`}</CardTitle>
+                  <CardTitle>{comparisonMetric === "all" ? "Machine Performance Over Time" : `${comparisonMetric} Over Time`}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[400px]">
@@ -627,22 +628,71 @@ export default function MachineComparisonPage() {
                           labelFormatter={(date) => format(new Date(date), "MMM dd, yyyy")}
                         />
                         <Legend />
-                        {comparisonData.map((machine, index) => (
-                          <Line
-                            key={machine.machineId}
-                            type="monotone"
-                            dataKey={`${machine.machineName}_${comparisonMetric}`}
-                            name={machine.machineName}
-                            stroke={
-                              index === 0 ? "#73a4b7" : 
-                              index === 1 ? "#e95f2a" : 
-                              index === 2 ? "#647991" : 
-                              index === 3 ? "#2f3944" : 
-                              `#${Math.floor(Math.random()*16777215).toString(16)}`
-                            }
-                            activeDot={{ r: 8 }}
-                          />
-                        ))}
+                        {comparisonMetric === "all" 
+                          ? (
+                              // First machine with all metrics
+                              comparisonData.length > 0 && [
+                                <Line
+                                  key="energyEfficiency"
+                                  type="monotone"
+                                  dataKey={`${comparisonData[0].machineName}_energyEfficiency`}
+                                  name="Energy Efficiency"
+                                  stroke="#73a4b7"
+                                  activeDot={{ r: 8 }}
+                                />,
+                                <Line
+                                  key="oeeScore"
+                                  type="monotone"
+                                  dataKey={`${comparisonData[0].machineName}_oeeScore`}
+                                  name="OEE Score"
+                                  stroke="#e95f2a"
+                                  activeDot={{ r: 8 }}
+                                />,
+                                <Line
+                                  key="availability"
+                                  type="monotone"
+                                  dataKey={`${comparisonData[0].machineName}_availability`}
+                                  name="Availability"
+                                  stroke="#647991"
+                                  activeDot={{ r: 8 }}
+                                />,
+                                <Line
+                                  key="failureRate"
+                                  type="monotone"
+                                  dataKey={`${comparisonData[0].machineName}_failureRate`}
+                                  name="Failure Rate"
+                                  stroke="#2f3944"
+                                  activeDot={{ r: 8 }}
+                                />,
+                                <Line
+                                  key="averageCycleTime"
+                                  type="monotone"
+                                  dataKey={`${comparisonData[0].machineName}_averageCycleTime`}
+                                  name="Avg. Cycle Time"
+                                  stroke="#8884d8"
+                                  activeDot={{ r: 8 }}
+                                />
+                              ]
+                            ) 
+                          : (
+                              // Each machine with selected metric
+                              comparisonData.map((machine, index) => (
+                                <Line
+                                  key={machine.machineId}
+                                  type="monotone"
+                                  dataKey={`${machine.machineName}_${comparisonMetric}`}
+                                  name={machine.machineName}
+                                  stroke={
+                                    index === 0 ? "#73a4b7" : 
+                                    index === 1 ? "#e95f2a" : 
+                                    index === 2 ? "#647991" : 
+                                    index === 3 ? "#2f3944" : 
+                                    `#${Math.floor(Math.random()*16777215).toString(16)}`
+                                  }
+                                  activeDot={{ r: 8 }}
+                                />
+                              ))
+                            )}
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
