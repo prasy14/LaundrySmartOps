@@ -113,11 +113,11 @@ export default function MachineComparisonPage() {
   });
 
   // Filter machines based on selected locations
-  const filteredMachines = machinesData?.machines.filter(
+  const filteredMachines = machinesData?.machines?.filter(
     (machine) => 
       selectedLocations.length === 0 || 
       selectedLocations.includes("all") || 
-      selectedLocations.includes(machine.locationId.toString())
+      (machine.locationId && selectedLocations.includes(machine.locationId.toString()))
   ) || [];
 
   // Query for comparison data
@@ -320,7 +320,7 @@ export default function MachineComparisonPage() {
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem value="all">All Locations</SelectItem>
-                      {locationsData?.locations.map((location) => (
+                      {locationsData?.locations?.map((location) => (
                         <SelectItem key={location.id} value={location.id.toString()}>
                           {location.name}
                         </SelectItem>
