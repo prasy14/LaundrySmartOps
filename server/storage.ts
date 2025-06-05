@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, desc, inArray, and, gte, lte, sql, between, asc } from "drizzle-orm";
+import { eq, desc, inArray, and, gte, lte, sql, between, asc, like } from "drizzle-orm";
 import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics } from "@shared/schema";
 import type {
   User, InsertUser,
@@ -78,6 +78,10 @@ export interface IStorage {
   addMachinePerformanceMetrics(metrics: InsertMachinePerformanceMetrics): Promise<MachinePerformanceMetrics>;
   updateMachinePerformanceMetrics(id: number, metrics: Partial<InsertMachinePerformanceMetrics>): Promise<MachinePerformanceMetrics>;
   getComparableMachineMetrics(machineIds: number[], startDate: Date, endDate: Date): Promise<any[]>;
+
+  // Persistent error and alert generation methods
+  getPersistentMachineErrors(durationHours?: number): Promise<any[]>;
+  createServiceAlertsFromPersistentErrors(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -505,6 +509,110 @@ async getCycleSteps(): Promise<CycleStep[]> {
       console.log("[storage] Returning empty array to prevent application crash");
       return []; // Return empty array instead of crashing
     }
+  }
+
+  async getPersistentMachineErrors(durationHours: number = 1): Promise<any[]> {
+    console.log(`[storage] Getting machine errors persisting for ${durationHours} hours`);
+    try {
+      const cutoffTime = new Date(Date.now() - (durationHours * 60 * 60 * 1000));
+      
+      const persistentErrors = await db
+        .select({
+          id: machineErrors.id,
+          machineId: machineErrors.machineId,
+          locationId: machineErrors.locationId,
+          errorName: machineErrors.errorName,
+          errorType: machineErrors.errorType,
+          errorCode: machineErrors.errorCode,
+          timestamp: machineErrors.timestamp,
+          createdAt: machineErrors.createdAt,
+          machineName: machines.name,
+          locationName: locations.name,
+          manufacturer: machines.manufacturer,
+          modelNumber: machines.modelNumber,
+          serialNumber: machines.serialNumber,
+        })
+        .from(machineErrors)
+        .leftJoin(machines, eq(machineErrors.machineId, machines.id))
+        .leftJoin(locations, eq(machineErrors.locationId, locations.id))
+        .where(lte(machineErrors.timestamp, cutoffTime))
+        .orderBy(asc(machineErrors.timestamp));
+
+      console.log(`[storage] Found ${persistentErrors.length} persistent errors`);
+      return persistentErrors;
+    } catch (error) {
+      console.error('[storage] Error fetching persistent machine errors:', error);
+      return [];
+    }
+  }
+
+  async createServiceAlertsFromPersistentErrors(): Promise<number> {
+    console.log('[storage] Creating service alerts from persistent errors');
+    try {
+      const persistentErrors = await this.getPersistentMachineErrors(1);
+      let alertsCreated = 0;
+
+      for (const error of persistentErrors) {
+        // Check if an alert already exists for this error
+        const existingAlert = await db
+          .select()
+          .from(alerts)
+          .where(and(
+            eq(alerts.machineId, error.machineId),
+            eq(alerts.type, 'error'),
+            eq(alerts.status, 'active'),
+            like(alerts.message, `%${error.errorName}%`)
+          ))
+          .limit(1);
+
+        if (existingAlert.length === 0) {
+          // Create a new service alert
+          const alertData = {
+            machineId: error.machineId,
+            locationId: error.locationId,
+            type: 'error' as const,
+            serviceType: this.determineServiceType(error.errorType),
+            message: `Persistent Error: ${error.errorName} (Code: ${error.errorCode || 'N/A'}) - Active for over 1 hour`,
+            status: 'active' as const,
+            priority: this.determinePriority(error.errorType),
+            category: 'operational' as const,
+            createdAt: new Date(),
+          };
+
+          await db.insert(alerts).values(alertData);
+          alertsCreated++;
+          console.log(`[storage] Created alert for machine ${error.machineId}: ${error.errorName}`);
+        }
+      }
+
+      console.log(`[storage] Created ${alertsCreated} new service alerts from persistent errors`);
+      return alertsCreated;
+    } catch (error) {
+      console.error('[storage] Error creating service alerts from persistent errors:', error);
+      return 0;
+    }
+  }
+
+  private determineServiceType(errorType: string): string {
+    const type = errorType.toLowerCase();
+    if (type.includes('mechanical') || type.includes('motor') || type.includes('pump')) {
+      return 'mechanical';
+    } else if (type.includes('electrical') || type.includes('power') || type.includes('circuit')) {
+      return 'electrical';
+    } else if (type.includes('software') || type.includes('communication') || type.includes('network')) {
+      return 'software';
+    }
+    return 'general';
+  }
+
+  private determinePriority(errorType: string): string {
+    const type = errorType.toLowerCase();
+    if (type.includes('critical') || type.includes('fire') || type.includes('safety')) {
+      return 'high';
+    } else if (type.includes('warning') || type.includes('temperature') || type.includes('leak')) {
+      return 'medium';
+    }
+    return 'low';
   }
 
   // Machine Performance Metrics methods

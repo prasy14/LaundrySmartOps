@@ -46,6 +46,20 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import SearchableDropdown from "@/pages/SearchableDropdown";
 
+interface EnhancedAlert extends Alert {
+  relatedError?: any;
+  errorDuration?: number;
+  errorDetails?: {
+    errorCode: number;
+    errorType: string;
+    machineName: string;
+    locationName: string;
+    manufacturer?: string;
+    modelNumber?: string;
+    serialNumber?: string;
+  };
+}
+
 export default function AlertsPage() {
   // State management
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
@@ -69,22 +83,32 @@ export default function AlertsPage() {
     queryKey: ['/api/locations'],
   });
 
-  // Fetch all alerts with filters
+  // Fetch enhanced service alerts with machine error integration
   const { 
     data: alertsData, 
     isLoading: alertsLoading,
     refetch: refetchAlerts
-  } = useQuery<{ alerts: Alert[] }>({
-    queryKey: [
-      '/api/alerts', 
-      selectedLocation, 
-      selectedServiceType, 
-      dateRange,
-      activeTab,
-      severity,
-      filterRecurring,
-      minRecurringCount
-    ],
+  } = useQuery<{ alerts: EnhancedAlert[] }>({
+    queryKey: ['/api/service-alerts'],
+    enabled: !locationsLoading,
+  });
+
+  // Fetch persistent machine errors
+  const { 
+    data: persistentErrorsData, 
+    isLoading: persistentErrorsLoading,
+    refetch: refetchPersistentErrors
+  } = useQuery<{ persistentErrors: any[], count: number, durationHours: number }>({
+    queryKey: ['/api/persistent-errors'],
+    enabled: !locationsLoading,
+  });
+
+  // Fetch alert statistics
+  const { 
+    data: alertStatistics, 
+    isLoading: statisticsLoading
+  } = useQuery<any>({
+    queryKey: ['/api/alert-statistics'],
     enabled: !locationsLoading,
   });
 
@@ -148,8 +172,40 @@ export default function AlertsPage() {
     return 0;
   }) || [];
 
+  // Function to generate alerts from persistent errors
+  const generateAlertsFromErrors = async () => {
+    try {
+      const response = await fetch('/api/generate-alerts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate alerts');
+      }
+
+      const result = await response.json();
+      toast({
+        title: "Alerts Generated",
+        description: result.message,
+      });
+
+      // Refresh data
+      refetchAlerts();
+      refetchPersistentErrors();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate alerts from persistent errors",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Export alerts to CSV
-  const exportToCSV = (data: Alert[]) => {
+  const exportToCSV = (data: EnhancedAlert[]) => {
     if (!data || data.length === 0) {
       toast({
         title: "No data to export",
@@ -211,16 +267,28 @@ export default function AlertsPage() {
           <TabsList className="mb-4">
             <TabsTrigger value="active">Active Alerts</TabsTrigger>
             <TabsTrigger value="historical">Historical Alerts</TabsTrigger>
+            <TabsTrigger value="persistent-errors">Persistent Errors</TabsTrigger>
+            <TabsTrigger value="statistics">Statistics</TabsTrigger>
           </TabsList>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => refetchAlerts()}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={generateAlertsFromErrors}
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Generate Alerts
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refetchAlerts()}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <Card className="shadow-md">
