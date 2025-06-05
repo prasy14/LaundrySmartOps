@@ -24,7 +24,6 @@ const navigationCategories = [
     items: [
       { name: 'Machine Management', href: '/machines', icon: WashingMachine },
       { name: 'Alert Issues', href: '/alerts', icon: AlertTriangle },
-      { name: 'Predictive Maintenance', href: '/predictive', icon: BrainCircuit },
     ]
   },
   {
@@ -32,7 +31,6 @@ const navigationCategories = [
     items: [
       { name: 'Reports & Analytics', href: '/reports', icon: FileBarChart },
       { name: 'Visualizations', href: '/visualizations', icon: LineChart },
-      { name: 'Custom Reports', href: '/custom-reports', icon: FileText },
       { name: 'Machine Comparison', href: '/machine-comparison', icon: BarChart },
     ]
   },
