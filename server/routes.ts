@@ -134,6 +134,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
+    // Import and mount coin vault routes
+    const coinVaultRoutes = (await import("./routes/coin-vault")).default;
+    apiRouter.use('/coin-vaults', coinVaultRoutes);
+
     // Mount the API router with /api prefix BEFORE any static file handling
     app.use('/api', apiRouter);
 

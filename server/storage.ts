@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { eq, desc, inArray, and, gte, lte, sql, between, asc, like } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
@@ -1030,6 +1030,152 @@ async getCycleSteps(): Promise<CycleStep[]> {
       if (value === null || value === undefined) return acc;
       return acc + Number(value);
     }, 0);
+  }
+
+  // Coin Vault operations
+  async getCoinVaults(): Promise<CoinVault[]> {
+    try {
+      const vaults = await db.select().from(coinVaults).orderBy(desc(coinVaults.lastUpdated));
+      console.log(`[storage] Retrieved ${vaults.length} coin vaults`);
+      return vaults;
+    } catch (error) {
+      console.error(`[storage] Error fetching coin vaults:`, error);
+      throw error;
+    }
+  }
+
+  async getCoinVaultsByLocation(locationId: number): Promise<CoinVault[]> {
+    try {
+      const vaults = await db
+        .select()
+        .from(coinVaults)
+        .where(eq(coinVaults.locationId, locationId))
+        .orderBy(desc(coinVaults.lastUpdated));
+      
+      console.log(`[storage] Retrieved ${vaults.length} coin vaults for location ${locationId}`);
+      return vaults;
+    } catch (error) {
+      console.error(`[storage] Error fetching coin vaults by location:`, error);
+      throw error;
+    }
+  }
+
+  async getCoinVaultsByMachine(machineId: number): Promise<CoinVault[]> {
+    try {
+      const vaults = await db
+        .select()
+        .from(coinVaults)
+        .where(eq(coinVaults.machineId, machineId))
+        .orderBy(desc(coinVaults.lastUpdated));
+      
+      console.log(`[storage] Retrieved ${vaults.length} coin vaults for machine ${machineId}`);
+      return vaults;
+    } catch (error) {
+      console.error(`[storage] Error fetching coin vaults by machine:`, error);
+      throw error;
+    }
+  }
+
+  async createOrUpdateCoinVault(coinVault: InsertCoinVault): Promise<CoinVault> {
+    try {
+      // Try to find existing vault by external machine ID and location
+      const existingVault = await db
+        .select()
+        .from(coinVaults)
+        .where(
+          and(
+            eq(coinVaults.externalMachineId, coinVault.externalMachineId),
+            eq(coinVaults.locationId, coinVault.locationId!)
+          )
+        )
+        .limit(1);
+
+      if (existingVault.length > 0) {
+        // Update existing vault
+        const [updated] = await db
+          .update(coinVaults)
+          .set({
+            ...coinVault,
+            lastUpdated: new Date()
+          })
+          .where(eq(coinVaults.id, existingVault[0].id))
+          .returning();
+        
+        console.log(`[storage] Updated coin vault for machine ${coinVault.externalMachineId}`);
+        return updated;
+      } else {
+        // Create new vault
+        const [created] = await db
+          .insert(coinVaults)
+          .values(coinVault)
+          .returning();
+        
+        console.log(`[storage] Created new coin vault for machine ${coinVault.externalMachineId}`);
+        return created;
+      }
+    } catch (error) {
+      console.error(`[storage] Error creating/updating coin vault:`, error);
+      throw error;
+    }
+  }
+
+  async createCoinVaultsFromReport(reportData: any): Promise<CoinVault[]> {
+    try {
+      const createdVaults: CoinVault[] = [];
+      
+      if (!reportData.data?.locations || !Array.isArray(reportData.data.locations)) {
+        throw new Error('Invalid report data structure - missing locations array');
+      }
+
+      for (const locationData of reportData.data.locations) {
+        // Find location by external ID
+        const location = await this.getLocationByExternalId(locationData.id);
+        if (!location) {
+          console.warn(`[storage] Location not found for external ID: ${locationData.id}`);
+          continue;
+        }
+
+        for (const machineData of locationData.machines || []) {
+          // Find machine by external ID
+          const machine = await this.getMachineByExternalId(machineData.id);
+          
+          const vaultData: InsertCoinVault = {
+            locationId: location.id,
+            machineId: machine?.id || null,
+            externalMachineId: machineData.id,
+            machineName: machineData.name,
+            vaultSize: machineData.vaultSize,
+            percentCapacity: machineData.percentCapacity.toString(),
+            totalValue: machineData.totalValue, // Already in cents
+            machineType: machineData.machineType,
+            emptiedDetails: machineData.emptiedDetails || []
+          };
+
+          const createdVault = await this.createOrUpdateCoinVault(vaultData);
+          createdVaults.push(createdVault);
+        }
+      }
+
+      console.log(`[storage] Processed coin vault report - created/updated ${createdVaults.length} vaults`);
+      return createdVaults;
+    } catch (error) {
+      console.error(`[storage] Error processing coin vault report:`, error);
+      throw error;
+    }
+  }
+
+  async deleteCoinVault(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(coinVaults)
+        .where(eq(coinVaults.id, id));
+      
+      console.log(`[storage] Deleted coin vault with ID ${id}`);
+      return true;
+    } catch (error) {
+      console.error(`[storage] Error deleting coin vault:`, error);
+      return false;
+    }
   }
 }
 
