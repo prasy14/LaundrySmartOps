@@ -1534,6 +1534,194 @@ async getCycleSteps(): Promise<CycleStep[]> {
     
     return usages;
   }
+
+  // Audit Total Vending methods
+  async getAuditTotalVendings(): Promise<AuditTotalVending[]> {
+    return await db.select().from(auditTotalVending).orderBy(desc(auditTotalVending.createdAt));
+  }
+
+  async getAuditTotalVendingsByLocation(locationId: number): Promise<AuditTotalVending[]> {
+    return await db.select().from(auditTotalVending)
+      .where(eq(auditTotalVending.locationId, locationId))
+      .orderBy(desc(auditTotalVending.createdAt));
+  }
+
+  async getAuditTotalVendingsByMachine(machineId: number): Promise<AuditTotalVending[]> {
+    return await db.select().from(auditTotalVending)
+      .where(eq(auditTotalVending.machineId, machineId))
+      .orderBy(desc(auditTotalVending.createdAt));
+  }
+
+  async getAuditTotalVending(id: number): Promise<AuditTotalVending | undefined> {
+    const [vending] = await db.select()
+      .from(auditTotalVending)
+      .where(eq(auditTotalVending.id, id));
+    return vending || undefined;
+  }
+
+  async createAuditTotalVending(data: InsertAuditTotalVending): Promise<AuditTotalVending> {
+    const [result] = await db.insert(auditTotalVending).values(data).returning();
+    return result;
+  }
+
+  async updateAuditTotalVending(id: number, data: Partial<InsertAuditTotalVending>): Promise<AuditTotalVending> {
+    const [updated] = await db.update(auditTotalVending)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(auditTotalVending.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAuditTotalVending(id: number): Promise<boolean> {
+    try {
+      await db.delete(auditTotalVending)
+        .where(eq(auditTotalVending.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting audit total vending:', error);
+      return false;
+    }
+  }
+
+  async createAuditTotalVendingsFromReport(reportData: any): Promise<AuditTotalVending[]> {
+    try {
+      console.log('Processing audit total vending report:', JSON.stringify(reportData, null, 2));
+      
+      const vendings: AuditTotalVending[] = [];
+      
+      if (!reportData.data || !reportData.data.locations || !Array.isArray(reportData.data.locations)) {
+        throw new Error('Invalid report data structure');
+      }
+
+      for (const location of reportData.data.locations) {
+        if (!location.machines || !Array.isArray(location.machines)) {
+          continue;
+        }
+
+        for (const machine of location.machines) {
+          const totalCycles = machine.totalCycles || 0;
+          const totalVended = parseFloat(machine.totalVended || '0');
+          
+          // Calculate average revenue per cycle
+          const averageRevenuePerCycle = totalCycles > 0 ? (totalVended / totalCycles) : 0;
+          
+          // Calculate data collection period
+          const firstReceived = new Date(machine.firstReceivedAt);
+          const lastReceived = new Date(machine.lastReceivedAt);
+          const dataCollectionDays = Math.ceil((lastReceived.getTime() - firstReceived.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Calculate daily averages
+          const dailyAverageRevenue = dataCollectionDays > 0 ? (totalVended / dataCollectionDays) : 0;
+          const dailyAverageCycles = dataCollectionDays > 0 ? (totalCycles / dataCollectionDays) : 0;
+          
+          // Calculate revenue efficiency score (1-10 scale)
+          let revenueEfficiencyScore = 5; // Base score
+          let performanceRating = "average";
+          
+          // Score based on average revenue per cycle
+          if (averageRevenuePerCycle >= 8.0) {
+            revenueEfficiencyScore = 10;
+            performanceRating = "excellent";
+          } else if (averageRevenuePerCycle >= 6.0) {
+            revenueEfficiencyScore = 8;
+            performanceRating = "good";
+          } else if (averageRevenuePerCycle >= 4.0) {
+            revenueEfficiencyScore = 6;
+            performanceRating = "average";
+          } else {
+            revenueEfficiencyScore = 3;
+            performanceRating = "poor";
+          }
+          
+          // Adjust score based on utilization
+          if (dailyAverageCycles >= 10) {
+            revenueEfficiencyScore = Math.min(10, revenueEfficiencyScore + 1);
+          } else if (dailyAverageCycles < 3) {
+            revenueEfficiencyScore = Math.max(1, revenueEfficiencyScore - 2);
+            if (performanceRating === "excellent") performanceRating = "good";
+            if (performanceRating === "good") performanceRating = "average";
+          }
+          
+          // Industry benchmark comparison
+          let industryBenchmarkComparison = "at";
+          if (averageRevenuePerCycle >= 7.0) {
+            industryBenchmarkComparison = "above";
+          } else if (averageRevenuePerCycle < 4.0) {
+            industryBenchmarkComparison = "below";
+          }
+          
+          // Generate recommendations
+          const recommendations = [];
+          if (averageRevenuePerCycle < 5.0) {
+            recommendations.push("Consider reviewing pricing strategy or machine programming");
+          }
+          if (dailyAverageCycles < 5) {
+            recommendations.push("Low utilization - consider relocating machine or improving marketing");
+          }
+          if (totalVended < 1000 && dataCollectionDays > 30) {
+            recommendations.push("Revenue below expectations - investigate machine functionality");
+          }
+          if (averageRevenuePerCycle > 8.0) {
+            recommendations.push("Excellent performance - consider replicating strategy at other locations");
+          }
+
+          const vendingData: InsertAuditTotalVending = {
+            locationId: parseInt(location.id.replace('loc_id', '19')), // Map to location ID 19
+            machineId: null, // Will be populated if machine exists
+            externalLocationId: location.id,
+            externalMachineId: machine.id,
+            machineName: machine.name,
+            machineTypeName: machine.machineType?.name,
+            machineTypeDescription: machine.machineType?.description,
+            isWasher: machine.machineType?.isWasher || false,
+            isDryer: machine.machineType?.isDryer || false,
+            isCombo: machine.machineType?.isCombo || false,
+            
+            // Vending metrics
+            totalCycles: totalCycles,
+            totalVended: totalVended.toString(),
+            
+            // Calculated metrics
+            averageRevenuePerCycle: averageRevenuePerCycle.toFixed(2),
+            revenueEfficiencyScore: revenueEfficiencyScore,
+            performanceRating: performanceRating,
+            
+            // Data collection period
+            firstReceivedAt: firstReceived,
+            lastReceivedAt: lastReceived,
+            dataCollectionDays: dataCollectionDays,
+            
+            // Revenue analytics
+            dailyAverageRevenue: dailyAverageRevenue.toFixed(2),
+            dailyAverageCycles: dailyAverageCycles.toFixed(2),
+            
+            // Benchmarking
+            industryBenchmarkComparison: industryBenchmarkComparison,
+            locationPerformanceRank: 1, // Will be calculated relative to other machines
+            
+            // Audit metadata
+            auditNotes: `Processed from total vending report for ${dataCollectionDays} days of data`,
+            recommendations: recommendations
+          };
+
+          const createdVending = await this.createAuditTotalVending(vendingData);
+          vendings.push(createdVending);
+          
+          console.log(`Created audit total vending record for machine: ${machine.name}, Revenue: $${totalVended}, Cycles: ${totalCycles}, Avg/Cycle: $${averageRevenuePerCycle.toFixed(2)}`);
+        }
+      }
+      
+      console.log(`Successfully processed ${vendings.length} total vending records`);
+      return vendings;
+      
+    } catch (error) {
+      console.error('Error processing audit total vending report:', error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

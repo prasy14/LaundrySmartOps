@@ -1,0 +1,61 @@
+### Test Audit Total Vending API
+
+### Get all audit total vending records
+GET http://localhost:5000/api/audit-total-vending
+Content-Type: application/json
+
+### Get audit total vending records by location
+GET http://localhost:5000/api/audit-total-vending/location/19
+Content-Type: application/json
+
+### Get audit total vending records by machine  
+GET http://localhost:5000/api/audit-total-vending/machine/1
+Content-Type: application/json
+
+### Process total vending report (your JSON data)
+POST http://localhost:5000/api/audit-total-vending/total-vending-report
+Content-Type: application/json
+
+{
+  "reportId": "AUDIT_TOTAL_VENDING",
+  "data": {
+    "locations": [
+      {
+        "id": "loc_id",
+        "name": "ALS - Laundromat",
+        "machines": [
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 250",
+            "totalCycles": 298,
+            "totalVended": 2356,
+            "machineType": {
+              "name": "Washer Extractor P105 lbs.",
+              "description": "Washer Extractor P105 lbs.",
+              "isWasher": true,
+              "isDryer": false,
+              "isCombo": false
+            },
+            "firstReceivedAt": "2024-07-27T09:44:04.000Z",
+            "lastReceivedAt": "2024-08-31T23:48:05.000Z"
+          },
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 250",
+            "totalCycles": 567,
+            "totalVended": 1292,
+            "machineType": {
+              "name": "Washer Extractor 80 lbs.",
+              "description": "Washer Extractor 80 lbs.",
+              "isWasher": true,
+              "isDryer": false,
+              "isCombo": false
+            },
+            "firstReceivedAt": "2024-07-22T09:06:14.000Z",
+            "lastReceivedAt": "2024-08-31T23:48:05.000Z"
+          }
+        ]
+      }
+    ]
+  }
+}
