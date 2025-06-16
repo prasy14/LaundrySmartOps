@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { eq, desc, inArray, and, gte, lte, sql, between, asc, like } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults, auditOperations } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults, auditOperations, auditCycleUsage } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
@@ -18,7 +18,8 @@ import type {
   MachinePerformanceMetrics,
   InsertMachinePerformanceMetrics,
   CoinVault, InsertCoinVault,
-  AuditOperation, InsertAuditOperation
+  AuditOperation, InsertAuditOperation,
+  AuditCycleUsage, InsertAuditCycleUsage
 } from "@shared/schema";
 
 export interface IStorage {
@@ -110,6 +111,16 @@ export interface IStorage {
   updateAuditOperation(id: number, operation: Partial<InsertAuditOperation>): Promise<AuditOperation>;
   deleteAuditOperation(id: number): Promise<boolean>;
   createAuditOperationsFromReport(reportData: any): Promise<AuditOperation[]>;
+
+  // Audit Cycle Usage operations
+  getAuditCycleUsages(): Promise<AuditCycleUsage[]>;
+  getAuditCycleUsagesByLocation(locationId: number): Promise<AuditCycleUsage[]>;
+  getAuditCycleUsagesByMachine(machineId: number): Promise<AuditCycleUsage[]>;
+  getAuditCycleUsage(id: number): Promise<AuditCycleUsage | undefined>;
+  createAuditCycleUsage(usage: InsertAuditCycleUsage): Promise<AuditCycleUsage>;
+  updateAuditCycleUsage(id: number, usage: Partial<InsertAuditCycleUsage>): Promise<AuditCycleUsage>;
+  deleteAuditCycleUsage(id: number): Promise<boolean>;
+  createAuditCycleUsagesFromReport(reportData: any): Promise<AuditCycleUsage[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1319,6 +1330,209 @@ async getCycleSteps(): Promise<CycleStep[]> {
       console.error('Error creating audit operations from report:', error);
       throw error;
     }
+  }
+
+  // Audit Cycle Usage methods
+  async getAuditCycleUsages(): Promise<AuditCycleUsage[]> {
+    return await db.select()
+      .from(auditCycleUsage)
+      .orderBy(desc(auditCycleUsage.createdAt));
+  }
+
+  async getAuditCycleUsagesByLocation(locationId: number): Promise<AuditCycleUsage[]> {
+    return await db.select()
+      .from(auditCycleUsage)
+      .where(eq(auditCycleUsage.locationId, locationId))
+      .orderBy(desc(auditCycleUsage.createdAt));
+  }
+
+  async getAuditCycleUsagesByMachine(machineId: number): Promise<AuditCycleUsage[]> {
+    return await db.select()
+      .from(auditCycleUsage)
+      .where(eq(auditCycleUsage.machineId, machineId))
+      .orderBy(desc(auditCycleUsage.createdAt));
+  }
+
+  async getAuditCycleUsage(id: number): Promise<AuditCycleUsage | undefined> {
+    const [usage] = await db.select()
+      .from(auditCycleUsage)
+      .where(eq(auditCycleUsage.id, id));
+    return usage || undefined;
+  }
+
+  async createAuditCycleUsage(usage: InsertAuditCycleUsage): Promise<AuditCycleUsage> {
+    const [created] = await db.insert(auditCycleUsage)
+      .values(usage)
+      .returning();
+    return created;
+  }
+
+  async updateAuditCycleUsage(id: number, usage: Partial<InsertAuditCycleUsage>): Promise<AuditCycleUsage> {
+    const [updated] = await db.update(auditCycleUsage)
+      .set({
+        ...usage,
+        updatedAt: new Date()
+      })
+      .where(eq(auditCycleUsage.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAuditCycleUsage(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(auditCycleUsage)
+        .where(eq(auditCycleUsage.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting audit cycle usage:', error);
+      return false;
+    }
+  }
+
+  async createAuditCycleUsagesFromReport(reportData: any): Promise<AuditCycleUsage[]> {
+    const usages: AuditCycleUsage[] = [];
+    
+    try {
+      if (!reportData?.data?.locations) {
+        throw new Error('Invalid report data: missing locations array');
+      }
+
+      for (const location of reportData.data.locations) {
+        if (!location.machines || !Array.isArray(location.machines)) {
+          continue;
+        }
+
+        for (const machine of location.machines) {
+          // Calculate totals and percentages
+          const totalDelicate = (machine.delicateColdCount || 0) + 
+                               (machine.delicateHotCount || 0) + 
+                               (machine.delicateWarmCount || 0);
+          
+          const totalNormal = (machine.normalColdCount || 0) + 
+                             (machine.normalHotCount || 0) + 
+                             (machine.normalWarmCount || 0);
+          
+          const totalPermanentPress = (machine.permanentPressColdCount || 0) + 
+                                     (machine.permanentPressHotCount || 0) + 
+                                     (machine.permanentPressWarmCount || 0);
+
+          const totalCold = (machine.delicateColdCount || 0) + 
+                           (machine.normalColdCount || 0) + 
+                           (machine.permanentPressColdCount || 0);
+          
+          const totalHot = (machine.delicateHotCount || 0) + 
+                          (machine.normalHotCount || 0) + 
+                          (machine.permanentPressHotCount || 0);
+          
+          const totalWarm = (machine.delicateWarmCount || 0) + 
+                           (machine.normalWarmCount || 0) + 
+                           (machine.permanentPressWarmCount || 0);
+
+          const totalCycles = machine.totalCycles || 0;
+          
+          // Calculate percentages
+          const hotWaterPercentage = totalCycles > 0 ? (totalHot / totalCycles * 100) : 0;
+          const delicatePercentage = totalCycles > 0 ? (totalDelicate / totalCycles * 100) : 0;
+
+          // Calculate efficiency score and rating
+          let efficiencyScore = 10;
+          let usageRating = "optimal";
+
+          // Deduct points for excessive hot water usage
+          if (hotWaterPercentage > 70) {
+            efficiencyScore -= 3;
+            usageRating = "concerning";
+          } else if (hotWaterPercentage > 50) {
+            efficiencyScore -= 1;
+            usageRating = "good";
+          }
+
+          // Deduct points for low delicate cycle usage (indicates harsh washing)
+          if (delicatePercentage < 10) {
+            efficiencyScore -= 2;
+            if (usageRating === "optimal") usageRating = "good";
+          }
+
+          if (efficiencyScore < 6) usageRating = "poor";
+
+          // Calculate data collection period
+          const firstReceived = new Date(machine.firstReceivedAt);
+          const lastReceived = new Date(machine.lastReceivedAt);
+          const dataCollectionDays = Math.ceil((lastReceived.getTime() - firstReceived.getTime()) / (1000 * 60 * 60 * 24));
+
+          // Generate recommendations
+          const recommendations = [];
+          if (hotWaterPercentage > 60) {
+            recommendations.push("Consider reducing hot water usage to improve energy efficiency");
+          }
+          if (delicatePercentage < 15) {
+            recommendations.push("Increase use of delicate cycles to extend fabric life");
+          }
+          if (totalCycles < 100) {
+            recommendations.push("Machine utilization is low - consider redistribution");
+          }
+
+          const usage: InsertAuditCycleUsage = {
+            locationId: parseInt(location.id.replace('loc_id', '19')), // Map to location ID 19
+            machineId: null, // Will be populated if machine exists
+            externalLocationId: location.id,
+            externalMachineId: machine.id,
+            machineName: machine.name,
+            machineTypeName: machine.machineType?.name,
+            machineTypeDescription: machine.machineType?.description,
+            isWasher: machine.machineType?.isWasher || false,
+            isDryer: machine.machineType?.isDryer || false,
+            isCombo: machine.machineType?.isCombo || false,
+            
+            // Raw cycle counts
+            delicateColdCount: machine.delicateColdCount || 0,
+            delicateHotCount: machine.delicateHotCount || 0,
+            delicateWarmCount: machine.delicateWarmCount || 0,
+            normalColdCount: machine.normalColdCount || 0,
+            normalHotCount: machine.normalHotCount || 0,
+            normalWarmCount: machine.normalWarmCount || 0,
+            permanentPressColdCount: machine.permanentPressColdCount || 0,
+            permanentPressHotCount: machine.permanentPressHotCount || 0,
+            permanentPressWarmCount: machine.permanentPressWarmCount || 0,
+            
+            // Calculated totals
+            totalCycles: totalCycles,
+            totalDelicateCycles: totalDelicate,
+            totalNormalCycles: totalNormal,
+            totalPermanentPressCycles: totalPermanentPress,
+            totalColdCycles: totalCold,
+            totalHotCycles: totalHot,
+            totalWarmCycles: totalWarm,
+            
+            // Efficiency metrics
+            hotWaterUsagePercentage: hotWaterPercentage.toFixed(2),
+            delicateCyclePercentage: delicatePercentage.toFixed(2),
+            energyEfficiencyScore: efficiencyScore,
+            usagePatternRating: usageRating,
+            
+            // Data collection period
+            firstReceivedAt: firstReceived,
+            lastReceivedAt: lastReceived,
+            dataCollectionDays: dataCollectionDays,
+            
+            // Audit metadata
+            auditNotes: `Cycle usage analysis for ${machine.name}. Total cycles: ${totalCycles}, Hot water usage: ${hotWaterPercentage.toFixed(1)}%`,
+            recommendations: recommendations
+          };
+
+          const [created] = await db.insert(auditCycleUsage)
+            .values(usage)
+            .returning();
+          
+          usages.push(created);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing audit cycle usage report:', error);
+      throw error;
+    }
+    
+    return usages;
   }
 }
 

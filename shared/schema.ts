@@ -706,3 +706,103 @@ export const insertAuditOperationSchema = createInsertSchema(auditOperations).pi
 
 export type AuditOperation = typeof auditOperations.$inferSelect;
 export type InsertAuditOperation = z.infer<typeof insertAuditOperationSchema>;
+
+// Audit Cycle Usage table for tracking machine cycle patterns and usage analytics
+export const auditCycleUsage = pgTable("audit_cycle_usage", {
+  id: serial("id").primaryKey(),
+  locationId: integer("location_id").references(() => locations.id),
+  machineId: integer("machine_id").references(() => machines.id),
+  externalLocationId: text("external_location_id"),
+  externalMachineId: text("external_machine_id"),
+  
+  // Machine information
+  machineName: text("machine_name").notNull(),
+  machineTypeName: text("machine_type_name"),
+  machineTypeDescription: text("machine_type_description"),
+  isWasher: boolean("is_washer").default(false),
+  isDryer: boolean("is_dryer").default(false),
+  isCombo: boolean("is_combo").default(false),
+  
+  // Cycle counts by type and temperature
+  delicateColdCount: integer("delicate_cold_count").default(0),
+  delicateHotCount: integer("delicate_hot_count").default(0),
+  delicateWarmCount: integer("delicate_warm_count").default(0),
+  normalColdCount: integer("normal_cold_count").default(0),
+  normalHotCount: integer("normal_hot_count").default(0),
+  normalWarmCount: integer("normal_warm_count").default(0),
+  permanentPressColdCount: integer("permanent_press_cold_count").default(0),
+  permanentPressHotCount: integer("permanent_press_hot_count").default(0),
+  permanentPressWarmCount: integer("permanent_press_warm_count").default(0),
+  
+  // Total cycles and calculated metrics
+  totalCycles: integer("total_cycles").notNull(),
+  totalDelicateCycles: integer("total_delicate_cycles").default(0),
+  totalNormalCycles: integer("total_normal_cycles").default(0),
+  totalPermanentPressCycles: integer("total_permanent_press_cycles").default(0),
+  totalColdCycles: integer("total_cold_cycles").default(0),
+  totalHotCycles: integer("total_hot_cycles").default(0),
+  totalWarmCycles: integer("total_warm_cycles").default(0),
+  
+  // Usage patterns and efficiency metrics
+  hotWaterUsagePercentage: numeric("hot_water_usage_percentage", { precision: 5, scale: 2 }),
+  delicateCyclePercentage: numeric("delicate_cycle_percentage", { precision: 5, scale: 2 }),
+  energyEfficiencyScore: integer("energy_efficiency_score"),
+  usagePatternRating: text("usage_pattern_rating"), // optimal, good, concerning, poor
+  
+  // Data collection period
+  firstReceivedAt: timestamp("first_received_at").notNull(),
+  lastReceivedAt: timestamp("last_received_at").notNull(),
+  dataCollectionDays: integer("data_collection_days"),
+  
+  // Audit metadata
+  auditDate: timestamp("audit_date").defaultNow(),
+  auditedBy: integer("audited_by").references(() => users.id),
+  auditNotes: text("audit_notes"),
+  recommendations: jsonb("recommendations"),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertAuditCycleUsageSchema = createInsertSchema(auditCycleUsage).pick({
+  locationId: true,
+  machineId: true,
+  externalLocationId: true,
+  externalMachineId: true,
+  machineName: true,
+  machineTypeName: true,
+  machineTypeDescription: true,
+  isWasher: true,
+  isDryer: true,
+  isCombo: true,
+  delicateColdCount: true,
+  delicateHotCount: true,
+  delicateWarmCount: true,
+  normalColdCount: true,
+  normalHotCount: true,
+  normalWarmCount: true,
+  permanentPressColdCount: true,
+  permanentPressHotCount: true,
+  permanentPressWarmCount: true,
+  totalCycles: true,
+  totalDelicateCycles: true,
+  totalNormalCycles: true,
+  totalPermanentPressCycles: true,
+  totalColdCycles: true,
+  totalHotCycles: true,
+  totalWarmCycles: true,
+  hotWaterUsagePercentage: true,
+  delicateCyclePercentage: true,
+  energyEfficiencyScore: true,
+  usagePatternRating: true,
+  firstReceivedAt: true,
+  lastReceivedAt: true,
+  dataCollectionDays: true,
+  auditedBy: true,
+  auditNotes: true,
+  recommendations: true
+});
+
+export type AuditCycleUsage = typeof auditCycleUsage.$inferSelect;
+export type InsertAuditCycleUsage = z.infer<typeof insertAuditCycleUsageSchema>;
