@@ -11,6 +11,7 @@ import alertsRoutes from "./routes/alerts";
 import reportEmailRoutes from "./routes/reports-email";
 import machinePerformanceRoutes from "./routes/machine-performance";
 import { serviceAlertsRouter } from "./routes/service-alerts";
+import machineErrorsRoutes from "./routes/machine-errors";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 import { db } from "./db";
 import { machineErrors } from "@shared/schema";
@@ -38,6 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     apiRouter.use('/alerts', isOperatorOrAbove, alertsRoutes);
     apiRouter.use('/', isOperatorOrAbove, serviceAlertsRouter);
     apiRouter.use('/machine-performance', isOperatorOrAbove, machinePerformanceRoutes);
+    apiRouter.use('/machine-errors', isOperatorOrAbove, machineErrorsRoutes);
 
     // Data access routes
     apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {

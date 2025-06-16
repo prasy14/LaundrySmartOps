@@ -1,0 +1,35 @@
+# Test Machine Errors API with the provided JSON structure
+
+### Create machine errors from your JSON example
+POST http://localhost:5000/api/machine-errors/bulk
+Content-Type: application/json
+
+{
+  "machineId": 1,
+  "locationId": 1,
+  "errors": [
+    {
+      "id": "18a9e369-eaf5-4f6a-8141-b20637924a50",
+      "name": "ERROR_OUTBOARD_COMMUNICATION_ENUM",
+      "type": "CONTROL",
+      "code": 4,
+      "timestamp": "2024-02-13T14:20:05.000Z"
+    },
+    {
+      "id": "7bafc72e-c81f-4b67-a587-6b9b2a0e4187",
+      "name": "ERROR_OUTBOARD_COMMUNICATION_ENUM",
+      "type": "CONTROL",
+      "code": 4,
+      "timestamp": "2024-02-13T21:28:55.000Z"
+    }
+  ]
+}
+
+### Get all machine errors
+GET http://localhost:5000/api/machine-errors
+
+### Get machine errors by machine ID
+GET http://localhost:5000/api/machine-errors/machine/1
+
+### Get machine errors by location ID
+GET http://localhost:5000/api/machine-errors/location/1
