@@ -810,78 +810,37 @@ export type InsertAuditCycleUsage = z.infer<typeof insertAuditCycleUsageSchema>;
 // Audit Total Vending table for tracking machine revenue and cycle performance
 export const auditTotalVending = pgTable("audit_total_vending", {
   id: serial("id").primaryKey(),
-  locationId: integer("location_id").references(() => locations.id),
-  machineId: integer("machine_id").references(() => machines.id),
-  externalLocationId: text("external_location_id"),
-  externalMachineId: text("external_machine_id"),
-  
-  // Machine information
-  machineName: text("machine_name").notNull(),
+  locationId: text("location_id"),
+  locationName: text("location_name"),
+  machineId: text("machine_id"),
+  machineName: text("machine_name"),
+  totalCycles: integer("total_cycles"),
+  totalVended: integer("total_vended"),
+  firstReceivedAt: timestamp("first_received_at"),
+  lastReceivedAt: timestamp("last_received_at"),
   machineTypeName: text("machine_type_name"),
-  machineTypeDescription: text("machine_type_description"),
-  isWasher: boolean("is_washer").default(false),
-  isDryer: boolean("is_dryer").default(false),
-  isCombo: boolean("is_combo").default(false),
-  
-  // Vending metrics
-  totalCycles: integer("total_cycles").notNull(),
-  totalVended: numeric("total_vended", { precision: 10, scale: 2 }).notNull(),
-  
-  // Calculated metrics
-  averageRevenuePerCycle: numeric("average_revenue_per_cycle", { precision: 8, scale: 2 }),
-  revenueEfficiencyScore: integer("revenue_efficiency_score"),
-  performanceRating: text("performance_rating"), // excellent, good, average, poor
-  
-  // Data collection period
-  firstReceivedAt: timestamp("first_received_at").notNull(),
-  lastReceivedAt: timestamp("last_received_at").notNull(),
-  dataCollectionDays: integer("data_collection_days"),
-  
-  // Revenue analytics
-  dailyAverageRevenue: numeric("daily_average_revenue", { precision: 8, scale: 2 }),
-  dailyAverageCycles: numeric("daily_average_cycles", { precision: 6, scale: 2 }),
-  
-  // Benchmarking
-  industryBenchmarkComparison: text("industry_benchmark_comparison"), // above, at, below
-  locationPerformanceRank: integer("location_performance_rank"),
-  
-  // Audit metadata
-  auditDate: timestamp("audit_date").defaultNow(),
-  auditedBy: integer("audited_by").references(() => users.id),
-  auditNotes: text("audit_notes"),
-  recommendations: jsonb("recommendations"),
-  
-  // Timestamps
+  machineTypeDesc: text("machine_type_desc"),
+  isWasher: boolean("is_washer"),
+  isDryer: boolean("is_dryer"),
+  isCombo: boolean("is_combo"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });
 
 export const insertAuditTotalVendingSchema = createInsertSchema(auditTotalVending).pick({
   locationId: true,
+  locationName: true,
   machineId: true,
-  externalLocationId: true,
-  externalMachineId: true,
   machineName: true,
-  machineTypeName: true,
-  machineTypeDescription: true,
-  isWasher: true,
-  isDryer: true,
-  isCombo: true,
   totalCycles: true,
   totalVended: true,
-  averageRevenuePerCycle: true,
-  revenueEfficiencyScore: true,
-  performanceRating: true,
   firstReceivedAt: true,
   lastReceivedAt: true,
-  dataCollectionDays: true,
-  dailyAverageRevenue: true,
-  dailyAverageCycles: true,
-  industryBenchmarkComparison: true,
-  locationPerformanceRank: true,
-  auditedBy: true,
-  auditNotes: true,
-  recommendations: true
+  machineTypeName: true,
+  machineTypeDesc: true,
+  isWasher: true,
+  isDryer: true,
+  isCombo: true
 });
 
 export type AuditTotalVending = typeof auditTotalVending.$inferSelect;
