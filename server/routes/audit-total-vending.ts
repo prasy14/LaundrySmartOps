@@ -19,11 +19,7 @@ router.get('/', async (req, res) => {
 // Get audit total vending records by location
 router.get('/location/:locationId', async (req, res) => {
   try {
-    const locationId = parseInt(req.params.locationId);
-    if (isNaN(locationId)) {
-      return res.status(400).json({ error: 'Invalid location ID' });
-    }
-    
+    const locationId = req.params.locationId;
     const vendings = await storage.getAuditTotalVendingsByLocation(locationId);
     res.json({ vendings });
   } catch (error) {
@@ -35,11 +31,7 @@ router.get('/location/:locationId', async (req, res) => {
 // Get audit total vending records by machine
 router.get('/machine/:machineId', async (req, res) => {
   try {
-    const machineId = parseInt(req.params.machineId);
-    if (isNaN(machineId)) {
-      return res.status(400).json({ error: 'Invalid machine ID' });
-    }
-    
+    const machineId = req.params.machineId;
     const vendings = await storage.getAuditTotalVendingsByMachine(machineId);
     res.json({ vendings });
   } catch (error) {

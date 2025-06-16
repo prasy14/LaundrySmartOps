@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { eq, desc, inArray, and, gte, lte, sql, between, asc, like } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults, auditOperations, auditCycleUsage } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults, auditOperations, auditCycleUsage, auditTotalVending } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
@@ -19,7 +19,8 @@ import type {
   InsertMachinePerformanceMetrics,
   CoinVault, InsertCoinVault,
   AuditOperation, InsertAuditOperation,
-  AuditCycleUsage, InsertAuditCycleUsage
+  AuditCycleUsage, InsertAuditCycleUsage,
+  AuditTotalVending, InsertAuditTotalVending
 } from "@shared/schema";
 
 export interface IStorage {
@@ -121,6 +122,16 @@ export interface IStorage {
   updateAuditCycleUsage(id: number, usage: Partial<InsertAuditCycleUsage>): Promise<AuditCycleUsage>;
   deleteAuditCycleUsage(id: number): Promise<boolean>;
   createAuditCycleUsagesFromReport(reportData: any): Promise<AuditCycleUsage[]>;
+
+  // Audit Total Vending operations
+  getAuditTotalVendings(): Promise<AuditTotalVending[]>;
+  getAuditTotalVendingsByLocation(locationId: string): Promise<AuditTotalVending[]>;
+  getAuditTotalVendingsByMachine(machineId: string): Promise<AuditTotalVending[]>;
+  getAuditTotalVending(id: number): Promise<AuditTotalVending | undefined>;
+  createAuditTotalVending(vending: InsertAuditTotalVending): Promise<AuditTotalVending>;
+  updateAuditTotalVending(id: number, vending: Partial<InsertAuditTotalVending>): Promise<AuditTotalVending>;
+  deleteAuditTotalVending(id: number): Promise<boolean>;
+  createAuditTotalVendingsFromReport(reportData: any): Promise<AuditTotalVending[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1540,13 +1551,13 @@ async getCycleSteps(): Promise<CycleStep[]> {
     return await db.select().from(auditTotalVending).orderBy(desc(auditTotalVending.createdAt));
   }
 
-  async getAuditTotalVendingsByLocation(locationId: number): Promise<AuditTotalVending[]> {
+  async getAuditTotalVendingsByLocation(locationId: string): Promise<AuditTotalVending[]> {
     return await db.select().from(auditTotalVending)
       .where(eq(auditTotalVending.locationId, locationId))
       .orderBy(desc(auditTotalVending.createdAt));
   }
 
-  async getAuditTotalVendingsByMachine(machineId: number): Promise<AuditTotalVending[]> {
+  async getAuditTotalVendingsByMachine(machineId: string): Promise<AuditTotalVending[]> {
     return await db.select().from(auditTotalVending)
       .where(eq(auditTotalVending.machineId, machineId))
       .orderBy(desc(auditTotalVending.createdAt));
@@ -1669,42 +1680,19 @@ async getCycleSteps(): Promise<CycleStep[]> {
           }
 
           const vendingData: InsertAuditTotalVending = {
-            locationId: parseInt(location.id.replace('loc_id', '19')), // Map to location ID 19
-            machineId: null, // Will be populated if machine exists
-            externalLocationId: location.id,
-            externalMachineId: machine.id,
+            locationId: location.id,
+            locationName: location.name,
+            machineId: machine.id,
             machineName: machine.name,
-            machineTypeName: machine.machineType?.name,
-            machineTypeDescription: machine.machineType?.description,
-            isWasher: machine.machineType?.isWasher || false,
-            isDryer: machine.machineType?.isDryer || false,
-            isCombo: machine.machineType?.isCombo || false,
-            
-            // Vending metrics
             totalCycles: totalCycles,
-            totalVended: totalVended.toString(),
-            
-            // Calculated metrics
-            averageRevenuePerCycle: averageRevenuePerCycle.toFixed(2),
-            revenueEfficiencyScore: revenueEfficiencyScore,
-            performanceRating: performanceRating,
-            
-            // Data collection period
+            totalVended: Math.round(totalVended),
             firstReceivedAt: firstReceived,
             lastReceivedAt: lastReceived,
-            dataCollectionDays: dataCollectionDays,
-            
-            // Revenue analytics
-            dailyAverageRevenue: dailyAverageRevenue.toFixed(2),
-            dailyAverageCycles: dailyAverageCycles.toFixed(2),
-            
-            // Benchmarking
-            industryBenchmarkComparison: industryBenchmarkComparison,
-            locationPerformanceRank: 1, // Will be calculated relative to other machines
-            
-            // Audit metadata
-            auditNotes: `Processed from total vending report for ${dataCollectionDays} days of data`,
-            recommendations: recommendations
+            machineTypeName: machine.machineType?.name,
+            machineTypeDesc: machine.machineType?.description,
+            isWasher: machine.machineType?.isWasher || false,
+            isDryer: machine.machineType?.isDryer || false,
+            isCombo: machine.machineType?.isCombo || false
           };
 
           const createdVending = await this.createAuditTotalVending(vendingData);
