@@ -19,11 +19,7 @@ router.get("/", isManagerOrAdmin, async (req, res) => {
 // Get audit cycle usages by location
 router.get("/location/:locationId", isManagerOrAdmin, async (req, res) => {
   try {
-    const locationId = parseInt(req.params.locationId);
-    if (isNaN(locationId)) {
-      return res.status(400).json({ error: "Invalid location ID" });
-    }
-    
+    const locationId = req.params.locationId;
     const usages = await storage.getAuditCycleUsagesByLocation(locationId);
     res.json(usages);
   } catch (error) {
@@ -35,11 +31,7 @@ router.get("/location/:locationId", isManagerOrAdmin, async (req, res) => {
 // Get audit cycle usages by machine
 router.get("/machine/:machineId", isManagerOrAdmin, async (req, res) => {
   try {
-    const machineId = parseInt(req.params.machineId);
-    if (isNaN(machineId)) {
-      return res.status(400).json({ error: "Invalid machine ID" });
-    }
-    
+    const machineId = req.params.machineId;
     const usages = await storage.getAuditCycleUsagesByMachine(machineId);
     res.json(usages);
   } catch (error) {

@@ -1350,14 +1350,14 @@ async getCycleSteps(): Promise<CycleStep[]> {
       .orderBy(desc(auditCycleUsage.createdAt));
   }
 
-  async getAuditCycleUsagesByLocation(locationId: number): Promise<AuditCycleUsage[]> {
+  async getAuditCycleUsagesByLocation(locationId: string): Promise<AuditCycleUsage[]> {
     return await db.select()
       .from(auditCycleUsage)
       .where(eq(auditCycleUsage.locationId, locationId))
       .orderBy(desc(auditCycleUsage.createdAt));
   }
 
-  async getAuditCycleUsagesByMachine(machineId: number): Promise<AuditCycleUsage[]> {
+  async getAuditCycleUsagesByMachine(machineId: string): Promise<AuditCycleUsage[]> {
     return await db.select()
       .from(auditCycleUsage)
       .where(eq(auditCycleUsage.machineId, machineId))

@@ -127,6 +127,7 @@ Changelog:
 - June 16, 2025. Created complete AUDIT_CYCLE_USAGE database table and API system with Location ID and Machine ID fields for processing cycle usage analytics with energy efficiency scoring and intelligent recommendations
 - June 16, 2025. Successfully implemented complete AUDIT_TOTAL_VENDING database table and API system with Location ID and Machine ID fields for processing vending revenue data with revenue efficiency scoring and performance analytics
 - June 16, 2025. Updated AUDIT_TOTAL_VENDING table structure to user's exact specifications with TEXT fields for location_id, machine_id, simplified column set, and INTEGER total_vended field
+- June 16, 2025. Updated AUDIT_CYCLE_USAGE table structure to user's exact specifications with TEXT fields for location_id, machine_id, report_id, and simplified 22-column structure matching cycle usage audit requirements
 
 ## User Preferences
 
