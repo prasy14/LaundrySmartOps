@@ -1,0 +1,111 @@
+### Coin Vault API Tests
+
+# Get all coin vaults
+GET http://localhost:5000/api/coin-vaults
+Accept: application/json
+
+###
+
+# Get coin vaults by location (replace with actual location ID)
+GET http://localhost:5000/api/coin-vaults/location/1
+Accept: application/json
+
+###
+
+# Get coin vaults by machine (replace with actual machine ID)
+GET http://localhost:5000/api/coin-vaults/machine/1
+Accept: application/json
+
+###
+
+# Create/Update a coin vault
+POST http://localhost:5000/api/coin-vaults
+Content-Type: application/json
+
+{
+  "locationId": 1,
+  "machineId": 1,
+  "externalMachineId": "mac_test123",
+  "machineName": "Test Washer",
+  "vaultSize": 100,
+  "percentCapacity": "75.5",
+  "totalValue": 2550,
+  "machineType": {
+    "name": "Commercial Washer",
+    "description": "Heavy duty commercial washing machine"
+  },
+  "emptiedDetails": [
+    {
+      "emptiedAt": "2024-01-15T10:30:00Z",
+      "emptiedValue": 1500
+    },
+    {
+      "emptiedAt": "2024-01-10T14:20:00Z",
+      "emptiedValue": 1200
+    }
+  ]
+}
+
+###
+
+# Process coin vault report (JSON structure from user requirements)
+POST http://localhost:5000/api/coin-vaults/report
+Content-Type: application/json
+
+{
+  "reportId": "COIN_VAULT",
+  "data": {
+    "locations": [
+      {
+        "id": "loc_abc123",
+        "name": "Downtown Laundromat",
+        "machines": [
+          {
+            "id": "mac_def456",
+            "name": "Washer #1",
+            "vaultSize": 200,
+            "percentCapacity": 85.2,
+            "totalValue": 3420,
+            "machineType": {
+              "name": "Speed Queen Washer",
+              "description": "High-efficiency front-loading washer"
+            },
+            "emptiedDetails": [
+              {
+                "emptiedAt": "2024-01-20T08:45:00Z",
+                "emptiedValue": 2000
+              },
+              {
+                "emptiedAt": "2024-01-18T16:30:00Z",
+                "emptiedValue": 1800
+              }
+            ]
+          },
+          {
+            "id": "mac_ghi789",
+            "name": "Dryer #2",
+            "vaultSize": 150,
+            "percentCapacity": 62.7,
+            "totalValue": 1565,
+            "machineType": {
+              "name": "Speed Queen Dryer",
+              "description": "Commercial gas dryer"
+            },
+            "emptiedDetails": [
+              {
+                "emptiedAt": "2024-01-19T12:15:00Z",
+                "emptiedValue": 950
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+###
+
+# Delete a coin vault (replace with actual vault ID)
+DELETE http://localhost:5000/api/coin-vaults/1
+Accept: application/json
