@@ -153,4 +153,104 @@ router.post("/report", isManagerOrAdmin, async (req, res) => {
   }
 });
 
+// Process machine performance audit report
+router.post("/performance-report", isManagerOrAdmin, async (req, res) => {
+  try {
+    const { reportId, data } = req.body;
+    
+    if (reportId !== "AUDIT_OPERATION") {
+      return res.status(400).json({ error: "Invalid report type" });
+    }
+
+    const createdOperations = [];
+    
+    for (const location of data.locations) {
+      // Find or create location
+      const locationRecord = await storage.getLocationByExternalId(location.id);
+      if (!locationRecord) {
+        console.warn(`Location not found: ${location.id}`);
+        continue;
+      }
+
+      for (const machine of location.machines) {
+        // Find machine by external ID
+        const machineRecord = await storage.getMachineByExternalId(machine.id);
+        
+        // Create audit operation from machine performance data
+        const auditOperation = {
+          locationId: locationRecord.id,
+          machineId: machineRecord?.id || null,
+          externalLocationId: location.id,
+          externalMachineId: machine.id,
+          operationType: "performance_audit",
+          operationStatus: "completed",
+          auditorName: "System Performance Monitor",
+          auditorId: "SYS_PERF",
+          startTime: new Date(machine.lastReceivedAt),
+          endTime: new Date(machine.lastReceivedAt),
+          duration: parseInt(machine.totalOperationHours) || 0,
+          findings: {
+            issues: [],
+            recommendations: [
+              `Machine completed ${machine.totalNumberOfMachineCycles} total cycles`,
+              machine.totalNumberOfRapidAdvanceCycles > 0 
+                ? `${machine.totalNumberOfRapidAdvanceCycles} rapid advance cycles detected`
+                : "No rapid advance cycles - optimal usage pattern"
+            ],
+            scores: {
+              functionality: parseInt(machine.totalNumberOfMachineCycles) > 30 ? 9 : 7,
+              performance: parseInt(machine.totalOperationHours) > 50 ? 8 : 6,
+              overall: 8
+            }
+          },
+          checklist: {
+            items: [
+              {
+                item: "Total Machine Cycles",
+                status: "pass",
+                notes: `${machine.totalNumberOfMachineCycles} cycles completed`
+              },
+              {
+                item: "Rapid Advance Cycles",
+                status: parseInt(machine.totalNumberOfRapidAdvanceCycles) > 10 ? "fail" : "pass",
+                notes: `${machine.totalNumberOfRapidAdvanceCycles} rapid advance cycles`
+              },
+              {
+                item: "Operation Hours",
+                status: "pass",
+                notes: `${machine.totalOperationHours} hours total operation`
+              },
+              {
+                item: "Data Collection Period",
+                status: "pass",
+                notes: `From ${machine.firstReceivedAt} to ${machine.lastReceivedAt}`
+              }
+            ],
+            completionRate: 100
+          },
+          notes: `Performance audit for ${machine.name} (${machine.machineType.description}). Cycles: ${machine.totalNumberOfMachineCycles}, Rapid: ${machine.totalNumberOfRapidAdvanceCycles}, Hours: ${machine.totalOperationHours}`,
+          priority: parseInt(machine.totalNumberOfRapidAdvanceCycles) > 10 ? "high" : "medium",
+          category: "routine",
+          complianceStatus: "compliant",
+          createdBy: req.user?.id,
+          updatedBy: req.user?.id
+        };
+
+        const created = await storage.createAuditOperation(auditOperation);
+        createdOperations.push(created);
+      }
+    }
+
+    res.status(201).json({
+      message: `Successfully processed performance audit for ${createdOperations.length} machines`,
+      reportId,
+      operationsCreated: createdOperations.length,
+      operations: createdOperations
+    });
+  } catch (error) {
+    console.error("Error processing performance audit report:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

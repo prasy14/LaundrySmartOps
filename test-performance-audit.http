@@ -1,0 +1,65 @@
+### Test Performance Audit Report Processing
+POST http://localhost:5000/api/audit-operations/performance-report
+Content-Type: application/json
+
+{
+  "reportId": "AUDIT_OPERATION",
+  "data": {
+    "locations": [
+      {
+        "id": "loc_id",
+        "name": "location_name",
+        "machines": [
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 12",
+            "machineType": {
+              "name": "Tumbler 50 lbs.",
+              "description": "Tumbler 50 lbs.",
+              "isWasher": false,
+              "isDryer": true,
+              "isCombo": false
+            },
+            "totalNumberOfMachineCycles": "20",
+            "totalNumberOfRapidAdvanceCycles": "5",
+            "totalOperationHours": "25",
+            "firstReceivedAt": "2024-06-09T14:00:09.000Z",
+            "lastReceivedAt": "2024-07-09T19:00:03.000Z"
+          },
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 10",
+            "machineType": {
+              "name": "Washer Extractor 20 lbs.",
+              "description": "Washer Extractor 20 lbs.",
+              "isWasher": true,
+              "isDryer": false,
+              "isCombo": false
+            },
+            "totalNumberOfMachineCycles": "50",
+            "totalNumberOfRapidAdvanceCycles": "0",
+            "totalOperationHours": "100",
+            "firstReceivedAt": "2024-06-09T12:00:03.000Z",
+            "lastReceivedAt": "2024-07-09T19:00:14.000Z"
+          },
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 13",
+            "machineType": {
+              "name": "CZCOMBO240",
+              "description": "CZCOMBO240",
+              "isWasher": false,
+              "isDryer": false,
+              "isCombo": true
+            },
+            "totalNumberOfMachineCycles": "53",
+            "totalNumberOfRapidAdvanceCycles": "2",
+            "totalOperationHours": "104",
+            "firstReceivedAt": "2024-06-09T14:15:07.000Z",
+            "lastReceivedAt": "2024-07-09T19:00:08.000Z"
+          }
+        ]
+      }
+    ]
+  }
+}
