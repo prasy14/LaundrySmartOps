@@ -625,3 +625,84 @@ export const insertCoinVaultSchema = createInsertSchema(coinVaults).pick({
 
 export type CoinVault = typeof coinVaults.$inferSelect;
 export type InsertCoinVault = z.infer<typeof insertCoinVaultSchema>;
+
+// Audit Operations table
+export const auditOperations = pgTable("audit_operations", {
+  id: serial("id").primaryKey(),
+  locationId: integer("location_id").references(() => locations.id).notNull(),
+  machineId: integer("machine_id").references(() => machines.id),
+  externalLocationId: text("external_location_id"),
+  externalMachineId: text("external_machine_id"),
+  operationType: text("operation_type").notNull(), // e.g., "maintenance", "inspection", "cleaning"
+  operationStatus: text("operation_status").notNull(), // e.g., "pending", "in_progress", "completed", "failed"
+  auditorName: text("auditor_name").notNull(),
+  auditorId: text("auditor_id"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"), // in minutes
+  findings: jsonb("findings").$type<{
+    issues: Array<{
+      type: string;
+      severity: string;
+      description: string;
+      resolved: boolean;
+    }>;
+    recommendations: string[];
+    scores?: {
+      cleanliness?: number;
+      functionality?: number;
+      safety?: number;
+      overall?: number;
+    };
+  }>(),
+  checklist: jsonb("checklist").$type<{
+    items: Array<{
+      item: string;
+      status: string; // "pass", "fail", "na"
+      notes?: string;
+    }>;
+    completionRate?: number;
+  }>(),
+  notes: text("notes"),
+  attachments: jsonb("attachments").$type<Array<{
+    filename: string;
+    url: string;
+    type: string;
+    size?: number;
+  }>>(),
+  priority: text("priority").notNull().default("medium"), // "high", "medium", "low"
+  category: text("category").notNull(), // "preventive", "corrective", "routine", "emergency"
+  complianceStatus: text("compliance_status"), // "compliant", "non_compliant", "pending_review"
+  nextAuditDue: timestamp("next_audit_due"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdBy: integer("created_by").references(() => users.id),
+  updatedBy: integer("updated_by").references(() => users.id)
+});
+
+export const insertAuditOperationSchema = createInsertSchema(auditOperations).pick({
+  locationId: true,
+  machineId: true,
+  externalLocationId: true,
+  externalMachineId: true,
+  operationType: true,
+  operationStatus: true,
+  auditorName: true,
+  auditorId: true,
+  startTime: true,
+  endTime: true,
+  duration: true,
+  findings: true,
+  checklist: true,
+  notes: true,
+  attachments: true,
+  priority: true,
+  category: true,
+  complianceStatus: true,
+  nextAuditDue: true,
+  createdBy: true,
+  updatedBy: true
+});
+
+export type AuditOperation = typeof auditOperations.$inferSelect;
+export type InsertAuditOperation = z.infer<typeof insertAuditOperationSchema>;

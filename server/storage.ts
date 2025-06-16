@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { eq, desc, inArray, and, gte, lte, sql, between, asc, like } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults, auditOperations } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
@@ -17,7 +17,8 @@ import type {
   MachineError, InsertMachineError,
   MachinePerformanceMetrics,
   InsertMachinePerformanceMetrics,
-  CoinVault, InsertCoinVault
+  CoinVault, InsertCoinVault,
+  AuditOperation, InsertAuditOperation
 } from "@shared/schema";
 
 export interface IStorage {
@@ -99,6 +100,16 @@ export interface IStorage {
   createOrUpdateCoinVault(coinVault: InsertCoinVault): Promise<CoinVault>;
   createCoinVaultsFromReport(reportData: any): Promise<CoinVault[]>;
   deleteCoinVault(id: number): Promise<boolean>;
+
+  // Audit Operations
+  getAuditOperations(): Promise<AuditOperation[]>;
+  getAuditOperationsByLocation(locationId: number): Promise<AuditOperation[]>;
+  getAuditOperationsByMachine(machineId: number): Promise<AuditOperation[]>;
+  getAuditOperation(id: number): Promise<AuditOperation | undefined>;
+  createAuditOperation(operation: InsertAuditOperation): Promise<AuditOperation>;
+  updateAuditOperation(id: number, operation: Partial<InsertAuditOperation>): Promise<AuditOperation>;
+  deleteAuditOperation(id: number): Promise<boolean>;
+  createAuditOperationsFromReport(reportData: any): Promise<AuditOperation[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1175,6 +1186,138 @@ async getCycleSteps(): Promise<CycleStep[]> {
     } catch (error) {
       console.error(`[storage] Error deleting coin vault:`, error);
       return false;
+    }
+  }
+
+  // Audit Operations methods
+  async getAuditOperations(): Promise<AuditOperation[]> {
+    return await db.select()
+      .from(auditOperations)
+      .orderBy(desc(auditOperations.createdAt));
+  }
+
+  async getAuditOperationsByLocation(locationId: number): Promise<AuditOperation[]> {
+    return await db.select()
+      .from(auditOperations)
+      .where(eq(auditOperations.locationId, locationId))
+      .orderBy(desc(auditOperations.createdAt));
+  }
+
+  async getAuditOperationsByMachine(machineId: number): Promise<AuditOperation[]> {
+    return await db.select()
+      .from(auditOperations)
+      .where(eq(auditOperations.machineId, machineId))
+      .orderBy(desc(auditOperations.createdAt));
+  }
+
+  async getAuditOperation(id: number): Promise<AuditOperation | undefined> {
+    const [operation] = await db.select()
+      .from(auditOperations)
+      .where(eq(auditOperations.id, id));
+    return operation || undefined;
+  }
+
+  async createAuditOperation(operation: InsertAuditOperation): Promise<AuditOperation> {
+    const [created] = await db.insert(auditOperations)
+      .values(operation)
+      .returning();
+    return created;
+  }
+
+  async updateAuditOperation(id: number, operation: Partial<InsertAuditOperation>): Promise<AuditOperation> {
+    const [updated] = await db.update(auditOperations)
+      .set({
+        ...operation,
+        updatedAt: new Date()
+      })
+      .where(eq(auditOperations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAuditOperation(id: number): Promise<boolean> {
+    try {
+      await db.delete(auditOperations)
+        .where(eq(auditOperations.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting audit operation:', error);
+      return false;
+    }
+  }
+
+  async createAuditOperationsFromReport(reportData: any): Promise<AuditOperation[]> {
+    try {
+      console.log('Processing audit operations report:', JSON.stringify(reportData, null, 2));
+      
+      const createdOperations: AuditOperation[] = [];
+      
+      if (reportData.auditOperations && Array.isArray(reportData.auditOperations)) {
+        for (const auditData of reportData.auditOperations) {
+          // Map external location ID to internal location ID
+          let locationId = null;
+          if (auditData.locationId || auditData.external_location_id) {
+            const externalLocationId = auditData.locationId || auditData.external_location_id;
+            const location = await this.getLocationByExternalId(externalLocationId);
+            if (location) {
+              locationId = location.id;
+            }
+          }
+
+          // Map external machine ID to internal machine ID
+          let machineId = null;
+          if (auditData.machineId || auditData.external_machine_id) {
+            const externalMachineId = auditData.machineId || auditData.external_machine_id;
+            const machine = await this.getMachineByExternalId(externalMachineId);
+            if (machine) {
+              machineId = machine.id;
+            }
+          }
+
+          if (!locationId) {
+            console.warn(`Location not found for audit operation with external ID: ${auditData.locationId || auditData.external_location_id}`);
+            continue;
+          }
+
+          const operationData: InsertAuditOperation = {
+            locationId,
+            machineId,
+            externalLocationId: auditData.locationId || auditData.external_location_id,
+            externalMachineId: auditData.machineId || auditData.external_machine_id,
+            operationType: auditData.operationType || auditData.operation_type || 'inspection',
+            operationStatus: auditData.operationStatus || auditData.operation_status || 'completed',
+            auditorName: auditData.auditorName || auditData.auditor_name || 'Unknown',
+            auditorId: auditData.auditorId || auditData.auditor_id,
+            startTime: auditData.startTime ? new Date(auditData.startTime) : new Date(auditData.start_time || auditData.timestamp),
+            endTime: auditData.endTime ? new Date(auditData.endTime) : (auditData.end_time ? new Date(auditData.end_time) : undefined),
+            duration: auditData.duration || auditData.duration_minutes,
+            findings: auditData.findings || {
+              issues: auditData.issues || [],
+              recommendations: auditData.recommendations || [],
+              scores: auditData.scores || {}
+            },
+            checklist: auditData.checklist || {
+              items: auditData.checklist_items || [],
+              completionRate: auditData.completion_rate
+            },
+            notes: auditData.notes || auditData.comments,
+            attachments: auditData.attachments || [],
+            priority: auditData.priority || 'medium',
+            category: auditData.category || 'routine',
+            complianceStatus: auditData.complianceStatus || auditData.compliance_status,
+            nextAuditDue: auditData.nextAuditDue ? new Date(auditData.nextAuditDue) : (auditData.next_audit_due ? new Date(auditData.next_audit_due) : undefined)
+          };
+
+          const created = await this.createAuditOperation(operationData);
+          createdOperations.push(created);
+        }
+      }
+
+      console.log(`Created ${createdOperations.length} audit operations from report`);
+      return createdOperations;
+    } catch (error) {
+      console.error('Error creating audit operations from report:', error);
+      throw error;
     }
   }
 }
