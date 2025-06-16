@@ -128,6 +128,7 @@ Changelog:
 - June 16, 2025. Successfully implemented complete AUDIT_TOTAL_VENDING database table and API system with Location ID and Machine ID fields for processing vending revenue data with revenue efficiency scoring and performance analytics
 - June 16, 2025. Updated AUDIT_TOTAL_VENDING table structure to user's exact specifications with TEXT fields for location_id, machine_id, simplified column set, and INTEGER total_vended field
 - June 16, 2025. Updated AUDIT_CYCLE_USAGE table structure to user's exact specifications with TEXT fields for location_id, machine_id, report_id, and simplified 22-column structure matching cycle usage audit requirements
+- June 16, 2025. Completed COIN_VAULT table restructure with simplified 14-column flat structure using TEXT-based location_id and machine_id identifiers, updated all storage methods and API routes for external data integration
 
 ## User Preferences
 

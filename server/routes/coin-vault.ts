@@ -19,11 +19,7 @@ router.get("/", async (req, res) => {
 // GET /api/coin-vaults/location/:id - Get coin vaults by location
 router.get("/location/:id", async (req, res) => {
   try {
-    const locationId = parseInt(req.params.id);
-    if (isNaN(locationId)) {
-      return res.status(400).json({ error: "Invalid location ID" });
-    }
-    
+    const locationId = req.params.id;
     const vaults = await storage.getCoinVaultsByLocation(locationId);
     res.json(vaults);
   } catch (error) {
@@ -35,11 +31,7 @@ router.get("/location/:id", async (req, res) => {
 // GET /api/coin-vaults/machine/:id - Get coin vaults by machine
 router.get("/machine/:id", async (req, res) => {
   try {
-    const machineId = parseInt(req.params.id);
-    if (isNaN(machineId)) {
-      return res.status(400).json({ error: "Invalid machine ID" });
-    }
-    
+    const machineId = req.params.id;
     const vaults = await storage.getCoinVaultsByMachine(machineId);
     res.json(vaults);
   } catch (error) {

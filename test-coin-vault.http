@@ -6,44 +6,37 @@ Accept: application/json
 
 ###
 
-# Get coin vaults by location (replace with actual location ID)
-GET http://localhost:5000/api/coin-vaults/location/1
+# Get coin vaults by location (using TEXT location ID)
+GET http://localhost:5000/api/coin-vaults/location/loc_abc123
 Accept: application/json
 
 ###
 
-# Get coin vaults by machine (replace with actual machine ID)
-GET http://localhost:5000/api/coin-vaults/machine/1
+# Get coin vaults by machine (using TEXT machine ID)
+GET http://localhost:5000/api/coin-vaults/machine/mac_def456
 Accept: application/json
 
 ###
 
-# Create/Update a coin vault
+# Create/Update a coin vault (simplified structure with TEXT IDs)
 POST http://localhost:5000/api/coin-vaults
 Content-Type: application/json
 
 {
-  "locationId": 1,
-  "machineId": 1,
-  "externalMachineId": "mac_test123",
+  "locationId": "loc_test123",
+  "locationName": "Test Location",
+  "machineId": "mac_test456",
   "machineName": "Test Washer",
   "vaultSize": 100,
   "percentCapacity": "75.5",
   "totalValue": 2550,
-  "machineType": {
-    "name": "Commercial Washer",
-    "description": "Heavy duty commercial washing machine"
-  },
-  "emptiedDetails": [
-    {
-      "emptiedAt": "2024-01-15T10:30:00Z",
-      "emptiedValue": 1500
-    },
-    {
-      "emptiedAt": "2024-01-10T14:20:00Z",
-      "emptiedValue": 1200
-    }
-  ]
+  "emptiedAt": "2024-01-15T10:30:00Z",
+  "emptiedValue": 1500,
+  "machineTypeName": "Commercial Washer",
+  "machineTypeDesc": "Heavy duty commercial washing machine",
+  "isWasher": true,
+  "isDryer": false,
+  "isCombo": false
 }
 
 ###

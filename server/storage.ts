@@ -97,8 +97,8 @@ export interface IStorage {
 
   // Coin Vault operations
   getCoinVaults(): Promise<CoinVault[]>;
-  getCoinVaultsByLocation(locationId: number): Promise<CoinVault[]>;
-  getCoinVaultsByMachine(machineId: number): Promise<CoinVault[]>;
+  getCoinVaultsByLocation(locationId: string): Promise<CoinVault[]>;
+  getCoinVaultsByMachine(machineId: string): Promise<CoinVault[]>;
   createOrUpdateCoinVault(coinVault: InsertCoinVault): Promise<CoinVault>;
   createCoinVaultsFromReport(reportData: any): Promise<CoinVault[]>;
   deleteCoinVault(id: number): Promise<boolean>;
@@ -1161,27 +1161,22 @@ async getCycleSteps(): Promise<CycleStep[]> {
       }
 
       for (const locationData of reportData.data.locations) {
-        // Find location by external ID
-        const location = await this.getLocationByExternalId(locationData.id);
-        if (!location) {
-          console.warn(`[storage] Location not found for external ID: ${locationData.id}`);
-          continue;
-        }
-
         for (const machineData of locationData.machines || []) {
-          // Find machine by external ID
-          const machine = await this.getMachineByExternalId(machineData.id);
-          
           const vaultData: InsertCoinVault = {
-            locationId: location.id,
-            machineId: machine?.id || null,
-            externalMachineId: machineData.id,
+            locationId: locationData.id,
+            locationName: locationData.name,
+            machineId: machineData.id,
             machineName: machineData.name,
             vaultSize: machineData.vaultSize,
             percentCapacity: machineData.percentCapacity.toString(),
-            totalValue: machineData.totalValue, // Already in cents
-            machineType: machineData.machineType,
-            emptiedDetails: machineData.emptiedDetails || []
+            totalValue: machineData.totalValue,
+            emptiedAt: machineData.emptiedAt ? new Date(machineData.emptiedAt) : undefined,
+            emptiedValue: machineData.emptiedValue,
+            machineTypeName: machineData.machineType?.name,
+            machineTypeDesc: machineData.machineType?.description,
+            isWasher: machineData.machineType?.isWasher || false,
+            isDryer: machineData.machineType?.isDryer || false,
+            isCombo: machineData.machineType?.isCombo || false
           };
 
           const createdVault = await this.createOrUpdateCoinVault(vaultData);
