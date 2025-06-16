@@ -16,7 +16,8 @@ import type {
   CycleStep,
   MachineError, InsertMachineError,
   MachinePerformanceMetrics,
-  InsertMachinePerformanceMetrics
+  InsertMachinePerformanceMetrics,
+  CoinVault, InsertCoinVault
 } from "@shared/schema";
 
 export interface IStorage {
@@ -90,6 +91,14 @@ export interface IStorage {
   // Persistent error and alert generation methods
   getPersistentMachineErrors(durationHours?: number): Promise<any[]>;
   createServiceAlertsFromPersistentErrors(): Promise<number>;
+
+  // Coin Vault operations
+  getCoinVaults(): Promise<CoinVault[]>;
+  getCoinVaultsByLocation(locationId: number): Promise<CoinVault[]>;
+  getCoinVaultsByMachine(machineId: number): Promise<CoinVault[]>;
+  createOrUpdateCoinVault(coinVault: InsertCoinVault): Promise<CoinVault>;
+  createCoinVaultsFromReport(reportData: any): Promise<CoinVault[]>;
+  deleteCoinVault(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {

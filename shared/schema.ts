@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -585,3 +585,43 @@ export type ReportSchedule = typeof reportSchedules.$inferSelect;
 export type InsertReportSchedule = z.infer<typeof insertReportScheduleSchema>;
 export type ReportRecipient = typeof reportRecipients.$inferSelect;
 export type InsertReportRecipient = z.infer<typeof insertReportRecipientSchema>;
+
+// Coin Vault table for storing coin vault data
+export const coinVaults = pgTable("coin_vaults", {
+  id: serial("id").primaryKey(),
+  locationId: integer("location_id").references(() => locations.id),
+  machineId: integer("machine_id").references(() => machines.id),
+  externalMachineId: text("external_machine_id").notNull(),
+  machineName: text("machine_name").notNull(),
+  vaultSize: integer("vault_size").notNull(),
+  percentCapacity: numeric("percent_capacity", { precision: 5, scale: 3 }).notNull(),
+  totalValue: integer("total_value").notNull(), // stored in cents
+  machineType: jsonb("machine_type").$type<{
+    name: string;
+    description: string;
+    isWasher: boolean;
+    isDryer: boolean;
+    isCombo: boolean;
+  }>().notNull(),
+  emptiedDetails: jsonb("emptied_details").$type<Array<{
+    emptiedAt: string;
+    emptiedValue: number;
+  }>>().notNull().default([]),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCoinVaultSchema = createInsertSchema(coinVaults).pick({
+  locationId: true,
+  machineId: true,
+  externalMachineId: true,
+  machineName: true,
+  vaultSize: true,
+  percentCapacity: true,
+  totalValue: true,
+  machineType: true,
+  emptiedDetails: true,
+});
+
+export type CoinVault = typeof coinVaults.$inferSelect;
+export type InsertCoinVault = z.infer<typeof insertCoinVaultSchema>;
