@@ -1,0 +1,176 @@
+### Audit Operations API Tests
+
+### Get all audit operations
+GET http://localhost:5000/api/audit-operations
+Authorization: Bearer your-token-here
+
+### Get audit operations by location
+GET http://localhost:5000/api/audit-operations/location/1
+Authorization: Bearer your-token-here
+
+### Get audit operations by machine
+GET http://localhost:5000/api/audit-operations/machine/1
+Authorization: Bearer your-token-here
+
+### Get specific audit operation
+GET http://localhost:5000/api/audit-operations/1
+Authorization: Bearer your-token-here
+
+### Create new audit operation
+POST http://localhost:5000/api/audit-operations
+Content-Type: application/json
+Authorization: Bearer your-token-here
+
+{
+  "locationId": 1,
+  "machineId": 1,
+  "externalLocationId": "loc_123",
+  "externalMachineId": "mac_456",
+  "operationType": "maintenance",
+  "operationStatus": "completed",
+  "auditorName": "John Smith",
+  "auditorId": "EMP001",
+  "startTime": "2024-01-15T09:00:00Z",
+  "endTime": "2024-01-15T11:30:00Z",
+  "duration": 150,
+  "findings": {
+    "issues": [
+      {
+        "type": "mechanical",
+        "severity": "medium",
+        "description": "Belt tension needs adjustment",
+        "resolved": true
+      }
+    ],
+    "recommendations": [
+      "Schedule quarterly belt inspection",
+      "Update maintenance log"
+    ],
+    "scores": {
+      "cleanliness": 8,
+      "functionality": 7,
+      "safety": 9,
+      "overall": 8
+    }
+  },
+  "checklist": {
+    "items": [
+      {
+        "item": "Check belt tension",
+        "status": "pass",
+        "notes": "Adjusted to specification"
+      },
+      {
+        "item": "Inspect electrical connections",
+        "status": "pass"
+      },
+      {
+        "item": "Test safety features",
+        "status": "pass"
+      }
+    ],
+    "completionRate": 100
+  },
+  "notes": "Routine maintenance completed successfully. All systems operational.",
+  "attachments": [
+    {
+      "filename": "maintenance_photos.jpg",
+      "url": "/uploads/maintenance_photos.jpg",
+      "type": "image/jpeg",
+      "size": 2048576
+    }
+  ],
+  "priority": "medium",
+  "category": "preventive",
+  "complianceStatus": "compliant",
+  "nextAuditDue": "2024-04-15T09:00:00Z"
+}
+
+### Update audit operation
+PUT http://localhost:5000/api/audit-operations/1
+Content-Type: application/json
+Authorization: Bearer your-token-here
+
+{
+  "operationStatus": "completed",
+  "endTime": "2024-01-15T11:45:00Z",
+  "duration": 165,
+  "complianceStatus": "compliant",
+  "notes": "Updated with final completion time and compliance status"
+}
+
+### Delete audit operation
+DELETE http://localhost:5000/api/audit-operations/1
+Authorization: Bearer your-token-here
+
+### Process audit operations report (bulk import)
+POST http://localhost:5000/api/audit-operations/report
+Content-Type: application/json
+Authorization: Bearer your-token-here
+
+{
+  "auditOperations": [
+    {
+      "locationId": "loc_123",
+      "machineId": "mac_456",
+      "operationType": "inspection",
+      "operationStatus": "completed",
+      "auditorName": "Jane Doe",
+      "auditorId": "EMP002",
+      "startTime": "2024-01-16T10:00:00Z",
+      "endTime": "2024-01-16T11:00:00Z",
+      "duration": 60,
+      "findings": {
+        "issues": [],
+        "recommendations": ["Continue current maintenance schedule"],
+        "scores": {
+          "cleanliness": 9,
+          "functionality": 9,
+          "safety": 10,
+          "overall": 9
+        }
+      },
+      "checklist": {
+        "items": [
+          {
+            "item": "Visual inspection",
+            "status": "pass"
+          },
+          {
+            "item": "Performance test",
+            "status": "pass"
+          }
+        ],
+        "completionRate": 100
+      },
+      "priority": "low",
+      "category": "routine",
+      "complianceStatus": "compliant",
+      "nextAuditDue": "2024-07-16T10:00:00Z"
+    },
+    {
+      "external_location_id": "loc_789",
+      "external_machine_id": "mac_101",
+      "operation_type": "emergency",
+      "operation_status": "in_progress",
+      "auditor_name": "Bob Wilson",
+      "auditor_id": "EMP003",
+      "start_time": "2024-01-17T14:30:00Z",
+      "issues": [
+        {
+          "type": "electrical",
+          "severity": "high",
+          "description": "Power fluctuations detected",
+          "resolved": false
+        }
+      ],
+      "recommendations": [
+        "Immediate electrical system inspection required",
+        "Consider temporary shutdown until repairs completed"
+      ],
+      "priority": "high",
+      "category": "corrective",
+      "compliance_status": "pending_review"
+    }
+  ]
+}

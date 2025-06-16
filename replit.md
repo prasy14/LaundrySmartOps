@@ -122,6 +122,7 @@ SmartOps is a comprehensive full-stack web application for managing industrial l
 
 Changelog:
 - June 16, 2025. Initial setup
+- June 16, 2025. Added comprehensive AUDIT_OPERATION database table and API system with Location ID and Machine ID fields
 
 ## User Preferences
 
