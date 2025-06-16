@@ -14,6 +14,7 @@ import { serviceAlertsRouter } from "./routes/service-alerts";
 import machineErrorsRoutes from "./routes/machine-errors";
 import coinVaultRoutes from "./routes/coin-vault";
 import auditOperationsRoutes from "./routes/audit-operations";
+import auditCycleUsageRoutes from "./routes/audit-cycle-usage";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 import { db } from "./db";
 import { machineErrors } from "@shared/schema";
@@ -44,6 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     apiRouter.use('/machine-errors', isOperatorOrAbove, machineErrorsRoutes);
     apiRouter.use('/coin-vaults', isManagerOrAdmin, coinVaultRoutes);
     apiRouter.use('/audit-operations', isManagerOrAdmin, auditOperationsRoutes);
+    apiRouter.use('/audit-cycle-usage', isManagerOrAdmin, auditCycleUsageRoutes);
 
     // Data access routes
     apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {

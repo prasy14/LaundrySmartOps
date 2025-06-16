@@ -1,0 +1,100 @@
+### Test Audit Cycle Usage API
+
+### Get all audit cycle usages
+GET http://localhost:5000/api/audit-cycle-usage
+Content-Type: application/json
+
+### Get audit cycle usages by location
+GET http://localhost:5000/api/audit-cycle-usage/location/19
+Content-Type: application/json
+
+### Get audit cycle usages by machine  
+GET http://localhost:5000/api/audit-cycle-usage/machine/1
+Content-Type: application/json
+
+### Process cycle usage report (your JSON data)
+POST http://localhost:5000/api/audit-cycle-usage/cycle-usage-report
+Content-Type: application/json
+
+{
+  "reportId": "AUDIT_CYCLE_USAGE",
+  "data": {
+    "locations": [
+      {
+        "id": "loc_id",
+        "name": "location_name",
+        "machines": [
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 250",
+            "delicateColdCount": 1447,
+            "delicateHotCount": 1127,
+            "delicateWarmCount": 201,
+            "normalColdCount": 2575,
+            "normalHotCount": 2850,
+            "normalWarmCount": 34,
+            "permanentPressColdCount": 0,
+            "permanentPressHotCount": 0,
+            "permanentPressWarmCount": 0,
+            "totalCycles": 2884,
+            "machineType": {
+              "name": "Washer Extractor 80 lbs.",
+              "description": "Washer Extractor 80 lbs.",
+              "isWasher": true,
+              "isDryer": false,
+              "isCombo": false
+            },
+            "firstReceivedAt": "2024-07-22T09:06:14.000Z",
+            "lastReceivedAt": "2024-08-26T09:15:06.000Z"
+          },
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 1",
+            "delicateColdCount": 0,
+            "delicateHotCount": 0,
+            "delicateWarmCount": 0,
+            "normalColdCount": 4,
+            "normalHotCount": 150,
+            "normalWarmCount": 10,
+            "permanentPressColdCount": 0,
+            "permanentPressHotCount": 0,
+            "permanentPressWarmCount": 0,
+            "totalCycles": 194,
+            "machineType": {
+              "name": "CZCOMBO135",
+              "description": "CZCOMBO135",
+              "isWasher": true,
+              "isDryer": true,
+              "isCombo": true
+            },
+            "firstReceivedAt": "2024-07-15T20:45:11.000Z",
+            "lastReceivedAt": "2024-08-13T09:18:27.000Z"
+          },
+          {
+            "id": "mac_id",
+            "name": "Machine Node - 5",
+            "delicateColdCount": 1877,
+            "delicateHotCount": 1546,
+            "delicateWarmCount": 235,
+            "normalColdCount": 3502,
+            "normalHotCount": 3767,
+            "normalWarmCount": 61,
+            "permanentPressColdCount": 0,
+            "permanentPressHotCount": 0,
+            "permanentPressWarmCount": 0,
+            "totalCycles": 3828,
+            "machineType": {
+              "name": "Washer Extractor 80 lbs.",
+              "description": "Washer Extractor 80 lbs.",
+              "isWasher": true,
+              "isDryer": false,
+              "isCombo": false
+            },
+            "firstReceivedAt": "2024-07-22T09:06:17.000Z",
+            "lastReceivedAt": "2024-08-26T09:15:09.000Z"
+          }
+        ]
+      }
+    ]
+  }
+}
