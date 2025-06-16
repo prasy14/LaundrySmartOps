@@ -1484,16 +1484,11 @@ async getCycleSteps(): Promise<CycleStep[]> {
           }
 
           const usage: InsertAuditCycleUsage = {
-            locationId: parseInt(location.id.replace('loc_id', '19')), // Map to location ID 19
-            machineId: null, // Will be populated if machine exists
-            externalLocationId: location.id,
-            externalMachineId: machine.id,
+            reportId: "AUDIT_CYCLE_USAGE",
+            locationId: location.id,
+            locationName: location.name,
+            machineId: machine.id,
             machineName: machine.name,
-            machineTypeName: machine.machineType?.name,
-            machineTypeDescription: machine.machineType?.description,
-            isWasher: machine.machineType?.isWasher || false,
-            isDryer: machine.machineType?.isDryer || false,
-            isCombo: machine.machineType?.isCombo || false,
             
             // Raw cycle counts
             delicateColdCount: machine.delicateColdCount || 0,
@@ -1506,29 +1501,19 @@ async getCycleSteps(): Promise<CycleStep[]> {
             permanentPressHotCount: machine.permanentPressHotCount || 0,
             permanentPressWarmCount: machine.permanentPressWarmCount || 0,
             
-            // Calculated totals
+            // Total cycles
             totalCycles: totalCycles,
-            totalDelicateCycles: totalDelicate,
-            totalNormalCycles: totalNormal,
-            totalPermanentPressCycles: totalPermanentPress,
-            totalColdCycles: totalCold,
-            totalHotCycles: totalHot,
-            totalWarmCycles: totalWarm,
             
-            // Efficiency metrics
-            hotWaterUsagePercentage: hotWaterPercentage.toFixed(2),
-            delicateCyclePercentage: delicatePercentage.toFixed(2),
-            energyEfficiencyScore: efficiencyScore,
-            usagePatternRating: usageRating,
-            
-            // Data collection period
+            // Timestamps
             firstReceivedAt: firstReceived,
             lastReceivedAt: lastReceived,
-            dataCollectionDays: dataCollectionDays,
             
-            // Audit metadata
-            auditNotes: `Cycle usage analysis for ${machine.name}. Total cycles: ${totalCycles}, Hot water usage: ${hotWaterPercentage.toFixed(1)}%`,
-            recommendations: recommendations
+            // Machine type information
+            machineTypeName: machine.machineType?.name,
+            machineTypeDesc: machine.machineType?.description,
+            isWasher: machine.machineType?.isWasher || false,
+            isDryer: machine.machineType?.isDryer || false,
+            isCombo: machine.machineType?.isCombo || false
           };
 
           const [created] = await db.insert(auditCycleUsage)

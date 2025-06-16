@@ -1,0 +1,24 @@
+| Column Name                   | Data Type | Description                                     |
+| ----------------------------- | --------- | ----------------------------------------------- |
+| report\_id                    | TEXT      | Report identifier (e.g., "AUDIT\_CYCLE\_USAGE") |
+| location\_id                  | TEXT      | Unique location ID                              |
+| location\_name                | TEXT      | Name of the location                            |
+| machine\_id                   | TEXT      | Unique machine ID                               |
+| machine\_name                 | TEXT      | Name of the machine                             |
+| delicate\_cold\_count         | INTEGER   | Count of delicate cold cycles                   |
+| delicate\_hot\_count          | INTEGER   | Count of delicate hot cycles                    |
+| delicate\_warm\_count         | INTEGER   | Count of delicate warm cycles                   |
+| normal\_cold\_count           | INTEGER   | Count of normal cold cycles                     |
+| normal\_hot\_count            | INTEGER   | Count of normal hot cycles                      |
+| normal\_warm\_count           | INTEGER   | Count of normal warm cycles                     |
+| permanent\_press\_cold\_count | INTEGER   | Count of permanent press cold cycles            |
+| permanent\_press\_hot\_count  | INTEGER   | Count of permanent press hot cycles             |
+| permanent\_press\_warm\_count | INTEGER   | Count of permanent press warm cycles            |
+| total\_cycles                 | INTEGER   | Total number of cycles                          |
+| first\_received\_at           | DATETIME  | First received timestamp                        |
+| last\_received\_at            | DATETIME  | Last received timestamp                         |
+| machine\_type\_name           | TEXT      | Machine type name                               |
+| machine\_type\_desc           | TEXT      | Machine type description                        |
+| is\_washer                    | BOOLEAN   | Indicates if the machine is a washer            |
+| is\_dryer                     | BOOLEAN   | Indicates if the machine is a dryer             |
+| is\_combo                     | BOOLEAN   | Indicates if the machine is a combo unit        |
