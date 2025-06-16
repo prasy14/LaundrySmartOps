@@ -13,8 +13,8 @@ import type {
   CommandHistory, InsertCommandHistory,
   MachineCycle,
   CycleModifier,
-  MachineError,
   CycleStep,
+  MachineError, InsertMachineError,
   MachinePerformanceMetrics,
   InsertMachinePerformanceMetrics
 } from "@shared/schema";
@@ -78,6 +78,14 @@ export interface IStorage {
   addMachinePerformanceMetrics(metrics: InsertMachinePerformanceMetrics): Promise<MachinePerformanceMetrics>;
   updateMachinePerformanceMetrics(id: number, metrics: Partial<InsertMachinePerformanceMetrics>): Promise<MachinePerformanceMetrics>;
   getComparableMachineMetrics(machineIds: number[], startDate: Date, endDate: Date): Promise<any[]>;
+
+  // Machine Error operations
+  getMachineErrors(): Promise<MachineError[]>;
+  getMachineErrorsByMachine(machineId: number): Promise<MachineError[]>;
+  getMachineErrorsByLocation(locationId: number): Promise<MachineError[]>;
+  createMachineError(error: InsertMachineError): Promise<MachineError>;
+  createMachineErrorsFromJson(errors: any[], machineId: number, locationId: number): Promise<MachineError[]>;
+  deleteMachineError(id: string): Promise<boolean>;
 
   // Persistent error and alert generation methods
   getPersistentMachineErrors(durationHours?: number): Promise<any[]>;
@@ -498,8 +506,8 @@ async getCycleSteps(): Promise<CycleStep[]> {
   }
 
   // Machine Error methods
-  async getMachineErrorsWithDetails(): Promise<MachineError[]> {
-    console.log('[storage] Getting machine errors');
+  async getMachineErrors(): Promise<MachineError[]> {
+    console.log('[storage] Getting all machine errors');
     try {
       const errors = await db.select().from(machineErrors);
       console.log(`[storage] Retrieved ${errors.length} machine errors`);
@@ -507,7 +515,105 @@ async getCycleSteps(): Promise<CycleStep[]> {
     } catch (error) {
       console.error('[storage] Error getting machine errors:', error);
       console.log("[storage] Returning empty array to prevent application crash");
-      return []; // Return empty array instead of crashing
+      return [];
+    }
+  }
+
+  async getMachineErrorsByMachine(machineId: number): Promise<MachineError[]> {
+    console.log(`[storage] Getting machine errors for machine ${machineId}`);
+    try {
+      const errors = await db
+        .select()
+        .from(machineErrors)
+        .where(eq(machineErrors.machineId, machineId));
+      console.log(`[storage] Retrieved ${errors.length} errors for machine ${machineId}`);
+      return errors;
+    } catch (error) {
+      console.error('[storage] Error getting machine errors by machine:', error);
+      return [];
+    }
+  }
+
+  async getMachineErrorsByLocation(locationId: number): Promise<MachineError[]> {
+    console.log(`[storage] Getting machine errors for location ${locationId}`);
+    try {
+      const errors = await db
+        .select()
+        .from(machineErrors)
+        .where(eq(machineErrors.locationId, locationId));
+      console.log(`[storage] Retrieved ${errors.length} errors for location ${locationId}`);
+      return errors;
+    } catch (error) {
+      console.error('[storage] Error getting machine errors by location:', error);
+      return [];
+    }
+  }
+
+  async createMachineError(error: InsertMachineError): Promise<MachineError> {
+    console.log(`[storage] Creating machine error: ${error.errorName}`);
+    try {
+      const [newError] = await db
+        .insert(machineErrors)
+        .values(error)
+        .returning();
+      console.log(`[storage] Created machine error with ID: ${newError.id}`);
+      return newError;
+    } catch (error) {
+      console.error('[storage] Error creating machine error:', error);
+      throw error;
+    }
+  }
+
+  async createMachineErrorsFromJson(errors: any[], machineId: number, locationId: number): Promise<MachineError[]> {
+    console.log(`[storage] Creating ${errors.length} machine errors from JSON for machine ${machineId}`);
+    try {
+      const machineErrorData = errors.map(error => ({
+        id: error.id,
+        machineId,
+        locationId,
+        errorName: error.name,
+        errorType: error.type,
+        errorCode: error.code,
+        timestamp: new Date(error.timestamp),
+      }));
+
+      const createdErrors = await db
+        .insert(machineErrors)
+        .values(machineErrorData)
+        .returning();
+      
+      console.log(`[storage] Successfully created ${createdErrors.length} machine errors`);
+      return createdErrors;
+    } catch (error) {
+      console.error('[storage] Error creating machine errors from JSON:', error);
+      throw error;
+    }
+  }
+
+  async deleteMachineError(id: string): Promise<boolean> {
+    console.log(`[storage] Deleting machine error: ${id}`);
+    try {
+      const result = await db
+        .delete(machineErrors)
+        .where(eq(machineErrors.id, id));
+      console.log(`[storage] Deleted machine error: ${id}`);
+      return true;
+    } catch (error) {
+      console.error('[storage] Error deleting machine error:', error);
+      return false;
+    }
+  }
+
+  async getMachineErrorsWithDetails(): Promise<MachineError[]> {
+    console.log('[storage] Getting machine errors with details');
+    try {
+      const errors = await db.select().from(machineErrors);
+      console.log(`[storage] Retrieved ${errors.length} machine errors`);
+      return errors;
+    } catch (error) {
+      console.error('[storage] Error getting machine errors:', error);
+      console.log("[storage] Returning empty array to prevent application crash");
+      return [];
     }
   }
 

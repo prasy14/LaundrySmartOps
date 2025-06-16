@@ -379,7 +379,24 @@ export const machineErrors = pgTable("machine_errors", {
 export const insertMachineErrorSchema = createInsertSchema(machineErrors).extend({
   id: z.string().uuid().optional(),
   timestamp: z.string().transform(str => new Date(str)),
+}).omit({
+  createdAt: true,
 });
+
+// Schema for handling the JSON format from external API
+export const externalMachineErrorSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  type: z.string(), 
+  code: z.number(),
+  timestamp: z.string(),
+}).transform((data) => ({
+  id: data.id,
+  errorName: data.name,
+  errorType: data.type,
+  errorCode: data.code,
+  timestamp: new Date(data.timestamp),
+}));
 
 // Add to the existing export types section
 export type MachineError = typeof machineErrors.$inferSelect;
