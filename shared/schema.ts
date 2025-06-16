@@ -589,38 +589,39 @@ export type InsertReportRecipient = z.infer<typeof insertReportRecipientSchema>;
 // Coin Vault table for storing coin vault data
 export const coinVaults = pgTable("coin_vaults", {
   id: serial("id").primaryKey(),
-  locationId: integer("location_id").references(() => locations.id),
-  machineId: integer("machine_id").references(() => machines.id),
-  externalMachineId: text("external_machine_id").notNull(),
+  locationId: text("location_id").notNull(),
+  locationName: text("location_name").notNull(),
+  machineId: text("machine_id").notNull(),
   machineName: text("machine_name").notNull(),
   vaultSize: integer("vault_size").notNull(),
-  percentCapacity: numeric("percent_capacity", { precision: 5, scale: 3 }).notNull(),
-  totalValue: integer("total_value").notNull(), // stored in cents
-  machineType: jsonb("machine_type").$type<{
-    name: string;
-    description: string;
-    isWasher: boolean;
-    isDryer: boolean;
-    isCombo: boolean;
-  }>().notNull(),
-  emptiedDetails: jsonb("emptied_details").$type<Array<{
-    emptiedAt: string;
-    emptiedValue: number;
-  }>>().notNull().default([]),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  percentCapacity: decimal("percent_capacity", { precision: 5, scale: 2 }).notNull(),
+  totalValue: integer("total_value").notNull(),
+  emptiedAt: timestamp("emptied_at"),
+  emptiedValue: integer("emptied_value"),
+  machineTypeName: text("machine_type_name"),
+  machineTypeDesc: text("machine_type_desc"),
+  isWasher: boolean("is_washer").default(false),
+  isDryer: boolean("is_dryer").default(false),
+  isCombo: boolean("is_combo").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertCoinVaultSchema = createInsertSchema(coinVaults).pick({
   locationId: true,
+  locationName: true,
   machineId: true,
-  externalMachineId: true,
   machineName: true,
   vaultSize: true,
   percentCapacity: true,
   totalValue: true,
-  machineType: true,
-  emptiedDetails: true,
+  emptiedAt: true,
+  emptiedValue: true,
+  machineTypeName: true,
+  machineTypeDesc: true,
+  isWasher: true,
+  isDryer: true,
+  isCombo: true,
 });
 
 export type CoinVault = typeof coinVaults.$inferSelect;

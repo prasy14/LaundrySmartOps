@@ -1068,7 +1068,7 @@ async getCycleSteps(): Promise<CycleStep[]> {
   // Coin Vault operations
   async getCoinVaults(): Promise<CoinVault[]> {
     try {
-      const vaults = await db.select().from(coinVaults).orderBy(desc(coinVaults.lastUpdated));
+      const vaults = await db.select().from(coinVaults).orderBy(desc(coinVaults.updatedAt));
       console.log(`[storage] Retrieved ${vaults.length} coin vaults`);
       return vaults;
     } catch (error) {
@@ -1077,13 +1077,13 @@ async getCycleSteps(): Promise<CycleStep[]> {
     }
   }
 
-  async getCoinVaultsByLocation(locationId: number): Promise<CoinVault[]> {
+  async getCoinVaultsByLocation(locationId: string): Promise<CoinVault[]> {
     try {
       const vaults = await db
         .select()
         .from(coinVaults)
         .where(eq(coinVaults.locationId, locationId))
-        .orderBy(desc(coinVaults.lastUpdated));
+        .orderBy(desc(coinVaults.updatedAt));
       
       console.log(`[storage] Retrieved ${vaults.length} coin vaults for location ${locationId}`);
       return vaults;
@@ -1093,13 +1093,13 @@ async getCycleSteps(): Promise<CycleStep[]> {
     }
   }
 
-  async getCoinVaultsByMachine(machineId: number): Promise<CoinVault[]> {
+  async getCoinVaultsByMachine(machineId: string): Promise<CoinVault[]> {
     try {
       const vaults = await db
         .select()
         .from(coinVaults)
         .where(eq(coinVaults.machineId, machineId))
-        .orderBy(desc(coinVaults.lastUpdated));
+        .orderBy(desc(coinVaults.updatedAt));
       
       console.log(`[storage] Retrieved ${vaults.length} coin vaults for machine ${machineId}`);
       return vaults;
@@ -1111,14 +1111,14 @@ async getCycleSteps(): Promise<CycleStep[]> {
 
   async createOrUpdateCoinVault(coinVault: InsertCoinVault): Promise<CoinVault> {
     try {
-      // Try to find existing vault by external machine ID and location
+      // Try to find existing vault by machine ID and location
       const existingVault = await db
         .select()
         .from(coinVaults)
         .where(
           and(
-            eq(coinVaults.externalMachineId, coinVault.externalMachineId),
-            eq(coinVaults.locationId, coinVault.locationId!)
+            eq(coinVaults.machineId, coinVault.machineId),
+            eq(coinVaults.locationId, coinVault.locationId)
           )
         )
         .limit(1);
@@ -1129,12 +1129,12 @@ async getCycleSteps(): Promise<CycleStep[]> {
           .update(coinVaults)
           .set({
             ...coinVault,
-            lastUpdated: new Date()
+            updatedAt: new Date()
           })
           .where(eq(coinVaults.id, existingVault[0].id))
           .returning();
         
-        console.log(`[storage] Updated coin vault for machine ${coinVault.externalMachineId}`);
+        console.log(`[storage] Updated coin vault for machine ${coinVault.machineId}`);
         return updated;
       } else {
         // Create new vault
@@ -1143,7 +1143,7 @@ async getCycleSteps(): Promise<CycleStep[]> {
           .values(coinVault)
           .returning();
         
-        console.log(`[storage] Created new coin vault for machine ${coinVault.externalMachineId}`);
+        console.log(`[storage] Created new coin vault for machine ${coinVault.machineId}`);
         return created;
       }
     } catch (error) {
