@@ -17,20 +17,14 @@ router.get("/", async (req, res) => {
 });
 
 // Get machine errors by machine ID
-router.get("/machine/:machineId", async (req, res) => {
-  try {
-    const machineId = parseInt(req.params.machineId);
-    if (isNaN(machineId)) {
-      return res.status(400).json({ error: "Invalid machine ID" });
-    }
-
-    const errors = await storage.getMachineErrorsByMachine(machineId);
-    res.json({ errors });
-  } catch (error) {
-    console.error("Error fetching machine errors by machine:", error);
-    res.status(500).json({ error: "Failed to fetch machine errors" });
-  }
-});
+router.get('/machine-errors', async (req, res) => {
+      try {
+        const errors = await storage.getMachineErrorsWithDetails();
+        res.json({ errors }); 
+      } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch machine errors' }); 
+      }
+    });
 
 // Get machine errors by location ID
 router.get("/location/:locationId", async (req, res) => {
