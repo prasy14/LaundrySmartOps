@@ -2,6 +2,7 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { analyticsService } from "../services/analytics";
 import { isOperatorOrAbove } from "../middleware/auth";
+import { differenceInMinutes } from "date-fns";
 
 const alertsRouter = Router();
 
@@ -21,7 +22,8 @@ alertsRouter.get('/', async (req, res) => {
     let alerts = await storage.getAlerts();
     
     // Filter by location if provided
-    if (locationId && locationId !== 'all') {
+    if (locationId && locationId !== 'all')
+    {
       const locationIdNum = parseInt(locationId as string);
       const machines = await storage.getMachinesByLocation(locationIdNum);
       const machineIds = machines.map(m => m.id);
@@ -34,7 +36,8 @@ alertsRouter.get('/', async (req, res) => {
     }
     
     // Filter by status if provided
-    if (status) {
+    if (status) 
+    {
       if (status === 'active') {
         // Only show active and in_progress alerts
         alerts = alerts.filter(alert => ['active', 'in_progress'].includes(alert.status));
@@ -56,9 +59,139 @@ alertsRouter.get('/', async (req, res) => {
     }
     
     res.json({ alerts });
-  } catch (error) {
+  } 
+  catch (error) 
+  {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch alerts'
+    });
+  }
+});
+
+// alertsRouter.get('/persistent-errors', async (req, res) => {
+//   try {
+//     const machineErrors = await storage.getPersistentMachineErrors(); // this returns all machine error records
+//      console.log("Persist Errors : ", machineErrors);
+//     // Group by machineId + errorCode or errorType
+//     const groupedErrors: Record<string, { machineId: number, errorType: string, errordescription:string, timestamps: Date[] }> = {};
+
+//     for (const error of machineErrors) {
+//       const key = `${error.machineId}-${error.type}`;
+//       if (!groupedErrors[key]) {
+//         groupedErrors[key] = {
+//           machineId: error.machineId,
+//           errorType: error.error_type,
+//           errordescription:error.error_name,
+//           timestamps: [],
+//         };
+//       }
+//       groupedErrors[key].timestamps.push(new Date(error.timestamp));
+//     }
+
+//     // Filter for errors that lasted more than 1 hour
+//     const persistentErrors = Object.values(groupedErrors)
+//       .map(group => {
+//         const sortedTimestamps = group.timestamps.sort((a, b) => a.getTime() - b.getTime());
+//         const durationInMinutes = differenceInMinutes(
+//           sortedTimestamps[sortedTimestamps.length - 1],
+//           sortedTimestamps[0]
+//         );
+//         return {
+//           machineId: group.machineId,
+//           errorType: group.errorType,
+//           durationInMinutes,
+//         };
+//       })
+//       .filter(entry => entry.durationInMinutes > 60); // More than 1 hour
+
+//     res.json({ persistentErrors });
+//   } catch (error) {
+//     res.status(500).json({
+//       error: error instanceof Error ? error.message : 'Failed to fetch persistent errors'
+//     });
+//   }
+// });
+
+alertsRouter.get('/persistent-errors', async (req, res) => {
+  try {
+    const machineErrors = await storage.getPersistentMachineErrors();
+
+    // Step 1: Group errors by errorName only
+    const groupedByErrorName: Record<string, {
+      errorName: string;
+      errorType: string;
+      timestamps: Date[];
+      createdAt: Date;
+      entries: {
+        machineId: number;
+        locationId: number;
+        createdAt: Date;
+        timestamp: Date;
+        machineName?: string;
+        locationName?: string;
+      }[];
+    }> = {};
+
+    for (const error of machineErrors) {
+      const key = error.errorName;
+      if (!groupedByErrorName[key]) {
+        groupedByErrorName[key] = {
+          errorName: error.errorName,
+          errorType: error.errorType,
+          timestamps: [],
+          createdAt: new Date(error.createdAt),
+          entries: [],
+        };
+      }
+
+      groupedByErrorName[key].timestamps.push(new Date(error.timestamp));
+      groupedByErrorName[key].entries.push({
+        machineId: error.machineId,
+        locationId: error.locationId,
+        createdAt: new Date(error.createdAt),
+        timestamp: new Date(error.timestamp),
+        machineName: error.machineName,
+        locationName: error.locationName,
+      });
+    }
+
+    // Step 2: Filter errorNames that appear more than twice and last over 60 minutes
+    const finalFiltered = Object.values(groupedByErrorName)
+      .filter(group => {
+        if (group.timestamps.length < 2) return false;
+        const sorted = [...group.timestamps].sort((a, b) => a.getTime() - b.getTime());
+        const durationMinutes = differenceInMinutes(sorted[sorted.length - 1], sorted[0]);
+        return durationMinutes > 60 && group.timestamps.length > 2;
+      })
+      .flatMap(group => {
+        const count = group.timestamps.length;
+        const priority =
+          count >= 5 ? "High" :
+          count >= 3 ? "Medium" :
+          "Low";
+
+        return group.entries.map(entry => ({
+          machineId: entry.machineId,
+          locationId: entry.locationId,
+          errorName: group.errorName,
+          errorType: group.errorType,
+          recurring: count >= 3,
+          priority,
+          createdAt: entry.createdAt,
+          timestamp: entry.timestamp,
+          machineName: entry.machineName,
+          locationName: entry.locationName,
+          count,
+        }));
+      });
+
+    console.log("Final persistent errors grouped by errorName:", finalFiltered);
+    res.json({ persistentErrors: finalFiltered });
+
+  } catch (error) {
+    console.error("Error in /persistent-errors:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to fetch persistent errors",
     });
   }
 });
@@ -83,7 +216,8 @@ alertsRouter.get('/:id', async (req, res) => {
 
 // Get recurring errors - alerts grouped by machine with count
 alertsRouter.get('/recurring/:minCount', async (req, res) => {
-  try {
+  try 
+  {
     const minCount = parseInt(req.params.minCount) || 3;
     const alerts = await storage.getAlerts();
     
@@ -106,7 +240,9 @@ alertsRouter.get('/recurring/:minCount', async (req, res) => {
       }));
     
     res.json({ recurringMachines });
-  } catch (error) {
+  } 
+  catch (error)
+  {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch recurring errors'
     });
@@ -115,13 +251,19 @@ alertsRouter.get('/recurring/:minCount', async (req, res) => {
 
 // Get unresolved alerts for a specific location
 alertsRouter.get('/location/:locationId/unresolved', async (req, res) => {
-  try {
+  try 
+  {
     const locationId = parseInt(req.params.locationId);
     const unresolvedAlerts = await analyticsService.getUnresolvedAlertsByLocation(locationId);
-    
-    res.json({ alerts: unresolvedAlerts });
-  } catch (error) {
-    res.status(500).json({
+    res.json
+    ({ 
+      alerts: unresolvedAlerts 
+    });
+  } 
+  catch (error) 
+  {
+    res.status(500).json
+    ({
       error: error instanceof Error ? error.message : 'Failed to fetch unresolved alerts'
     });
   }
