@@ -38,13 +38,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { Alert, Location } from "@shared/schema";
+import { Alert, Location,Machine, MachineError } from "@shared/schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import SearchableDropdown from "@/pages/SearchableDropdown";
+import { cn } from "@/lib/utils";
+
+
 
 interface EnhancedAlert extends Alert {
   relatedError?: any;
@@ -78,6 +81,11 @@ export default function AlertsPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState("active");
 
+//Fetch Machine data
+  const { data: machinesData, isLoading: machinesLoading } = useQuery<{ machines: Machine[] }>({
+  queryKey: ['/api/machines'],
+});
+
   // Fetch locations data
   const { data: locationsData, isLoading: locationsLoading } = useQuery<{ locations: Location[] }>({
     queryKey: ['/api/locations'],
@@ -98,10 +106,31 @@ export default function AlertsPage() {
     data: persistentErrorsData, 
     isLoading: persistentErrorsLoading,
     refetch: refetchPersistentErrors
-  } = useQuery<{ persistentErrors: any[], count: number, durationHours: number }>({
+  } = useQuery<{ persistentErrors: PersistentError[]}>({
     queryKey: ['/api/persistent-errors'],
     enabled: !locationsLoading,
   });
+
+  type PersistentError = {
+  machineId: number;
+  locationId: number;
+  errorName: string;
+  errorType: string;
+  createdAt: Date;
+  timestamp: Date;
+  machineName?: string;
+  locationName?: string;
+  count: number;
+  recurring: boolean;
+  priority: 'High' | 'Medium' | 'Low';
+};
+
+  //const getMachineName =  machinesData?.machines.find((m) => m.id === machineId)?.name || `#${machineId}`;
+ 
+
+const getLocationName = (locationId: number) => {
+  return locationsData?.locations.find((l) => l.id === locationId)?.name || `#${locationId}`;
+};
 
   // Fetch alert statistics
   const { 
@@ -486,11 +515,77 @@ export default function AlertsPage() {
                     <TableHead>Issue Description</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Created</TableHead>
+                    {activeTab === "persistent-errors" && (
+                      <TableHead>Timestamp</TableHead>
+                    )}
                     <TableHead>Recurring</TableHead>
                     <TableHead>Priority</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                 
+                {activeTab === "persistent-errors" && persistentErrorsData?.persistentErrors
+  ?.filter(error => {
+    return selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+  })
+  .map((error) => {
+  const machine = machinesData?.machines.find(m => m.id === error.machineId);
+  const location = locationsData?.locations.find(l => l.id === error.locationId);
+
+  return (
+    <TableRow key={`${error.machineId}-${error.errorName}-${error.timestamp}`}>
+      <TableCell className="font-medium">
+        {machine?.name}
+      </TableCell>
+
+      <TableCell>
+        
+      </TableCell>
+
+      <TableCell>
+        {error.errorType || 'Unknown'}
+      </TableCell>
+
+      <TableCell>
+        {error.errorName}
+      </TableCell>
+
+      <TableCell>
+        {location?.name}
+      </TableCell>
+
+      <TableCell className="whitespace-nowrap">
+        {format(new Date(error.createdAt), 'MMM d, yyyy h:mm a')}
+      </TableCell>
+
+      <TableCell className="whitespace-nowrap">
+        {format(new Date(error.timestamp), 'MMM d, yyyy h:mm a')}
+      </TableCell>
+
+      <TableCell>
+  {error.recurring === true ? "Yes" : "No"} ({error.count ?? 0})
+</TableCell>
+
+        <TableCell>
+  <span
+    className={cn("px-2 py-1 rounded text-white text-xs", {
+      "bg-red-600": error.priority === "High",
+      "bg-orange-500": error.priority === "Medium",
+      "bg-green-600": error.priority === "Low",
+    })}
+  >
+    {error.priority}
+  </span>
+</TableCell>
+
+
+      </TableRow>
+       
+       
+  );
+})}
+
+
                   {filteredAlerts.length > 0 ? (
                     filteredAlerts.map((alert) => (
                       <TableRow key={alert.id}>
@@ -538,7 +633,7 @@ export default function AlertsPage() {
                               alert.priority === 'high' ? 'destructive' :
                               alert.priority === 'medium' ? 'default' : 'outline'
                             }
-                          >
+                            >
                             {alert.priority || 'low'}
                           </Badge>
                         </TableCell>
@@ -566,8 +661,7 @@ export default function AlertsPage() {
                               setFilterRecurring(false);
                               setSelectedLocation('all');
                               setSelectedServiceType('all');
-                            }}
-                          >
+                            }}>
                             Clear filters
                           </Button>
                         </div>
@@ -593,6 +687,42 @@ export default function AlertsPage() {
             <p>Service alerts are automatically escalated based on priority and recurring pattern</p>
           </div>
         </div>
+
+       {/* <TabsContent value="persistent-errors">
+                 {persistentErrorsLoading ? (
+    <div className="flex justify-center items-center py-12">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  ) : persistentErrorsData?.persistentErrors?.length ? (
+    <div className="p-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Machine</TableHead>
+            <TableHead>Issue</TableHead>
+            <TableHead>Count</TableHead>
+            <TableHead>Last Seen</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {persistentErrorsData.persistentErrors.map((alert) => (
+            <TableRow key={alert.id}>
+              <TableCell>{alert.machineId}</TableCell>
+              <TableCell>{alert.message}</TableCell>
+              <TableCell>{alert.recurringCount || 1}</TableCell>
+              <TableCell>{new Date(alert.createdAt).toLocaleString()}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  ) : (
+    <div className="text-center py-10 text-muted-foreground">
+      No persistent machine errors found.
+    </div>
+  )}
+</TabsContent> */}
+
       </Tabs>
     </div>
   );
