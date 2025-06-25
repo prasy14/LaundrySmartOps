@@ -379,8 +379,6 @@ export const machineErrors = pgTable("machine_errors", {
 export const insertMachineErrorSchema = createInsertSchema(machineErrors).extend({
   id: z.string().uuid().optional(),
   timestamp: z.string().transform(str => new Date(str)),
-}).omit({
-  createdAt: true,
 });
 
 // Schema for handling the JSON format from external API
@@ -622,6 +620,8 @@ export const insertCoinVaultSchema = createInsertSchema(coinVaults).pick({
   isWasher: true,
   isDryer: true,
   isCombo: true,
+  createdAt:true,
+  updatedAt:true
 });
 
 export type CoinVault = typeof coinVaults.$inferSelect;
@@ -674,7 +674,7 @@ export const auditOperations = pgTable("audit_operations", {
   priority: text("priority").notNull().default("medium"), // "high", "medium", "low"
   category: text("category").notNull(), // "preventive", "corrective", "routine", "emergency"
   complianceStatus: text("compliance_status"), // "compliant", "non_compliant", "pending_review"
-  nextAuditDue: timestamp("next_audit_due"),
+  //nextAuditDue: timestamp("next_audit_due"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   createdBy: integer("created_by").references(() => users.id),
@@ -700,7 +700,7 @@ export const insertAuditOperationSchema = createInsertSchema(auditOperations).pi
   priority: true,
   category: true,
   complianceStatus: true,
-  nextAuditDue: true,
+  //nextAuditDue: true,
   createdBy: true,
   updatedBy: true
 });
