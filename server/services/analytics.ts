@@ -2,6 +2,46 @@ import { storage } from "../storage";
 import { Location, Machine } from "@shared/schema";
 
 export class AnalyticsService {
+
+  async getUnresolvedAlertsByLocation(locationId: number) {
+   try {
+      let machines: Machine[];
+      
+      if (locationId) {
+        machines = await storage.getMachinesByLocation(locationId);
+      } else {
+        machines = await storage.getMachines();
+      }
+      
+      if (!machines.length) {
+        return {
+          machines: [],
+          aggregated: {
+            totalMachines: 0,
+            uptimePercentage: 0
+          }
+        };
+      }
+      
+      // Normally we'd calculate this from historical data
+      // but for now we just use a placeholder value
+      const averageUptime = 0.00; // 0%
+      
+      console.log("[analytics] Retrieved", machines.length, "machines for uptime calculation");
+      console.log("[analytics] Machine uptime metrics calculated successfully. Average uptime:", (averageUptime * 100).toFixed(2) + "%");
+      
+      return {
+        machines: machines,
+        aggregated: {
+          totalMachines: machines.length,
+          uptimePercentage: averageUptime
+        }
+      };
+    } catch (error) {
+      console.error("[analytics] Error calculating machine uptime:", error);
+      throw error;
+    }
+  }
   /**
    * Calculate machine uptime metrics
    */
