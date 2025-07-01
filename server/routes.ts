@@ -19,6 +19,8 @@ import auditTotalVendingRoutes from "./routes/audit-total-vending";
 import { isManagerOrAdmin, isOperatorOrAbove } from "./middleware/auth";
 import { db } from "./db";
 import { machineErrors } from "@shared/schema";
+import usersRoutes from "./routes/users";
+
 
 declare module 'express-session' {
   interface SessionData {
@@ -48,6 +50,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     apiRouter.use('/audit-operations', isManagerOrAdmin, auditOperationsRoutes);
     apiRouter.use('/audit-cycle-usage', isManagerOrAdmin, auditCycleUsageRoutes);
     apiRouter.use('/audit-total-vending', isManagerOrAdmin, auditTotalVendingRoutes);
+    apiRouter.use("/users", isManagerOrAdmin,  usersRoutes); 
+
 
     // Data access routes
     apiRouter.get('/locations', isOperatorOrAbove, async (req, res) => {
@@ -57,6 +61,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         log(`Error fetching locations: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
         res.status(500).json({ message: 'Failed to fetch locations' });
+      }
+    });
+ apiRouter.get('/users', isOperatorOrAbove, async (req, res) => {
+      try {
+        const users = await storage.getAllUsers();
+        res.json({ users });
+      } catch (error) {
+        log(`Error fetching users: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to fetch users' });
       }
     });
 
