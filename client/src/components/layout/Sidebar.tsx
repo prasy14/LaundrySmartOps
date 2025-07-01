@@ -39,7 +39,7 @@ const navigationCategories = [
     items: [
       { name: 'Locations', href: '/locations', icon: MapPin },
       { name: 'Location Admin', href: '/location-admin', icon: Building },
-      { name: 'User Management', href: '/users', icon: Users, role: 'admin' },
+      { name: 'User Management', href: '/user-management', icon: Users, role: 'admin' },
       { name: 'System Settings', href: '/admin', icon: Settings, role: 'admin' },
       { name: 'Sync Logs', href: '/sync-logs', icon: History, role: 'admin' },
     ]
