@@ -5,7 +5,8 @@ import type { User } from "@shared/schema";
 
 export function ProtectedRoute({ 
   component: Component,
-  allowedRoles = ['admin', 'manager', 'operator', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst'],
+  allowedRoles = ['admin', 'manager', 'operator', 'system_analyst', 'performance_analyst',
+     'lease_manager', 'data_analyst', 'technician', 'compliance', 'executive'],
   path
 }: { 
   component: React.ComponentType;
