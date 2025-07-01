@@ -14,6 +14,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
+import usermanagement from "@/pages/user-management";
 
 // Placeholder Components for new routes
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -61,7 +62,14 @@ function Router() {
                       allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']} 
                     />
                   </Route>
-
+                  
+                   <Route path="/user-management">
+                     <ProtectedRoute 
+                        path="/user-management" 
+                        component={usermanagement}
+                        allowedRoles={['admin']} 
+                      />
+                    </Route>
                   <Route path="/locations">
                     <ProtectedRoute 
                       path="/locations" 
@@ -82,7 +90,7 @@ function Router() {
                     <ProtectedRoute 
                       path="/machines" 
                       component={MachinesPage}
-                      allowedRoles={['admin', 'lease_manager', 'system_analyst']} 
+                      allowedRoles={['admin', 'lease_manager', 'system_analyst', 'technician', 'manager']} 
                     />
                   </Route>
 
@@ -107,7 +115,7 @@ function Router() {
                     <ProtectedRoute 
                       path="/alerts" 
                       component={AlertsPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst']} 
+                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'technician', 'manager']} 
                     />
                   </Route>
 
@@ -147,7 +155,7 @@ function Router() {
                     <ProtectedRoute 
                       path="/usage-patterns" 
                       component={UsagePatternsPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst']} 
+                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'technician', 'manager', 'lease_manager']} 
                     />
                   </Route>
 
