@@ -61,7 +61,24 @@ export default function LoginPage() {
         description: "Successfully logged in",
         duration: 500,
       });
-
+      
+      // Redirect based on role
+switch (data.user.role) {
+  case 'admin':
+  case 'manager':
+  case 'executive':
+  case 'sysanalyst':
+    setLocation("/dashboard");
+    break;
+  case 'technician':
+    setLocation("/alerts");
+    break;
+  case 'compliance':
+    setLocation("/");
+    break;
+  default:
+    setLocation("/");
+}
       // Add a small delay to ensure the session is properly set
       await new Promise(resolve => setTimeout(resolve, 100));
       setLocation("/");
