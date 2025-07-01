@@ -109,6 +109,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getAllUsers(): Promise<User[]> {
+  return db.select().from(users); 
+}
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
@@ -872,6 +876,29 @@ async createOrUpdateAuditCycleUsage(data: InsertAuditCycleUsage): Promise<void> 
     }
   }
 
+ async getPersistentErrors(): Promise<MachineError[]> {
+  console.log('[storage] Getting persistent errors (more than 3 occurrences)');
+  try {
+    const result = await db.execute(`
+      SELECT *
+      FROM machine_errors
+      WHERE error_name IN (
+        SELECT error_name
+        FROM machine_errors
+        GROUP BY error_name
+        HAVING COUNT(*) > 3
+      )
+    `);
+
+    console.log(`[storage] get ${result.rows.length} get persistent errors`);
+    return result.rows as MachineError[];
+  } catch (error) {
+    console.error('[storage] Error getting persistent errors:', error);
+    return [];
+  }
+}
+
+
   async getPersistentMachineErrors(durationHours: number = 1): Promise<any[]> {
     console.log(`[storage] Getting machine errors persisting for ${durationHours} hours`);
     try {
@@ -1375,3 +1402,5 @@ async createOrUpdateAuditCycleUsage(data: InsertAuditCycleUsage): Promise<void> 
 }
 
 export const storage = new DatabaseStorage();
+
+export { db };
