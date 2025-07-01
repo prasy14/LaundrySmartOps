@@ -2,7 +2,8 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { analyticsService } from "../services/analytics";
 import { isOperatorOrAbove } from "../middleware/auth";
-import { differenceInMinutes } from "date-fns";
+import { differenceInMinutes, endOfDay, isAfter, isBefore, subDays, subYears } from "date-fns";
+import { log } from "console";
 
 const alertsRouter = Router();
 
@@ -112,81 +113,46 @@ alertsRouter.get('/', async (req, res) => {
 //   }
 // });
 
+alertsRouter.get("/historical-alerts", async (req, res) => {
+  try {
+    console.log("[/historical-alerts] Fetching all machine errors...");
+
+    const allAlerts = await storage.getMachineErrors();
+    console.log("[/historical-alerts] Total alerts fetched from DB:", allAlerts.length);
+
+    const now = new Date();
+    const twoDaysAgo = subDays(now, 2);
+    console.log("[/historical-alerts] Current time:", now.toISOString());
+    console.log("[/historical-alerts] Filtering alerts created before:", twoDaysAgo.toISOString());
+
+    const filteredAlerts = allAlerts.filter(alert => {
+      const createdAt = new Date(alert.createdAt);
+      const isHistorical = isBefore(createdAt, twoDaysAgo);
+
+      if (isHistorical) {
+        console.log(`[ALERT] Included | Created At: ${createdAt.toISOString()} | Machine ID: ${alert.machineId} | Error: ${alert.errorName}`);
+      } else {
+        console.log(`[ALERT] Skipped  | Created At: ${createdAt.toISOString()} | Machine ID: ${alert.machineId} | Error: ${alert.errorName}`);
+      }
+
+      return isHistorical;
+    });
+
+    console.log("[/historical-alerts] Total historical alerts:", filteredAlerts.length);
+
+    res.json({ historicalAlerts: filteredAlerts });
+  } catch (error) {
+    console.error("[/historical-alerts] Error fetching historical alerts:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to fetch historical alerts",
+    });
+  }
+});
+
 alertsRouter.get('/persistent-errors', async (req, res) => {
   try {
     const machineErrors = await storage.getPersistentMachineErrors();
-
-    // Step 1: Group errors by errorName only
-    const groupedByErrorName: Record<string, {
-      errorName: string;
-      errorType: string;
-      timestamps: Date[];
-      createdAt: Date;
-      entries: {
-        machineId: number;
-        locationId: number;
-        createdAt: Date;
-        timestamp: Date;
-        machineName?: string;
-        locationName?: string;
-      }[];
-    }> = {};
-
-    for (const error of machineErrors) {
-      const key = error.errorName;
-      if (!groupedByErrorName[key]) {
-        groupedByErrorName[key] = {
-          errorName: error.errorName,
-          errorType: error.errorType,
-          timestamps: [],
-          createdAt: new Date(error.createdAt),
-          entries: [],
-        };
-      }
-
-      groupedByErrorName[key].timestamps.push(new Date(error.timestamp));
-      groupedByErrorName[key].entries.push({
-        machineId: error.machineId,
-        locationId: error.locationId,
-        createdAt: new Date(error.createdAt),
-        timestamp: new Date(error.timestamp),
-        machineName: error.machineName,
-        locationName: error.locationName,
-      });
-    }
-
-    // Step 2: Filter errorNames that appear more than twice and last over 60 minutes
-    const finalFiltered = Object.values(groupedByErrorName)
-      .filter(group => {
-        if (group.timestamps.length < 2) return false;
-        const sorted = [...group.timestamps].sort((a, b) => a.getTime() - b.getTime());
-        const durationMinutes = differenceInMinutes(sorted[sorted.length - 1], sorted[0]);
-        return durationMinutes > 60 && group.timestamps.length > 2;
-      })
-      .flatMap(group => {
-        const count = group.timestamps.length;
-        const priority =
-          count >= 5 ? "High" :
-          count >= 3 ? "Medium" :
-          "Low";
-
-        return group.entries.map(entry => ({
-          machineId: entry.machineId,
-          locationId: entry.locationId,
-          errorName: group.errorName,
-          errorType: group.errorType,
-          recurring: count >= 3,
-          priority,
-          createdAt: entry.createdAt,
-          timestamp: entry.timestamp,
-          machineName: entry.machineName,
-          locationName: entry.locationName,
-          count,
-        }));
-      });
-
-    console.log("Final persistent errors grouped by errorName:", finalFiltered);
-    res.json({ persistentErrors: finalFiltered });
+    res.json({ alerts: machineErrors });
 
   } catch (error) {
     console.error("Error in /persistent-errors:", error);
@@ -195,6 +161,8 @@ alertsRouter.get('/persistent-errors', async (req, res) => {
     });
   }
 });
+
+
 
 // Get specific alert by ID
 alertsRouter.get('/:id', async (req, res) => {
