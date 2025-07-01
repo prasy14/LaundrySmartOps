@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -46,6 +46,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import SearchableDropdown from "@/pages/SearchableDropdown";
 import { cn } from "@/lib/utils";
+import { machine } from "os";
 
 
 
@@ -102,17 +103,50 @@ export default function AlertsPage() {
   });
 
   // Fetch persistent machine errors
-  const { 
-    data: persistentErrorsData, 
-    isLoading: persistentErrorsLoading,
-    refetch: refetchPersistentErrors
-  } = useQuery<{ persistentErrors: PersistentError[]}>({
-    queryKey: ['/api/persistent-errors'],
-    enabled: !locationsLoading,
-  });
+ const {
+  data: persistentErrorsData,
+  isLoading: persistentErrorsLoading,
+  refetch: refetchPersistentErrors,
+} = useQuery<{ persistentErrors: PersistentError[] }>({
+  queryKey: ['persistent-errors', activeTab], // Include tab in key
+  queryFn: () =>
+    fetch(`/api/persistent-errors?activeTab=${activeTab}`).then((res) => res.json()),
+  enabled: !locationsLoading,
+});
+
+
+//   const {
+//   data: historicalAlertsData,
+//   isLoading: historicalAlertsLoading,
+//   refetch: refetchHistoricalAlerts,
+// } = useQuery<{ historicalAlerts: HistoricalAlert[] }>({
+//   queryKey: ['/api/historical-alerts'], 
+//   queryFn: async () => {
+//     const res = await fetch("/api/historical-alerts", { credentials: "include" }); 
+//     if (!res.ok) throw new Error("Failed to fetch historical alerts");
+//     return res.json();
+//   },
+//   enabled: activeTab === 'historical',
+// });
+
 
   type PersistentError = {
+     id: string; 
   machineId: number;
+  locationId: number;
+  errorName: string;
+  errorType: string;
+  createdAt: Date;
+  timestamp: Date;
+  machineName?: string;
+  locationName?: string;
+  count: number;
+  recurring: boolean;
+  priority: 'High' | 'Medium' | 'Low';
+};
+
+type HistoricalAlert = {
+   machineId: number;
   locationId: number;
   errorName: string;
   errorType: string;
@@ -201,6 +235,41 @@ const getLocationName = (locationId: number) => {
     return 0;
   }) || [];
 
+  // Filtered data for export
+const filteredActiveAlerts = persistentErrorsData?.persistentErrors?.filter(error => {
+  const created = new Date(error.createdAt);
+  const isOlderThanOneHour = new Date().getTime() - created.getTime() > 60 * 60 * 1000;
+  const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+  const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
+  return isOlderThanOneHour && isMatchingLocation && isMatchingErrorType;
+}) || [];
+
+const filteredHistoricalAlerts = persistentErrorsData?.persistentErrors?.filter(error => {
+  const now = new Date();
+  const twoYearsAgo = new Date(now);
+  twoYearsAgo.setFullYear(now.getFullYear() - 2);
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+
+  const ts = new Date(error.timestamp);
+  const isInDateRange = ts >= twoYearsAgo && ts < yesterday;
+  const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+  const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
+  return isInDateRange && isMatchingLocation && isMatchingErrorType;
+}) || [];
+
+const filteredPersistentErrors = persistentErrorsData?.persistentErrors?.filter(error => {
+  const counts: Record<string, number> = {};
+  persistentErrorsData.persistentErrors.forEach(e => {
+    counts[e.errorName] = (counts[e.errorName] || 0) + 1;
+  });
+  const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+  const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
+  return isMatchingLocation && isMatchingErrorType && counts[error.errorName] > 3;
+}) || [];
+
+
+
   // Function to generate alerts from persistent errors
   const generateAlertsFromErrors = async () => {
     try {
@@ -224,6 +293,8 @@ const getLocationName = (locationId: number) => {
       // Refresh data
       refetchAlerts();
       refetchPersistentErrors();
+      //refetchHistoricalAlerts();
+
     } catch (error) {
       toast({
         title: "Error",
@@ -234,53 +305,124 @@ const getLocationName = (locationId: number) => {
   };
 
   // Export alerts to CSV
-  const exportToCSV = (data: EnhancedAlert[]) => {
-    if (!data || data.length === 0) {
-      toast({
-        title: "No data to export",
-        description: "There are no alerts matching your current filters.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Create headers
-    const headers = [
-      "ID", "Machine ID", "Type", "Service Type", "Message", "Status", 
-      "Created At", "Resolved At", "Priority", "Location", "Recurring Count"
+//   const exportToCSV = (
+//   data: MachineError[],
+//   recurringCounts: Record<string, number>,
+//   machines: Machine[], // Add your actual type
+//   locations: Location[] // Add your actual type
+// ) => {
+//   if (!data || data.length === 0) {
+//     toast({
+//       title: "No data to export",
+//       description: "There are no alerts matching your current filters.",
+//       variant: "destructive"
+//     });
+//     return;
+//   }
+
+//   const csvRows: string[][] = [
+//     [
+//       "Machine Name",
+//       "Location Name",
+//       "Error Type",
+//       "Error Name",
+//       "Created At",
+//       "Timestamp",
+//       "Recurring Count",
+//       "Priority"
+//     ],
+//     ...data.map((alert) => {
+//       const recurrenceCount = recurringCounts[alert.errorName] || 1;
+//       const priority =
+//         recurrenceCount >= 10 ? "5" :
+//         recurrenceCount >= 7 ? "4" :
+//         recurrenceCount >= 5 ? "3" :
+//         recurrenceCount >= 3 ? "2" : "1";
+
+//       const machine = machines.find((m) => m.id === alert.machineId);
+//       const location = locations.find((l) => l.id === alert.locationId);
+
+//       return [
+//         machine?.name || "Unknown",
+//         location?.name || "Unknown",
+//         alert.errorType,
+//         alert.errorName,
+//         format(new Date(alert.createdAt), "yyyy-MM-dd HH:mm:ss"),
+//         format(new Date(alert.timestamp), "yyyy-MM-dd HH:mm:ss"),
+//         recurrenceCount.toString(),
+//         priority
+//       ];
+//     }),
+//   ];
+
+//   const csvContent = csvRows.map((row) => row.join(",")).join("\n");
+
+//   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+//   const url = URL.createObjectURL(blob);
+
+//   const link = document.createElement("a");
+//   link.setAttribute("href", url);
+//   link.setAttribute("download", `alerts-${format(new Date(), "yyyy-MM-dd")}.csv`);
+//   document.body.appendChild(link);
+//   link.click();
+//   document.body.removeChild(link);
+// };
+ const exportToCSV = (data: MachineError[],  activeTab: string) => {
+  if (!data || data.length === 0) {
+    toast({
+      title: "No data to export",
+      description: "There are no alerts matching your current filters.",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  const headers = [
+    "Machine Name", "Location Name", "Error Type", "Error Name", "Created At", "Timestamp", "Recurring Count", "Priority"
+  ];
+
+  const errorNameCounts: Record<string, number> = {};
+  data.forEach(error => {
+    errorNameCounts[error.errorName] = (errorNameCounts[error.errorName] || 0) + 1;
+  });
+
+  const rows = data.map(error => {
+    const machineName = machinesData?.machines.find(m => m.id === error.machineId)?.name || "Unknown";
+    const locationName = locationsData?.locations.find(l => l.id === error.locationId)?.name || "Unknown";
+    const recurrenceCount = errorNameCounts[error.errorName] || 1;
+    const priority =
+      recurrenceCount >= 10 ? "5" :
+      recurrenceCount >= 7 ? "4" :
+      recurrenceCount >= 5 ? "3" :
+      recurrenceCount >= 3 ? "2" : "1";
+
+    return [
+      machineName,
+      locationName,
+      error.errorType,
+      error.errorName,
+      format(new Date(error.createdAt), 'yyyy-MM-dd HH:mm:ss'),
+      format(new Date(error.timestamp), 'yyyy-MM-dd HH:mm:ss'),
+      recurrenceCount.toString(),
+      priority
     ];
-    
-    // Create rows
-    const rows = data.map(alert => [
-      alert.id,
-      alert.machineId,
-      alert.type,
-      alert.serviceType || '',
-      alert.message,
-      alert.status,
-      format(new Date(alert.createdAt), 'yyyy-MM-dd HH:mm:ss'),
-      alert.resolvedAt ? format(new Date(alert.resolvedAt), 'yyyy-MM-dd HH:mm:ss') : '',
-      alert.priority || '',
-      alert.location || '',
-      recurringErrorCounts[alert.machineId] || 1
-    ]);
-    
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-    
-    // Create blob and download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `service-alerts-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  });
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+   const tabName = activeTab.replace(/\s+/g, '-').toLowerCase();
+  link.setAttribute('href', url);
+  link.setAttribute('download', `alerts-${tabName}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -352,18 +494,28 @@ const getLocationName = (locationId: number) => {
                        options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
                   />
                 
-                <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Service Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="mechanical">Mechanical</SelectItem>
-                    <SelectItem value="electrical">Electrical</SelectItem>
-                    <SelectItem value="software">Software</SelectItem>
-                    <SelectItem value="general">General</SelectItem>
-                  </SelectContent>
-                </Select>
+               <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
+  <SelectTrigger className="w-[200px]">
+    <SelectValue placeholder="Service Type" />
+  </SelectTrigger>
+
+  <SelectContent>
+    <SelectItem value="all">All Types</SelectItem>
+    <SelectItem value="NO_FLOW_ERROR">NO_FLOW_ERROR</SelectItem>
+    <SelectItem value="FATAL_DOOR_LOCK_ERROR">FATAL_DOOR_LOCK_ERROR</SelectItem>
+    <SelectItem value="CONTROL">CONTROL</SelectItem>
+    <SelectItem value="BROKEN_BELT_ERROR">BROKEN_BELT_ERROR</SelectItem>
+    <SelectItem value="LOCKER_ROTOR_ERROR">LOCKER_ROTOR_ERROR</SelectItem>
+    <SelectItem value="BOARD_NOT_READY_ERROR">BOARD_NOT_READY_ERROR</SelectItem>
+    <SelectItem value="DRAIN_ERROR">DRAIN_ERROR</SelectItem>
+    <SelectItem value="THERMAL_PROTECT_ERROR">THERMAL_PROTECT_ERROR</SelectItem>
+    <SelectItem value="SHORTED_THERMISTOR_ERROR">SHORTED_THERMISTOR_ERROR</SelectItem>
+    <SelectItem value="OVERFLOW_ERROR">OVERFLOW_ERROR</SelectItem>
+    <SelectItem value="SUDS_LOCK_ERROR">SUDS_LOCK_ERROR</SelectItem>
+    <SelectItem value="DOOR_OPEN_ERROR1">DOOR_OPEN_ERROR1</SelectItem>
+  </SelectContent>
+</Select>
+
                 
                 <Popover>
                   <PopoverTrigger asChild>
@@ -489,13 +641,33 @@ const getLocationName = (locationId: number) => {
                   </PopoverContent>
                 </Popover>
                 
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => exportToCSV(filteredAlerts)}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
+              <Button
+  variant="outline"
+  size="icon"
+  onClick={() => {
+  const rawExportData =
+    activeTab === "persistent-errors"
+      ? filteredPersistentErrors
+      : activeTab === "historical"
+      ? filteredHistoricalAlerts
+      : activeTab === "active"
+      ? filteredActiveAlerts
+      : [];
+
+  const exportData = rawExportData.map(error => ({
+    ...error,
+    errorCode: null, // since PersistentError doesn’t have this
+    id: `${error.machineId}-${error.errorName}-${error.timestamp}` // generate an ID if needed
+  }));
+
+  exportToCSV(exportData,activeTab);
+}}
+
+>
+  <Download className="h-4 w-4" />
+</Button>
+
+
               </div>
             </div>
           </CardHeader>
@@ -524,7 +696,7 @@ const getLocationName = (locationId: number) => {
                 </TableHeader>
                 <TableBody>
                  
-                {activeTab === "persistent-errors" && persistentErrorsData?.persistentErrors
+                {/* {activeTab === "persistent-errors" && persistentErrorsData?.persistentErrors
   ?.filter(error => {
     return selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
   })
@@ -583,8 +755,313 @@ const getLocationName = (locationId: number) => {
        
        
   );
-})}
+})} */}
+{activeTab === "historical" && (() => {
+  const errors = persistentErrorsData?.persistentErrors || [];
 
+  const now = new Date();
+  const twoYearsAgo = new Date(now);
+  twoYearsAgo.setFullYear(now.getFullYear() - 2);
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+
+  // Step 1: Count errorName occurrences
+  const errorNameCounts: Record<string, number> = {};
+  errors.forEach(error => {
+    errorNameCounts[error.errorName] = (errorNameCounts[error.errorName] || 0) + 1;
+  });
+
+  // Step 2: Filter by date + location
+  const filteredErrors = errors.filter((error) => {
+    const ts = new Date(error.timestamp);
+    const isInDateRange = ts >= twoYearsAgo && ts < yesterday;
+    const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+    const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
+   const machine = machinesData?.machines.find((m) => m.id === error.machineId);
+  const location = locationsData?.locations.find((l) => l.id === error.locationId);
+
+  // full-text search string
+  const searchLower = searchTerm.toLowerCase();
+  const matchText = `
+    ${error.errorName}
+    ${error.errorType}
+    ${error.createdAt}
+    ${error.timestamp}
+    ${machine?.name || ""}
+    ${location?.name || ""}
+  `.toLowerCase();
+
+  const isSearchMatch = !searchTerm || matchText.includes(searchLower);
+    return isMatchingLocation && isInDateRange && isMatchingErrorType&& isSearchMatch;
+  });
+
+  return (
+    <>
+      <div className="flex justify-end text-sm text-muted-foreground mb-2 pr-2">
+        Total Historical Alerts: <strong className="ml-1">{filteredErrors.length}</strong>
+      </div>
+
+      {filteredErrors.map((error, index) => {
+        const machine = machinesData?.machines.find((m) => m.id === error.machineId);
+        const location = locationsData?.locations.find((l) => l.id === error.locationId);
+        const count = errorNameCounts[error.errorName] || 1;
+
+        // Priority calculation
+        let priorityNumber = 1;
+        if (count >= 10) {
+          priorityNumber = 5;
+        } else if (count >= 7) {
+          priorityNumber = 4;
+        } else if (count >= 5) {
+          priorityNumber = 3;
+        } else if (count >= 3) {
+          priorityNumber = 2;
+        }
+
+        const priorityColor = 
+          priorityNumber === 5 ? "bg-red-600 text-white" :
+      priorityNumber === 4 ? "bg-orange-600 text-white" :
+      priorityNumber === 3 ? "bg-yellow-500 text-white" :
+      priorityNumber === 2 ? "bg-blue-500 text-black" :
+       priorityNumber === 1 ? "bg-green-500 text-black" :
+      "bg-gray-200 text-gray-600";
+
+        return (
+          <TableRow key={`${error.machineId}-${error.errorName}-${error.timestamp}-${index}`}>
+            <TableCell className="font-medium">{machine?.name || "Unknown"}</TableCell>
+            <TableCell>
+              <Badge variant="destructive">Active</Badge>
+            </TableCell>
+            <TableCell>{error.errorType || 'Unknown'}</TableCell>
+            <TableCell>{error.errorName}</TableCell>
+            <TableCell>{location?.name || "Unknown"}</TableCell>
+            <TableCell className="whitespace-nowrap">
+              {format(new Date(error.createdAt), 'MMM d, yyyy h:mm a')}
+            </TableCell>
+            <TableCell>
+              <Badge variant="default">{count}</Badge>
+            </TableCell>
+            <TableCell>
+              <div className={`inline-block px-2 py-1 text-xs font-medium rounded ${priorityColor}`}>
+                {priorityNumber}
+              </div>
+            </TableCell>
+          </TableRow>
+        );
+      })}
+    </>
+  );
+})()}
+
+
+  {/* Live Alerts Tab */}
+  {activeTab === "active" && (() => {
+  const errors = persistentErrorsData?.persistentErrors || [];
+
+  // Step 1: Count how many times each errorName occurred
+  const errorNameCounts: Record<string, number> = {};
+  errors.forEach(error => {
+    errorNameCounts[error.errorName] = (errorNameCounts[error.errorName] || 0) + 1;
+  });
+
+  // Step 2: Filter only errors active for more than 1 hour and by location
+  const filteredErrors = errors.filter((error) => {
+    const created = new Date(error.createdAt);
+    const isOlderThanOneHour = new Date().getTime() - created.getTime() > 60 * 60 * 1000;
+    const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+    const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
+    const machine = machinesData?.machines.find((m) => m.id === error.machineId);
+  const location = locationsData?.locations.find((l) => l.id === error.locationId);
+
+  // full-text search string
+  const searchLower = searchTerm.toLowerCase();
+  const matchText = `
+    ${error.errorName}
+    ${error.errorType}
+    ${error.createdAt}
+    ${error.timestamp}
+    ${machine?.name || ""}
+    ${location?.name || ""}
+  `.toLowerCase();
+
+  const isSearchMatch = !searchTerm || matchText.includes(searchLower);
+    return isMatchingLocation && isOlderThanOneHour && isMatchingErrorType && isSearchMatch;
+  
+  });
+
+  return filteredErrors.map((error, index) => {
+    const machine = machinesData?.machines.find((m) => m.id === error.machineId);
+    const location = locationsData?.locations.find((l) => l.id === error.locationId);
+    const count = errorNameCounts[error.errorName] || 1;
+
+    // Step 3: Priority logic
+    let priorityNumber = 1;
+    if (count >= 10) {
+      priorityNumber = 5;
+    } else if (count >= 7) {
+      priorityNumber = 4;
+    } else if (count >= 5) {
+      priorityNumber = 3;
+    } else if (count >= 3) {
+      priorityNumber = 2;
+    }
+
+    const priorityColor =
+      priorityNumber === 5 ? "bg-red-600 text-white" :
+      priorityNumber === 4 ? "bg-orange-600 text-white" :
+      priorityNumber === 3 ? "bg-yellow-500 text-white" :
+      priorityNumber === 2 ? "bg-blue-500 text-black" :
+       priorityNumber === 1 ? "bg-green-500 text-black" :
+      "bg-gray-200 text-gray-600";
+
+    return (
+      <TableRow key={`${error.machineId}-${error.errorName}-${error.timestamp}-${index}`}>
+        <TableCell className="font-medium">{machine?.name || "Unknown"}</TableCell>
+        <TableCell>
+          <Badge variant="destructive">Active</Badge>
+        </TableCell>
+        <TableCell>{error.errorType || 'Unknown'}</TableCell>
+        <TableCell>{error.errorName}</TableCell>
+        <TableCell>{location?.name || "Unknown"}</TableCell>
+        <TableCell className="whitespace-nowrap">
+          {format(new Date(error.createdAt), 'MMM d, yyyy h:mm a')}
+        </TableCell>
+        <TableCell>
+          <Badge variant="default">{count}</Badge>
+        </TableCell>
+        <TableCell>
+          <div className={`inline-block px-2 py-1 text-xs font-medium rounded ${priorityColor}`}>
+            {priorityNumber}
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  });
+})()}
+
+
+{activeTab === "persistent-errors" && (() => {
+  const errors = persistentErrorsData?.persistentErrors || [];
+
+  const errorNameCounts: Record<string, number> = {};
+  errors.forEach(error => {
+    errorNameCounts[error.errorName] = (errorNameCounts[error.errorName] || 0) + 1;
+  });
+
+  const filteredErrors = errors.filter((error) => {
+    const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+    const isRecurringMoreThan3 = errorNameCounts[error.errorName] > 3;
+     const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
+          const machine = machinesData?.machines.find((m) => m.id === error.machineId);
+          const location = locationsData?.locations.find((l) => l.id === error.locationId);
+     // full-text search string
+  const searchLower = searchTerm.toLowerCase();
+  const matchText = `
+    ${error.errorName}
+    ${error.errorType}
+    ${error.createdAt}
+    ${error.timestamp}
+    ${machine?.name || ""}
+    ${location?.name || ""}
+  `.toLowerCase();
+
+  const isSearchMatch = !searchTerm || matchText.includes(searchLower);
+    return isMatchingLocation && isRecurringMoreThan3 && isMatchingErrorType && isSearchMatch;
+  
+  });
+
+  return (
+    <>
+      <div className="flex justify-end items-center mb-2 pr-2">
+  <span className="text-sm text-muted-foreground">
+    Total Persistent Errors: <strong>{filteredErrors.length}</strong>
+  </span>
+</div>
+
+      {filteredErrors.map((error, index) => {
+        const machine = machinesData?.machines.find((m) => m.id === error.machineId);
+        const location = locationsData?.locations.find((l) => l.id === error.locationId);
+
+        return (
+          <TableRow key={`${error.machineId}-${error.errorName}-${error.timestamp}-${index}`}>
+            <TableCell className="font-medium">{machine?.name || "Unknown"}</TableCell>
+            <TableCell>
+              <Badge variant="destructive">Active</Badge>
+            </TableCell>
+            <TableCell>{error.errorType || 'Unknown'}</TableCell>
+            <TableCell>{error.errorName}</TableCell>
+            <TableCell>{location?.name || "Unknown"}</TableCell>
+            <TableCell className="whitespace-nowrap">
+              {format(new Date(error.createdAt), 'MMM d, yyyy h:mm a')}
+            </TableCell>
+            <TableCell>{format(new Date(error.timestamp), 'MMM d, yyyy h:mm a')}</TableCell>
+            <TableCell>
+              <Badge variant="default">{errorNameCounts[error.errorName]}</Badge>
+            </TableCell>
+            <TableCell>
+  {(() => {
+    const count = errorNameCounts[error.errorName] || 1;
+    let priorityNumber = 1;
+
+    if (count >= 10) {
+      priorityNumber = 5;
+    } else if (count >= 7) {
+      priorityNumber = 4;
+    } else if (count >= 5) {
+      priorityNumber = 3;
+    } else if (count >= 3) {
+      priorityNumber = 2;
+    }
+
+    return (
+      <div
+        className={`inline-block px-2 py-1 text-xs font-medium rounded 
+          ${priorityNumber === 5 ? "bg-red-600 text-white" :
+            priorityNumber === 4 ? "bg-orange-600 text-white" :
+            priorityNumber === 3 ? "bg-yellow-500 text-white" :
+            priorityNumber === 2 ? "bg-blue-500 text-black" :
+             priorityNumber === 1 ? "bg-green-500 text-black" :
+            "bg-gray-200 text-gray-600"}`}
+      >
+        {priorityNumber}
+      </div>
+    );
+  })()}
+</TableCell>
+          </TableRow>
+        );
+      })}
+    </>
+  );
+})()}
+
+
+{/* {activeTab === "active" &&
+  (!persistentErrorsData?.persistentErrors ||
+    persistentErrorsData.persistentErrors.filter((e) =>
+      new Date().getTime() - new Date(e.createdAt).getTime() > 60 * 60 * 1000 &&
+      (selectedLocation === "all" || e.locationId === parseInt(selectedLocation))
+    ).length === 0) && (
+    <TableRow>
+      <TableCell colSpan={8} className="text-center py-10">
+        <div className="flex flex-col items-center gap-2">
+          <CheckCircle className="h-10 w-10 text-success opacity-80" />
+          <p>No active service alerts</p>
+          <Button
+            variant="link"
+            onClick={() => {
+              setSearchTerm('');
+              setFilterRecurring(false);
+              setSelectedLocation('all');
+              setSelectedServiceType('all');
+            }}>
+            Clear filters
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+)} */}
 
                   {filteredAlerts.length > 0 ? (
                     filteredAlerts.map((alert) => (
@@ -650,8 +1127,6 @@ const getLocationName = (locationId: number) => {
                             </>
                           ) : (
                             <>
-                              <CheckCircle className="h-10 w-10 text-success opacity-80" />
-                              <p>No active service alerts</p>
                             </>
                           )}
                           <Button 
