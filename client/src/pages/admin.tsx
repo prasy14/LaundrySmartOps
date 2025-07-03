@@ -15,25 +15,41 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { 
-  Location, 
-  Machine, 
-  SyncLog, 
-  MachineProgram,
-  MachineError,
-  MachineCycle,
-  CycleStep,
-  CycleModifier 
+import { 
+  type Location, 
+  type Machine, 
+  type SyncLog, 
+  type MachineProgram,
+  type MachineError,
+  type MachineCycle,
+  type CycleStep,
+  type CycleModifier, 
+  machinePrograms
 } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PaginationControls from "@/pages/paginationcontrol";
+
+import { useState, useMemo, useEffect } from "react";
 
 interface SyncInfo {
   lastLocationSync?: SyncLog;
   lastMachineSync?: SyncLog;
 }
-
 export default function Admin() {
   const { toast } = useToast();
+   const itemsPerPage = 10;
+  const [locationPage, setLocationPage] = useState(1);
+  const [machinePage, setMachinePage] = useState(1);
+  const [programPage, setProgramPage] = useState(1);
+  const [errorPage, setErrorPage] = useState(1);
+  const [machinecyclePage, setMachineCyclePage] = useState(1);
+  const [cyclestepPage, setCyclestepPage] = useState(1);
+  const [cyclemodifierPage, setCyclemodifierPage] = useState(1);
+  
+  const paginate = <T,>(data: T[], currentPage: number, perPage: number): T[] => {
+  const start = (currentPage - 1) * perPage;
+  return data.slice(start, start + perPage);
+};
 
   // Fetch data
   const { data: locationsData } = useQuery<{ locations: Location[] }>({
@@ -70,6 +86,35 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
   const { data: syncInfo } = useQuery<SyncInfo>({
     queryKey: ['/api/admin/sync-info'],
   });
+
+  const [activeTab, setActiveTab] = useState("locations");
+
+useEffect(() => {
+  setLocationPage(1);
+  setMachinePage(1);
+  setProgramPage(1);
+  setErrorPage(1);
+  setMachineCyclePage(1);
+  setCyclestepPage(1);
+  setCyclemodifierPage(1);
+}, [activeTab]);
+
+
+const paginatedLocations = useMemo(() => paginate(locationsData?.locations || [], locationPage, itemsPerPage), [locationsData, locationPage]);
+const paginatedMachines = useMemo(() => paginate(machinesData?.machines || [], machinePage, itemsPerPage), [machinesData, machinePage]);
+const paginatedPrograms = useMemo(() => paginate(programsData?.programs || [], programPage, itemsPerPage), [programsData, programPage]);
+const paginatedErrors = useMemo(() => paginate(errorsData?.errors || [], errorPage, itemsPerPage), [errorsData, errorPage]);
+const paginatedCycles = useMemo(() => paginate(cyclesData?.machineCycles || [], machinecyclePage, itemsPerPage), [cyclesData, machinecyclePage]);
+const paginatedSteps = useMemo(() => paginate(stepsData?.cycleSteps || [], cyclestepPage, itemsPerPage), [stepsData, cyclestepPage]);
+const paginatedModifiers = useMemo(() => paginate(modifiersData?.cycleModifiers || [], cyclemodifierPage, itemsPerPage), [modifiersData, cyclemodifierPage]);
+
+const locationTotalPages = useMemo(() => Math.ceil((locationsData?.locations.length || 0) / itemsPerPage), [locationsData]);
+const machineTotalPages = useMemo(() => Math.ceil((machinesData?.machines.length || 0) / itemsPerPage), [machinesData]);
+const programTotalPages = useMemo(() => Math.ceil((programsData?.programs.length || 0) / itemsPerPage), [programsData]);
+const errorTotalPages = useMemo(() => Math.ceil((errorsData?.errors.length || 0) / itemsPerPage), [errorsData]);
+const cycleTotalPages = useMemo(() => Math.ceil((cyclesData?.machineCycles.length || 0) / itemsPerPage), [cyclesData]);
+const stepTotalPages = useMemo(() => Math.ceil((stepsData?.cycleSteps.length || 0) / itemsPerPage), [stepsData]);
+const modifierTotalPages = useMemo(() => Math.ceil((modifiersData?.cycleModifiers.length || 0) / itemsPerPage), [modifiersData]);
 
   // Sync mutations remain the same...
   const syncAllMutation = useMutation({
@@ -110,6 +155,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
       toast({
         title: "Success",
         description: "Locations synced successfully",
+          //duration: 40000,
       });
     },
     onError: (error: Error) => {
@@ -283,7 +329,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
             <CardTitle>Database Tables</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="locations" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4" defaultValue="locations">
               <TabsList className="flex-wrap">
                 <TabsTrigger value="locations">Locations</TabsTrigger>
                 <TabsTrigger value="machines">Machines</TabsTrigger>
@@ -306,7 +352,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {locationsData?.locations.map((location) => (
+                    {paginatedLocations .map((location) => (
                       <TableRow key={location.id}>
                         <TableCell className="font-medium">{location.name}</TableCell>
                         <TableCell>{location.address || 'N/A'}</TableCell>
@@ -325,6 +371,14 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                     ))}
                   </TableBody>
                 </Table>
+                <PaginationControls
+  currentPage={locationPage}
+  totalPages={locationTotalPages}
+  onPageChange={setLocationPage}
+  totalItems={locationsData?.locations.length || 0}
+  label="Locations"
+/>
+
               </TabsContent>
 
               {/* Machines Tab */}
@@ -340,7 +394,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {machinesData?.machines.map((machine) => {
+                    {paginatedMachines.map((machine) => {
                       const location = locationsData?.locations.find(l => l.id === machine.locationId);
                       return (
                         <TableRow key={machine.id}>
@@ -363,6 +417,13 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                     })}
                   </TableBody>
                 </Table>
+                <PaginationControls
+  currentPage={machinePage}
+  totalPages={machineTotalPages}
+  onPageChange={setMachinePage}
+  totalItems={machinesData?.machines.length || 0}
+  label="machines"
+/>
               </TabsContent>
 
               {/* Machine Programs Tab */}
@@ -381,7 +442,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                   </TableHeader>
                   <TableBody>
                     {programsData?.programs ? (
-                      programsData.programs.map((program) => {
+                      paginatedPrograms .map((program) => {
                         const machine = machinesData?.machines.find(m => m.id === program.machineId);
                         const location = locationsData?.locations.find(l => l.id === program.locationId);
                         return (
@@ -405,6 +466,13 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                     )}
                   </TableBody>
                 </Table>
+                 <PaginationControls
+  currentPage={programPage}
+  totalPages={programTotalPages}
+  onPageChange={setProgramPage}
+  totalItems={programsData?.programs.length || 0}
+  label="programs"
+/>
               </TabsContent>
 
               {/* Machine Errors Tab */}
@@ -422,7 +490,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
     </TableHeader>
     <TableBody>
       {errorsData?.errors?.length ? (
-        errorsData.errors.map((error) => {
+       paginatedErrors.map((error) => {
           const machine = machinesData?.machines.find(m => m.id === error.machineId);
           const location = locationsData?.locations.find(l => l.id === error.locationId);
           return (
@@ -445,6 +513,13 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
       )}
     </TableBody>
   </Table>
+   <PaginationControls
+  currentPage={errorPage}
+  totalPages={errorTotalPages}
+  onPageChange={setErrorPage}
+  totalItems={errorsData?.errors.length || 0}
+  label="errors"
+/>
 </TabsContent>
 
               {/* Machine Cycles Tab */}
@@ -459,7 +534,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                   </TableHeader>
                   <TableBody>
                   {cyclesData?.machineCycles?.length ? (
-  cyclesData.machineCycles.map((cycle) => (
+  paginatedCycles.map((cycle) => (
     <TableRow key={cycle.id}>
       <TableCell>{cycle.name}</TableCell>
       <TableCell>{cycle.cycleType}</TableCell>
@@ -474,9 +549,14 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
   </TableRow>
 )}
 </TableBody>
-
-
                 </Table>
+                  <PaginationControls
+  currentPage={cyclestepPage}
+  totalPages={cycleTotalPages}
+  onPageChange={setCyclestepPage}
+  totalItems={cyclesData?.machineCycles.length || 0}
+  label="cycles"
+/>
               </TabsContent>
 
               {/* Cycle Steps Tab */}
@@ -490,7 +570,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                  {stepsData?.cycleSteps && stepsData.cycleSteps.map((cycleSteps) => (
+                  {stepsData?.cycleSteps &&paginatedSteps.map((cycleSteps) => (
                   <TableRow key={cycleSteps.id}>
                   <TableCell className="font-medium">{cycleSteps.stepName}</TableCell>
                   <TableCell>{cycleSteps.description || 'N/A'}</TableCell>
@@ -499,6 +579,13 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                     ))}
                   </TableBody>
                 </Table>
+                 <PaginationControls
+  currentPage={cyclestepPage}
+  totalPages={stepTotalPages}
+  onPageChange={setCyclestepPage}
+  totalItems={stepsData?.cycleSteps.length || 0}
+  label="steps"
+/>
               </TabsContent>
 
               {/* Cycle Modifiers Tab */}
@@ -512,7 +599,7 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
                   </TableHeader>
                   <TableBody>
                   {modifiersData?.cycleModifiers?.length ? (
-  modifiersData.cycleModifiers.map((cycleModifiers) => (
+  paginatedModifiers.map((cycleModifiers) => (
     <TableRow key={cycleModifiers.id}>
       <TableCell className="font-medium">{cycleModifiers.name}</TableCell>
       <TableCell className="font-medium">{cycleModifiers.sortOrder}</TableCell>
@@ -527,6 +614,13 @@ const { data: stepsData } = useQuery<{ cycleSteps: CycleStep[] }>({
 )}
                   </TableBody>
                 </Table>
+                <PaginationControls
+  currentPage={cyclemodifierPage}
+  totalPages={modifierTotalPages}
+  onPageChange={setCyclemodifierPage}
+  totalItems={modifiersData?.cycleModifiers.length || 0}
+  label="modifiers"
+/>
               </TabsContent>
 
             </Tabs>
