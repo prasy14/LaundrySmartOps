@@ -47,6 +47,7 @@ import { toast } from "@/hooks/use-toast";
 import SearchableDropdown from "@/pages/SearchableDropdown";
 import { cn } from "@/lib/utils";
 import { machine } from "os";
+import PaginationControls from "@/pages/paginationcontrol";
 
 
 
@@ -843,35 +844,27 @@ const getStatusBadgeColor = (statusId: string) => {
   );
 })}
 
+
 <TableRow className="bg-muted/30">
   <TableCell colSpan={9}>
-    <div className="flex justify-between items-center text-sm text-muted-foreground px-2">
-      <span>
-        Total Alerts: <strong>
-          {activeTab === "historical" ? filteredHistorical.length :
-           activeTab === "persistent-errors" ? filteredPersistent.length : filteredActive.length}
-        </strong>
-      </span>
-      <span>
-        Page {currentPage} of {totalPages}
-        <button
-          className="ml-4 text-blue-600 disabled:opacity-50"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage(p => p - 1)}
-        >
-          Prev
-        </button>
-        <button
-          className="ml-2 text-blue-600 disabled:opacity-50"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(p => p + 1)}
-        >
-          Next
-        </button>
-      </span>
-    </div>
+    <PaginationControls
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={setCurrentPage}
+      totalItems={
+        activeTab === 'historical'
+          ? filteredHistorical.length
+          : activeTab === 'persistent-errors'
+          ? filteredPersistent.length
+          : activeTab === 'active'
+          ? filteredActiveAlerts.length
+          : 0 
+      }
+      label="alerts"
+    />
   </TableCell>
 </TableRow>
+
 
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-10">
