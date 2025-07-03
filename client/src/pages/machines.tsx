@@ -36,13 +36,19 @@ import MachineCycleAnalysis,{MachineCycleAnalysisHandle} from "@/components/dash
 import { useRef } from "react";
 import { writeFile, utils } from 'xlsx';
 import SearchableDropdown from "./SearchableDropdown";
+import PaginationControls from "@/pages/paginationcontrol";
 
 export default function Machines() {
+   
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [activeTab2, setActiveTab2] = useState<string>("inventory");
 
+  
   const [detailsExpanded, setDetailsExpanded] = useState<boolean>(false);
   
   const { data: machinesData, isLoading } = useQuery<{ machines: Machine[] }>({
@@ -178,6 +184,12 @@ export default function Machines() {
     (machine.locationId && machine.locationId.toString() === selectedLocation)
   );
 
+    const totalPages = Math.ceil((filteredMachines?.length || 0) / itemsPerPage);
+  const paginatedMachines = filteredMachines?.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
  // Export functions
  const exportInventoryData = (machines: Machine[] | undefined) => {
   if (!machines || machines.length === 0) {
@@ -274,8 +286,8 @@ export default function Machines() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {Array.isArray(filteredMachines) && filteredMachines.length > 0 ? (
-                 filteredMachines.map((machine) => {
+              {Array.isArray(paginatedMachines) && paginatedMachines.length > 0 ? (
+                 paginatedMachines.map((machine) => {
                     const warrantyStatus = getWarrantyStatus(machine);
                     return (
                       <TableRow
@@ -330,6 +342,14 @@ export default function Machines() {
             </Table>
           </CardContent>
         </Card>
+          {/* Pagination controls */}
+           <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredMachines?.length || 0}
+            label="inventory"
+          />
       </div>
     </div> {/* ✅ This closing div was missing */}
   </TabsContent>
