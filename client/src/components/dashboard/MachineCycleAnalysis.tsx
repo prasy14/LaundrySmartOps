@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import { utils, writeFile } from "xlsx";
 import { forwardRef, useImperativeHandle } from "react";
+import PaginationControls from "@/pages/paginationcontrol";
 
 export interface MachineCycleAnalysisHandle {
   exportData: () => void;
@@ -48,6 +49,7 @@ interface Location {
 // }
 
 // const MachineCycleAnalysis: React.FC<MachineCycleAnalysisProps> = ({ onExport }) => {
+const itemsPerPage = 10;
 
 const MachineCycleAnalysis = forwardRef<MachineCycleAnalysisHandle>((_, ref) => {
 const { toast } = useToast();
@@ -132,9 +134,19 @@ const { toast } = useToast();
       };
     }).filter(machine => machine.cycleStats.todayCount > cycleThreshold);
   };
-  
+
+  const [currentPage, setCurrentPage] = useState(1);
+
   const highCycleMachines = getHighCycleMachines();
   
+    const paginatedMachines = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return highCycleMachines.slice(start, end);
+  }, [highCycleMachines, currentPage]);
+
+  const totalPages = Math.ceil(highCycleMachines.length / itemsPerPage);
+
   // Get location name by ID
   const getLocationName = (locationId: number | null) => {
     if (!locationId) return 'Unknown';
@@ -170,6 +182,7 @@ const { toast } = useToast();
   console.log('machinesData:', machinesData);
 console.log('cycleThreshold:', cycleThreshold);
 console.log('highCycleMachines:', highCycleMachines);
+
 
   
   
@@ -264,8 +277,8 @@ console.log('highCycleMachines:', highCycleMachines);
               </TableRow>
             </TableHeader>
             <TableBody>
-              {highCycleMachines.length > 0 ? (
-                highCycleMachines.map((machine) => (
+              {paginatedMachines.length > 0 ? (
+                paginatedMachines.map((machine) => (
                   <TableRow key={machine.id}>
                     <TableCell className="font-medium">
                       {machine.externalId}
@@ -307,7 +320,14 @@ console.log('highCycleMachines:', highCycleMachines);
             </TableBody>
           </Table>
         </div>
-        
+         {/* Pagination Controls */}
+     <PaginationControls
+  currentPage={currentPage}
+  totalPages={totalPages}
+  onPageChange={setCurrentPage}
+  totalItems={highCycleMachines.length}
+  label="cycleanalysis"
+/>
         <div className="mt-4 text-xs text-muted-foreground">
           <p>* Machine cycle data is collected daily and analyzed for maintenance planning</p>
           <p>* Machines flagged for maintenance will be reviewed by the service team</p>
