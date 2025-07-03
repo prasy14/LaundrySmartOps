@@ -117,6 +117,12 @@ export default function Reports() {
     enabled: !locationsLoading,
   });
 
+  // Machine errors data with location and machine filter
+  const { data: machineErrors, isLoading: errorsLoading } = useQuery<{ errors: MachineError[] }>({
+    queryKey: ['/api/machine-errors', selectedLocation, selectedMachine, dateRange],
+    enabled: !locationsLoading,
+  });
+
   // Error trends data with machine filter
   const { data: errorTrends, isLoading: trendsLoading } = useQuery<{
     trends: Array<{
@@ -127,6 +133,75 @@ export default function Reports() {
     }>;
   }>({
     queryKey: ['/api/reports/error-trends', selectedMachine, dateRange],
+    enabled: !locationsLoading,
+  });
+
+  // Audit operations data
+  const { data: auditOperations, isLoading: auditOperationsLoading } = useQuery<{
+    operations: Array<{
+      id: number;
+      locationId: number;
+      machineId: number;
+      category: string;
+      operationType: string;
+      operationStatus: string;
+      auditorName: string;
+      startTime: Date;
+      endTime: Date;
+      findings: any;
+    }>;
+  }>({
+    queryKey: ['/api/audit-operations', selectedLocation, selectedMachine, dateRange],
+    enabled: !locationsLoading,
+  });
+
+  // Coin vault data
+  const { data: coinVaultData, isLoading: coinVaultLoading } = useQuery<{
+    vaults: Array<{
+      id: number;
+      locationId: string;
+      locationName: string;
+      machineId: string;
+      machineName: string;
+      vaultSize: number;
+      percentCapacity: string;
+      totalValue: number;
+      machineTypeName: string;
+    }>;
+  }>({
+    queryKey: ['/api/coin-vaults', selectedLocation, selectedMachine],
+    enabled: !locationsLoading,
+  });
+
+  // Audit cycle usage data
+  const { data: cycleUsageData, isLoading: cycleUsageLoading } = useQuery<{
+    usage: Array<{
+      id: number;
+      locationId: string;
+      machineId: string;
+      reportId: string;
+      totalCycles: number;
+      energyConsumption: number;
+      waterConsumption: number;
+      efficiency: number;
+    }>;
+  }>({
+    queryKey: ['/api/audit-cycle-usage', selectedLocation, selectedMachine, dateRange],
+    enabled: !locationsLoading,
+  });
+
+  // Audit total vending data
+  const { data: vendingData, isLoading: vendingLoading } = useQuery<{
+    vending: Array<{
+      id: number;
+      locationId: string;
+      machineId: string;
+      totalVended: number;
+      revenue: number;
+      transactions: number;
+    }>;
+  }>({
+    queryKey: ['/api/audit-total-vending', selectedLocation, selectedMachine, dateRange],
     enabled: !locationsLoading,
   });
   
@@ -176,7 +251,7 @@ export default function Reports() {
     return sustainabilityData.data.reduce((total, item) => total + item.cycles, 0);
   }, [sustainabilityData]);
 
-  if (locationsLoading || alertsLoading || issuesLoading || metricsLoading || trendsLoading || isSustainabilityLoading) {
+  if (locationsLoading || alertsLoading || issuesLoading || metricsLoading || trendsLoading || isSustainabilityLoading || errorsLoading || auditOperationsLoading || coinVaultLoading || cycleUsageLoading || vendingLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -228,6 +303,7 @@ export default function Reports() {
           {hasPermission(['system_analyst', 'admin']) && (
             <>
               <TabsTrigger value="alerts">Service Alerts</TabsTrigger>
+              <TabsTrigger value="machine-errors">Machine Errors</TabsTrigger>
               <TabsTrigger value="trends">Error Trends</TabsTrigger>
             </>
           )}
@@ -259,7 +335,13 @@ export default function Reports() {
           
           {/* Data Analyst Tabs */}
           {hasPermission(['data_analyst', 'admin', 'business_analyst']) && (
-            <TabsTrigger value="exports">Data Exports</TabsTrigger>
+            <>
+              <TabsTrigger value="audit-operations">Audit Operations</TabsTrigger>
+              <TabsTrigger value="coin-vault">Coin Vault</TabsTrigger>
+              <TabsTrigger value="cycle-usage">Cycle Usage</TabsTrigger>
+              <TabsTrigger value="vending-data">Vending Data</TabsTrigger>
+              <TabsTrigger value="exports">Data Exports</TabsTrigger>
+            </>
           )}
 
           {/* IT Manager Tabs */}
@@ -350,6 +432,86 @@ export default function Reports() {
                   )}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Machine Errors Tab */}
+        <TabsContent value="machine-errors">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Machine Errors</CardTitle>
+                <div className="flex items-center gap-4">
+                  <SearchableDropdown
+                    className="w-[300px]" 
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                    options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                  />
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
+                  <DateRangePicker
+                    date={dateRange}
+                    onDateChange={handleDateChange}
+                  />
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(machineErrors?.errors || [], 'machine-errors')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {errorsLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Error ID</TableHead>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Error Type</TableHead>
+                      <TableHead>Error Name</TableHead>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Error Code</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {machineErrors?.errors?.map((error) => (
+                      <TableRow key={error.id}>
+                        <TableCell className="font-medium">{error.id}</TableCell>
+                        <TableCell>{error.machineId || 'Unknown'}</TableCell>
+                        <TableCell>
+                          <Badge variant={error.errorType === 'CRITICAL' ? 'destructive' : 'secondary'}>
+                            {error.errorType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{error.errorName}</TableCell>
+                        <TableCell>{format(new Date(error.timestamp), 'MMM d, h:mm a')}</TableCell>
+                        <TableCell>{error.errorCode || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!machineErrors?.errors || machineErrors.errors.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          No machine errors found for the selected criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -642,7 +804,7 @@ export default function Reports() {
                     title="Energy Consumption"
                     unitLabel="kWh"
                     isLoading={isSustainabilityLoading}
-                    error={sustainabilityError}
+                    error={sustainabilityError?.message || undefined}
                     type="energy"
                   />
                   <ConsumptionChart
@@ -650,7 +812,7 @@ export default function Reports() {
                     title="Water Consumption"
                     unitLabel="Gallons"
                     isLoading={isSustainabilityLoading}
-                    error={sustainabilityError}
+                    error={sustainabilityError?.message || undefined}
                     type="water"
                   />
                 </div>
@@ -658,7 +820,7 @@ export default function Reports() {
                   <CarbonFootprintChart
                     data={carbonData}
                     isLoading={isSustainabilityLoading}
-                    error={sustainabilityError}
+                    error={sustainabilityError?.message || undefined}
                   />
                   <Card className="w-full h-80 shadow-md">
                     <CardHeader className="gradient-blue text-white border-b">
@@ -1098,6 +1260,334 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Audit Operations Tab */}
+        <TabsContent value="audit-operations">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Audit Operations</CardTitle>
+                <div className="flex items-center gap-4">
+                  <SearchableDropdown
+                    className="w-[300px]" 
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                    options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                  />
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
+                  <DateRangePicker
+                    date={dateRange}
+                    onDateChange={handleDateChange}
+                  />
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(auditOperations?.operations || [], 'audit-operations')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {auditOperationsLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Operation ID</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Auditor</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {auditOperations?.operations?.map((operation) => (
+                      <TableRow key={operation.id}>
+                        <TableCell className="font-medium">{operation.id}</TableCell>
+                        <TableCell>{operation.locationId}</TableCell>
+                        <TableCell>{operation.machineId}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{operation.category}</Badge>
+                        </TableCell>
+                        <TableCell>{operation.operationType}</TableCell>
+                        <TableCell>
+                          <Badge variant={operation.operationStatus === 'COMPLETED' ? 'default' : 'secondary'}>
+                            {operation.operationStatus}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{operation.auditorName}</TableCell>
+                        <TableCell>{format(new Date(operation.startTime), 'MMM d, h:mm a')}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!auditOperations?.operations || auditOperations.operations.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground">
+                          No audit operations found for the selected criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Coin Vault Tab */}
+        <TabsContent value="coin-vault">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Coin Vault Data</CardTitle>
+                <div className="flex items-center gap-4">
+                  <SearchableDropdown
+                    className="w-[300px]" 
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                    options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                  />
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(coinVaultData?.vaults || [], 'coin-vault-data')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {coinVaultLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vault ID</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Machine Type</TableHead>
+                      <TableHead>Vault Size</TableHead>
+                      <TableHead>Capacity %</TableHead>
+                      <TableHead>Total Value</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {coinVaultData?.vaults?.map((vault) => (
+                      <TableRow key={vault.id}>
+                        <TableCell className="font-medium">{vault.id}</TableCell>
+                        <TableCell>{vault.locationName}</TableCell>
+                        <TableCell>{vault.machineName}</TableCell>
+                        <TableCell>{vault.machineTypeName}</TableCell>
+                        <TableCell>{vault.vaultSize}</TableCell>
+                        <TableCell>
+                          <Badge variant={parseInt(vault.percentCapacity) > 80 ? 'destructive' : 'default'}>
+                            {vault.percentCapacity}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell>${vault.totalValue.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!coinVaultData?.vaults || coinVaultData.vaults.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          No coin vault data found for the selected criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Cycle Usage Tab */}
+        <TabsContent value="cycle-usage">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Cycle Usage Analytics</CardTitle>
+                <div className="flex items-center gap-4">
+                  <SearchableDropdown
+                    className="w-[300px]" 
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                    options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                  />
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
+                  <DateRangePicker
+                    date={dateRange}
+                    onDateChange={handleDateChange}
+                  />
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(cycleUsageData?.usage || [], 'cycle-usage-data')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {cycleUsageLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Usage ID</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Report ID</TableHead>
+                      <TableHead>Total Cycles</TableHead>
+                      <TableHead>Energy (kWh)</TableHead>
+                      <TableHead>Water (Gal)</TableHead>
+                      <TableHead>Efficiency %</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cycleUsageData?.usage?.map((usage) => (
+                      <TableRow key={usage.id}>
+                        <TableCell className="font-medium">{usage.id}</TableCell>
+                        <TableCell>{usage.locationId}</TableCell>
+                        <TableCell>{usage.machineId}</TableCell>
+                        <TableCell>{usage.reportId}</TableCell>
+                        <TableCell>{usage.totalCycles}</TableCell>
+                        <TableCell>{usage.energyConsumption.toFixed(2)}</TableCell>
+                        <TableCell>{usage.waterConsumption.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge variant={usage.efficiency > 80 ? 'default' : usage.efficiency > 60 ? 'secondary' : 'destructive'}>
+                            {usage.efficiency.toFixed(1)}%
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!cycleUsageData?.usage || cycleUsageData.usage.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground">
+                          No cycle usage data found for the selected criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Vending Data Tab */}
+        <TabsContent value="vending-data">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Total Vending Analytics</CardTitle>
+                <div className="flex items-center gap-4">
+                  <SearchableDropdown
+                    className="w-[300px]" 
+                    value={selectedLocation}
+                    onChange={setSelectedLocation}
+                    options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
+                  />
+                  <MachineSelector
+                    selectedMachine={selectedMachine}
+                    onMachineChange={setSelectedMachine}
+                    locationId={selectedLocation}
+                  />
+                  <DateRangePicker
+                    date={dateRange}
+                    onDateChange={handleDateChange}
+                  />
+                  {hasPermission(['data_analyst', 'admin']) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => exportToCSV(vendingData?.vending || [], 'vending-data')}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {vendingLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vending ID</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Total Vended</TableHead>
+                      <TableHead>Revenue</TableHead>
+                      <TableHead>Transactions</TableHead>
+                      <TableHead>Avg per Transaction</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vendingData?.vending?.map((vending) => (
+                      <TableRow key={vending.id}>
+                        <TableCell className="font-medium">{vending.id}</TableCell>
+                        <TableCell>{vending.locationId}</TableCell>
+                        <TableCell>{vending.machineId}</TableCell>
+                        <TableCell>{vending.totalVended}</TableCell>
+                        <TableCell>${vending.revenue.toFixed(2)}</TableCell>
+                        <TableCell>{vending.transactions}</TableCell>
+                        <TableCell>
+                          ${vending.transactions > 0 ? (vending.revenue / vending.transactions).toFixed(2) : '0.00'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!vendingData?.vending || vendingData.vending.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          No vending data found for the selected criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
