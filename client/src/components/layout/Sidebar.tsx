@@ -37,6 +37,7 @@ const navigationCategories = [
   {
     name: 'Administration',
     items: [
+      { name: 'Campuses', href: '/campuses', icon: Building },
       { name: 'Locations', href: '/locations', icon: MapPin },
       { name: 'Location Admin', href: '/location-admin', icon: Building },
       { name: 'User Management', href: '/user-management', icon: Users, role: 'admin' },

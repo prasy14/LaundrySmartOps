@@ -63,6 +63,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ message: 'Failed to fetch locations' });
       }
     });
+
+    // Campus routes
+    apiRouter.get('/campuses', isOperatorOrAbove, async (req, res) => {
+      try {
+        const campuses = await storage.getCampuses();
+        res.json({ campuses });
+      } catch (error) {
+        log(`Error fetching campuses: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to fetch campuses' });
+      }
+    });
+
+    apiRouter.post('/campuses/generate', isManagerOrAdmin, async (req, res) => {
+      try {
+        await storage.generateCampusDataFromLocations();
+        const campuses = await storage.getCampuses();
+        res.json({ 
+          message: 'Campus data generated successfully',
+          campuses 
+        });
+      } catch (error) {
+        log(`Error generating campus data: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to generate campus data' });
+      }
+    });
  apiRouter.get('/users', isOperatorOrAbove, async (req, res) => {
       try {
         const users = await storage.getAllUsers();

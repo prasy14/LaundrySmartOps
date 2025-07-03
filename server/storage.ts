@@ -1,12 +1,13 @@
 import { db } from "./db";
 import { eq, desc, inArray, and, gte, lte, sql, between, asc, like } from "drizzle-orm";
-import { users, machines, alerts, syncLogs, locations, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults, auditOperations, auditTotalVending, auditCycleUsage } from "@shared/schema";
+import { users, machines, alerts, syncLogs, locations, campuses, machinePrograms, machineTypes, programModifiers, commandHistory, machineCycles, cycleModifiers, machineErrors, cycleSteps, machinePerformanceMetrics, coinVaults, auditOperations, auditTotalVending, auditCycleUsage } from "@shared/schema";
 import type {
   User, InsertUser,
   Machine, InsertMachine,
   Alert, InsertAlert,
   SyncLog, InsertSyncLog,
   Location, InsertLocation,
+  Campus, InsertCampus,
   MachineProgram, InsertMachineProgram,
   MachineType, InsertMachineType,
   ProgramModifier, InsertProgramModifier,
@@ -40,6 +41,13 @@ export interface IStorage {
   getLocation(id: number): Promise<Location | undefined>;
   getLocationByExternalId(externalId: string): Promise<Location | undefined>;
   createOrUpdateLocation(location: InsertLocation): Promise<Location>;
+
+  // Campus operations
+  getCampuses(): Promise<Campus[]>;
+  getCampus(id: number): Promise<Campus | undefined>;
+  getCampusByName(name: string): Promise<Campus | undefined>;
+  createOrUpdateCampus(campus: InsertCampus): Promise<Campus>;
+  generateCampusDataFromLocations(): Promise<void>;
 
   // Machine Type operations
   getMachineType(id: number): Promise<MachineType | undefined>;
@@ -172,6 +180,89 @@ export class DatabaseStorage implements IStorage {
     }
     const [location] = await db.insert(locations).values(insertLocation).returning();
     return location;
+  }
+
+  // Campus methods
+  async getCampuses(): Promise<Campus[]> {
+    return await db.select().from(campuses);
+  }
+
+  async getCampus(id: number): Promise<Campus | undefined> {
+    const [campus] = await db.select().from(campuses).where(eq(campuses.id, id));
+    return campus;
+  }
+
+  async getCampusByName(name: string): Promise<Campus | undefined> {
+    const [campus] = await db.select().from(campuses).where(eq(campuses.campusName, name));
+    return campus;
+  }
+
+  async createOrUpdateCampus(insertCampus: InsertCampus): Promise<Campus> {
+    const existing = await this.getCampusByName(insertCampus.campusName);
+    if (existing) {
+      const [updated] = await db
+        .update(campuses)
+        .set(insertCampus)
+        .where(eq(campuses.campusName, insertCampus.campusName))
+        .returning();
+      return updated;
+    }
+    const [campus] = await db.insert(campuses).values(insertCampus).returning();
+    return campus;
+  }
+
+  async generateCampusDataFromLocations(): Promise<void> {
+    // Get all locations
+    const allLocations = await this.getLocations();
+    
+    // Create a map to track unique campuses
+    const campusMap = new Map<string, { campusName: string; campusId: string }>();
+    
+    // Process each location to extract campus data
+    for (const location of allLocations) {
+      // Parse the location name to extract campus and location parts
+      const nameParts = location.name.split(' - ');
+      if (nameParts.length >= 2) {
+        const campusName = nameParts[0].trim();
+        const locationName = nameParts.slice(1).join(' - ').trim();
+        
+        // Generate campus ID from campus name (lowercase, replace spaces with underscores)
+        const campusId = campusName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        
+        // Store in map if not already present
+        if (!campusMap.has(campusName)) {
+          campusMap.set(campusName, { campusName, campusId });
+        }
+        
+        // Update location with parsed data
+        await db
+          .update(locations)
+          .set({ locationName })
+          .where(eq(locations.id, location.id));
+      }
+    }
+    
+    // Create campus entries
+    const campusEntries = Array.from(campusMap.values());
+    for (const { campusName, campusId } of campusEntries) {
+      await this.createOrUpdateCampus({ campusName, campusId });
+    }
+    
+    // Update locations with campus references
+    for (const location of allLocations) {
+      const nameParts = location.name.split(' - ');
+      if (nameParts.length >= 2) {
+        const campusName = nameParts[0].trim();
+        const campus = await this.getCampusByName(campusName);
+        
+        if (campus) {
+          await db
+            .update(locations)
+            .set({ campusId: campus.id })
+            .where(eq(locations.id, location.id));
+        }
+      }
+    }
   }
   // Machine Type methods
   async getMachineType(id: number): Promise<MachineType | undefined> {

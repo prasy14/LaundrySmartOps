@@ -10,6 +10,7 @@ import ReportsPage from "@/pages/reports";
 import SyncLogsPage from "@/pages/sync-logs";
 import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
+import CampusesPage from "@/pages/campuses";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -75,6 +76,14 @@ function Router() {
                       path="/locations" 
                       component={LocationsPage}
                       allowedRoles={['admin', 'lease_manager']} 
+                    />
+                  </Route>
+
+                  <Route path="/campuses">
+                    <ProtectedRoute 
+                      path="/campuses" 
+                      component={CampusesPage}
+                      allowedRoles={['admin', 'system_analyst', 'lease_manager']} 
                     />
                   </Route>
 

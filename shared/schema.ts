@@ -49,11 +49,22 @@ export const insertUserSchema = createInsertSchema(users)
     locationId: z.number().optional(),
   });
 
+// Campus schema
+export const campuses = pgTable("campuses", {
+  id: serial("id").primaryKey(),
+  campusId: text("campus_id").notNull().unique(), // Generated from campus name
+  campusName: text("campus_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Location schema
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
   externalId: text("external_id").notNull().unique(), // From API: loc_xxxx
   name: text("name").notNull(),
+  locationName: text("location_name"), // The part after first "-" in name
+  campusId: integer("campus_id").references(() => campuses.id),
   timezone: text("timezone").notNull(),
   address: text("address"),
   coordinates: jsonb("coordinates").$type<{
@@ -812,3 +823,12 @@ export const insertAuditTotalVendingSchema = createInsertSchema(auditTotalVendin
 
 export type AuditTotalVending = typeof auditTotalVending.$inferSelect;
 export type InsertAuditTotalVending = z.infer<typeof insertAuditTotalVendingSchema>;
+
+// Campus schema types
+export const insertCampusSchema = createInsertSchema(campuses).pick({
+  campusId: true,
+  campusName: true,
+});
+
+export type Campus = typeof campuses.$inferSelect;
+export type InsertCampus = z.infer<typeof insertCampusSchema>;
