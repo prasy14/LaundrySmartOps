@@ -103,6 +103,14 @@ export default function AlertsPage() {
     enabled: !locationsLoading,
   });
 
+ const { 
+    data: alertData, 
+    isLoading: alertLoading,
+    refetch: refetchAlert
+  } = useQuery<{ alerts: PersistentError[] }>({
+    queryKey: ['persistent'],
+    enabled: !locationsLoading,
+  });
   // Fetch persistent machine errors
  const {
   data: persistentErrorsData,
@@ -176,6 +184,31 @@ const getLocationName = (locationId: number) => {
     enabled: !locationsLoading,
   });
 
+  
+const [isRefreshing, setIsRefreshing] = useState(false);
+const handleRefresh = async () => {
+  setIsRefreshing(true);
+
+  await Promise.all([
+    refetchPersistentErrors()
+  ]);
+
+  setIsRefreshing(false);
+};
+
+// const handleRefresh = async () => {
+//   refetchPersistentErrors();
+//   // try {
+//   //   const res = await fetch('/api/sync/machine-errors', {
+//   //     method: 'POST',
+//   //   });
+
+//   //   if (!res.ok) throw new Error("Failed to sync errors");
+//   //   await refetchAlert(); // UI update
+//   // } catch (err) {
+   
+//   // }
+// };
   // Count of recurring errors per machine
   const [recurringErrorCounts, setRecurringErrorCounts] = useState<{[key: number]: number}>({});
 
@@ -365,22 +398,20 @@ const getStatusBadgeColor = (statusId: string) => {
     case "AVAILABLE":
     case "READY_TO_START":
     case "ONLINE":
+      case "IN_USE":
       return "bg-green-500 text-white";
     case "COMPLETE":
       return "bg-blue-500 text-white";
     case "UNAVAILABLE":
+      case "OFFLINE":
+        case "NETWORK_ERROR":
       return "bg-red-500 text-white";
     case "MAINTENANCE":
       return "bg-yellow-500 text-black";
-    case "OFFLINE":
-      return "bg-gray-400 text-black";
     default:
       return "bg-gray-200 text-gray-800";
   }
 };
-
-
-
 
   // Function to generate alerts from persistent errors
   const generateAlertsFromErrors = async () => {
@@ -403,7 +434,7 @@ const getStatusBadgeColor = (statusId: string) => {
       });
 
       // Refresh data
-      refetchAlerts();
+      refetchAlert();
       refetchPersistentErrors();
       //refetchHistoricalAlerts();
 
@@ -495,19 +526,29 @@ const getStatusBadgeColor = (statusId: string) => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={generateAlertsFromErrors}
-            >
+              onClick={() => {
+                              setSearchTerm('');
+                              setFilterRecurring(false);
+                              setSelectedLocation('all');
+                              setSelectedServiceType('all');
+                            }}>
+            
               <AlertTriangle className="h-4 w-4 mr-2" />
-              Generate Alerts
+               Clear filters
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => refetchAlerts()}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+  {isRefreshing ? (
+    <>
+      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+      Refreshing...
+    </>
+  ) : (
+    <>
+      <RefreshCw className="h-4 w-4 mr-2" />
+      Refresh
+    </>
+  )}
+</Button>
           </div>
         </div>
 
@@ -764,7 +805,9 @@ const getStatusBadgeColor = (statusId: string) => {
     <TableRow key={`${error.machineId}-${error.errorName}-${error.timestamp}-${index}`}>
       <TableCell>{machine?.name || "Unknown"}</TableCell>
       <TableCell>
-        <div className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusColor}`}>{statusId}</div>
+        <Badge className={statusColor}>
+           {statusId}
+        </Badge>
       </TableCell>
       <TableCell>{error.errorType}</TableCell>
       <TableCell>{error.errorName}</TableCell>
@@ -797,7 +840,9 @@ const getStatusBadgeColor = (statusId: string) => {
     <TableRow key={`${error.machineId}-${error.errorName}-${error.timestamp}-${index}`}>
       <TableCell>{machine?.name || "Unknown"}</TableCell>
       <TableCell>
-        <div className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusColor}`}>{statusId}</div>
+       <Badge className={statusColor}>
+       {statusId}
+      </Badge>
       </TableCell>
       <TableCell>{error.errorType}</TableCell>
       <TableCell>{error.errorName}</TableCell>
@@ -829,7 +874,9 @@ const getStatusBadgeColor = (statusId: string) => {
     <TableRow key={`${error.machineId}-${error.errorName}-${error.timestamp}-${index}`}>
       <TableCell>{machine?.name || "Unknown"}</TableCell>
       <TableCell>
-        <div className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusColor}`}>{statusId}</div>
+        <Badge className={statusColor}>
+         {statusId}
+        </Badge>
       </TableCell>
       <TableCell>{error.errorType}</TableCell>
       <TableCell>{error.errorName}</TableCell>
@@ -878,16 +925,6 @@ const getStatusBadgeColor = (statusId: string) => {
                             <>
                             </>
                           )}
-                          <Button 
-                            variant="link" 
-                            onClick={() => {
-                              setSearchTerm('');
-                              setFilterRecurring(false);
-                              setSelectedLocation('all');
-                              setSelectedServiceType('all');
-                            }}>
-                            Clear filters
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
