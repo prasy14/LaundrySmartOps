@@ -198,7 +198,27 @@ const modifierTotalPages = useMemo(() => Math.ceil((modifiersData?.cycleModifier
     if (!machine.status?.selectedCycle) return 'None';
     return machine.status.selectedCycle.name;
   };
-
+ const getStatusBadgeColor = (statusId: string) => {
+  switch (statusId) {
+    case "AVAILABLE":
+    case "READY_TO_START":
+    case "ONLINE":
+      case "IN_USE":
+      return "bg-green-500 text-white";
+    case "COMPLETE":
+      return "bg-blue-500 text-white";
+    case "UNAVAILABLE":
+      case "OFFLINE":
+        case "NETWORK_ERROR":
+      return "bg-red-500 text-white";
+    case "MAINTENANCE":
+      return "bg-yellow-500 text-black";
+    
+     // return "bg-gray-400 text-black";
+    default:
+      return "bg-gray-200 text-gray-800";
+  }
+};
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 p-6 space-y-6">
@@ -396,13 +416,16 @@ const modifierTotalPages = useMemo(() => Math.ceil((modifiersData?.cycleModifier
                   <TableBody>
                     {paginatedMachines.map((machine) => {
                       const location = locationsData?.locations.find(l => l.id === machine.locationId);
+                      
+                      const statusId = machine?.status?.statusId || "unknown";
+                      const statusColor = getStatusBadgeColor(statusId);
                       return (
                         <TableRow key={machine.id}>
                           <TableCell className="font-medium">{machine.name}</TableCell>
                           <TableCell>{machine.modelNumber || 'N/A'}</TableCell>
                           <TableCell>
-                            <Badge variant={machine.status?.statusId === 'online' ? 'success' : 'destructive'}>
-                              {machine.status?.statusId || 'Unknown'}
+                            <Badge className={statusColor}>  
+                              {statusId}
                             </Badge>
                           </TableCell>
                           <TableCell>{location?.name || 'Unknown'}</TableCell>
