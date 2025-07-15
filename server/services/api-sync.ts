@@ -1,4 +1,7 @@
 import { storage } from "../storage";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
+import { campuses } from "shared/schema"; 
 import type { InsertLocation, InsertMachine, InsertMachineType, InsertMachineProgram } from "@shared/schema";
 import { log } from "../vite";
 
@@ -324,22 +327,44 @@ async syncCoinVaultReports(locationId: string, start: string, end: string): Prom
     }
   }
 
-  async syncLocations(): Promise<number> {
-    try {
-      log('Starting location sync', 'api-sync');
-      const response = await this.fetchWithAuth('/locations');
+   async  syncLocations(): Promise<number> {
+  try {
+    log("Starting location sync", "api-sync");
 
-      if (!response?.data) {
-        throw new Error('No location data received from API');
-      }
+    const response = await this.fetchWithAuth("/locations");
+
+    if (!response?.data) {
+      throw new Error("No location data received from API");
+    }
 
       let totalMachines = 0;
       let locationCount = 0;
 
       for (const location of response.data) {
         try {
-          log(`Processing location: ${location.name} (${location.id})`, 'api-sync');
+           log(`Processing location: ${location.name} (${location.id})`, "api-sync");
 
+        // Extract campus slug and name from location name
+        const nameParts = location.name?.split(" - ") || [];
+        const campusSlug = nameParts[0]?.trim()?.toLowerCase().replace(/\s+/g, "_") || "unknown_campus";
+        const campusName = nameParts.slice(1).join(" - ").trim() || "Unnamed Area";
+
+        // Create or update campus
+        await storage.createOrUpdateCampus({
+          campusId: campusSlug,
+          campusName,
+        });
+
+        // Fetch numeric campus.id
+        const campus = await db.query.campuses.findFirst({
+          where: (c, { eq }) => eq(c.campusId, campusSlug),
+        });
+
+        if (!campus) {
+          throw new Error(`Campus not found for campusId: ${campusSlug}`);
+        }
+
+        // Create or update location with integer campusId
           await storage.createOrUpdateLocation({
             externalId: location.id,
             name: location.name || `Location ${location.id}`,
@@ -347,18 +372,20 @@ async syncCoinVaultReports(locationId: string, start: string, end: string): Prom
             address: location.address || null,
             coordinates: location.coordinates || null,
             status: 'active',
-            lastSyncAt: new Date()
+            lastSyncAt: new Date(),
+             campusId: campus.id,
           });
           locationCount++;
 
           const machineCount = await this.syncMachinesForLocation(location.id);
           totalMachines += machineCount;
-          log(`Processed ${machineCount} machines for location ${location.name}`, 'api-sync');
 
-           await this.syncCoinVaultReports(location.id, '2025-01-01T00:00:00.000Z', new Date().toISOString()); // coin vault
-          // await this.syncAuditOperationReport(location.id, '2025-01-01T00:00:00.000Z', new Date().toISOString());// Audit operation
-          await this.syncAuditTotalVendingReport(location.id, '2025-01-01T00:00:00.000Z', new Date().toISOString());
-          await this.syncAuditCycleUsageReport(location.id, '2025-01-01T00:00:00.000Z', new Date().toISOString());
+        log(`Processed ${machineCount} machines for location ${location.name}`, "api-sync");
+
+        await this.syncCoinVaultReports(location.id, "2025-01-01T00:00:00.000Z", new Date().toISOString());
+        // await this.syncAuditOperationReport(location.id, "2025-01-01T00:00:00.000Z", new Date().toISOString());
+        await this.syncAuditTotalVendingReport(location.id, "2025-01-01T00:00:00.000Z", new Date().toISOString());
+        await this.syncAuditCycleUsageReport(location.id, "2025-01-01T00:00:00.000Z", new Date().toISOString());
         } catch (error) {
           log(`Failed to sync location ${location.id}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api-sync');
           // Continue with next location even if one fails
@@ -372,6 +399,52 @@ async syncCoinVaultReports(locationId: string, start: string, end: string): Prom
       throw error;
     }
   }
+  
+  async syncCampuses(): Promise<number> {
+  try {
+    log('Starting campus sync', 'api-sync');
+
+    const campuses = await this.fetchWithAuth('/campuses');
+    if (!Array.isArray(campuses)) {
+    throw new Error('Invalid campus data received from API');}
+    let campusCount = 0;
+
+    for (const campus of campuses) {
+      try {
+        const campusName = campus.name?.trim() || "Unknown Campus";
+        const campusId = campusName.toLowerCase().replace(/\s+/g, "_"); // slugify
+
+        log(`Processing campus: ${campusName}`, 'api-sync');
+
+        await storage.createOrUpdateCampus({
+          campusId,
+          campusName,
+        });
+
+        campusCount++;
+      } catch (error) {
+        log(
+          `Failed to sync campus ${campus.name}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`,
+          'api-sync'
+        );
+        // Continue with next campus even if one fails
+      }
+    }
+
+    log(`Successfully synced ${campusCount} campuses`, 'api-sync');
+    return campusCount;
+  } catch (error) {
+    log(
+      `Failed to sync campuses: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+      'api-sync'
+    );
+    throw error;
+  }
+}
 
   async syncAuditCycleUsageReport(locationId: string, start: string, end: string): Promise<number> {
   try {
