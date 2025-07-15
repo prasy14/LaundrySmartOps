@@ -391,4 +391,94 @@ syncRouter.post('/locations', async (req, res) => {
   }
 });
 
+
+// sync.ts
+
+syncRouter.post('/machine-errors', async (req, res) => {
+  const startTime = Date.now();
+  const userId = req.user?.id;
+
+  try {
+    log('Starting machine error sync...', 'sync');
+
+    const locations = await storage.getMachineErrors();
+    let totalErrors = 0;
+
+   for (const loc of locations) {
+  const machines = await storage.getMachineErrorsByLocation(loc.id);
+  for (const machine of machines) {
+    const externalLocation = await storage.getLocationByExternalId(loc.id); // get externalId
+    const externalMachine = await storage.getMachineByExternalId(machine.id); // get externalId
+
+    if (!externalLocation?.externalId || !externalMachine?.externalId) {
+      log(`Skipping machine ${machine.id} or location ${loc.id} - missing externalId`, 'api-sync');
+      continue;
+    }
+
+    const result = await apiService.syncMachineErrors(
+      externalLocation.externalId, // e.g., "loc_xxx"
+      externalMachine.externalId,  // e.g., "mac_xxx"
+      '2025-01-01T00:00:00.000Z',
+      new Date().toISOString()
+    );
+
+    totalErrors += result?.length || 0;
+  }
+}
+
+
+    const endTime = Date.now();
+
+    // Log sync success
+    await storage.createSyncLog({
+      timestamp: new Date(),
+      success: true,
+      error: null,
+      endpoint: '/sync/machine-errors',
+      method: 'POST',
+      requestData: null,
+      responseData: { errorCount: totalErrors },
+      duration: endTime - startTime,
+      statusCode: 200,
+      locationCount: locations.length,
+      machineCount: 0,
+      programCount: 0,
+      userId,
+      syncType: 'manual'
+    });
+
+    log(`Machine error sync completed. Total errors: ${totalErrors}`, 'sync');
+    res.status(200).json({
+      success: true,
+      errorCount: totalErrors
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown sync error';
+    log(`Machine error sync failed: ${message}`, 'sync');
+
+    // Log sync failure
+    await storage.createSyncLog({
+      timestamp: new Date(),
+      success: false,
+      error: message,
+      endpoint: '/sync/machine-errors',
+      method: 'POST',
+      requestData: null,
+      responseData: null,
+      duration: 0,
+      statusCode: 500,
+      locationCount: 0,
+      machineCount: 0,
+      programCount: 0,
+      userId,
+      syncType: 'manual'
+    });
+
+    res.status(500).json({
+      success: false,
+      error: message
+    });
+  }
+});
+
 export default syncRouter;
