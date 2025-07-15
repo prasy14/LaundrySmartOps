@@ -19,9 +19,9 @@ export default function Dashboard() {
   const { toast } = useToast();
   
   // Existing queries
-  const { data: alertsData, isLoading: alertsLoading } = useQuery<{ alerts: Alert[] }>({
-    queryKey: ['/api/alerts'],
-  });
+   const { data: alertsData, isLoading: alertsLoading } = useQuery<{ alerts: PersistentError[] }>({
+  queryKey: ['persistent-errors'],
+});
 
   const { data: machinesData, isLoading: machinesLoading } = useQuery<{ machines: Machine[] }>({
     queryKey: ['/api/machines'],
@@ -31,9 +31,50 @@ export default function Dashboard() {
     queryKey: ['/api/locations'],
   });
 
-  const { data: errorsData } = useQuery<{ errors: MachineError[] }>({
+ const { data: errorsData, isLoading: ErrorsLoading } = useQuery<{ errors: MachineError[] }>({
     queryKey: ['/api/machine-errors'],
   });
+
+   
+  // Fetch persistent machine errors
+   const {
+    data: persistentErrorsData,
+    isLoading: persistentErrorsLoading,
+    refetch: refetchPersistentErrors,
+  } = useQuery<{ persistentErrors: PersistentError[] }>({
+    queryKey: ['persistent-errors'], // Include tab in key
+    queryFn: () =>
+      fetch(`/api/persistent-errors?`).then((res) => res.json()),
+    enabled: !ErrorsLoading,
+  });
+  
+  
+  type PersistentError = {
+     id: string; 
+  machineId: number;
+  locationId: number;
+  errorName: string;
+  errorType: string;
+  createdAt: Date;
+  timestamp: Date;
+  machineName?: string;
+  locationName?: string;
+  count: number;
+  recurring: boolean;
+  priority: 'High' | 'Medium' | 'Low';
+};
+
+const now = new Date();
+const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+
+const recentPersistentAlerts = persistentErrorsData?.persistentErrors
+  ?.filter(err => new Date(err.createdAt) > fiveHoursAgo)
+  ?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  ?.slice(0, 5) || [];
+
+// const recentPersistentAlerts = persistentErrorsData?.persistentErrors
+//   ?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
+
 
   // New query for performance data
   const { data: performanceData } = useQuery<{
@@ -61,7 +102,16 @@ export default function Dashboard() {
   ).length || 0;
   
   // Calculate additional metrics
-  const currentAlerts = alertsData?.alerts.filter(a => a.resolvedAt === null).length || 0;
+   // Use persistentErrorsData directly
+const today = new Date();
+const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+const todaysAlerts = (persistentErrorsData?.persistentErrors ?? []).filter(a => {
+  const alertTimestamp = new Date(a.timestamp);
+  return alertTimestamp >= startOfDay;
+}).length;
+ 
+  //const currentAlerts = alertsData?.alerts.filter(a => a.resolvedAt === null).length || 0;
   const todayCycles = machinesData?.machines.reduce((count, machine) => {
     // This is a placeholder calculation - in a real app you'd have cycle logs
     return count + (machine.status?.statusId === 'IN_USE' ? 1 : 0);
@@ -111,11 +161,11 @@ export default function Dashboard() {
 
         <Card className="border-l-4 border-l-[#e95f2a]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium">Today's Alerts</CardTitle>
             <Bell className="h-4 w-4 text-[#e95f2a]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentAlerts}</div>
+            <div className="text-2xl font-bold">{todaysAlerts}</div>
             <p className="text-xs text-muted-foreground">Unresolved service alerts</p>
           </CardContent>
         </Card>
@@ -178,7 +228,7 @@ export default function Dashboard() {
       <Card className="shadow-md">
         <CardHeader className="gradient-blue text-white border-b">
           <CardTitle className="text-xl">Recent Service Alerts</CardTitle>
-          <CardDescription className="text-white/80">Latest alerts requiring attention</CardDescription>
+         <CardDescription className="text-white/80">LatestRecent service alerts in last 5 hours</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -190,7 +240,7 @@ export default function Dashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {alertsData?.alerts.filter(a => a.resolvedAt === null).slice(0, 5).map((alert) => {
+               {recentPersistentAlerts.map((alert) => {
                 const machine = machinesData?.machines.find(m => m.id === alert.machineId);
                 return (
                   <TableRow key={alert.id} className="hover:bg-[#f9fbfc] dark:hover:bg-[#2f3944]/50">
@@ -205,19 +255,19 @@ export default function Dashboard() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span>{alert.message}</span>
-                        <span className="text-xs text-muted-foreground">{alert.type}</span>
+                        <span>{alert.errorName || "Unknown error"}</span>
+                        <span className="text-xs text-muted-foreground">{alert.errorType || "Unknown type"}</span>
                       </div>
                     </TableCell>
                   </TableRow>
                 );
               })}
-              {(!alertsData?.alerts || alertsData.alerts.filter(a => a.resolvedAt === null).length === 0) && (
+               {recentPersistentAlerts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <CheckCircle className="h-6 w-6 text-[#73a4b7]" />
-                      <span>No active service alerts</span>
+                      <span>No Recent service alerts in the last 5 hours</span>
                     </div>
                   </TableCell>
                 </TableRow>
