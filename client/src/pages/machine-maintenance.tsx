@@ -149,7 +149,10 @@ export default function MachineMaintenance() {
 
   const machineOptions = [
     { id: "all", name: "All Machines" },
-    ...filteredMachines.map(machine => ({ id: machine.id.toString(), name: machine.name }))
+    ...filteredMachines.map(machine => ({ 
+      id: machine.id.toString(), 
+      name: machine.name || `Machine ${machine.id}`
+    }))
   ];
 
   return (

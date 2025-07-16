@@ -21,7 +21,7 @@ export default function SearchableDropdown({ options, value, onChange, placehold
   const selectedName = options.find(opt => opt.id.toString() === value)?.name || '';
 
   const filtered = options.filter(opt =>
-    opt.name.toLowerCase().includes(search.toLowerCase())
+    opt.name && opt.name.toLowerCase().includes(search.toLowerCase())
   );
 
   useEffect(() => {
