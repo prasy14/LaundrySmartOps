@@ -16,8 +16,8 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 import usermanagement from "@/pages/user-management";
+import { CampusLocationProvider } from "@/components/CampusLocationcontext";
 import MachineMaintenancePage from "@/pages/machine-maintenance";
-
 // Placeholder Components for new routes
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div className="container mx-auto p-6">
@@ -36,6 +36,7 @@ const UsagePatternsPage = () => <PlaceholderPage title="Usage Patterns" />;
 const EnergyOptimizerPage = () => <PlaceholderPage title="Energy Optimizer" />;
 const LocationAdminPage = () => <PlaceholderPage title="Location Administration" />;
 const UserManagementPage = () => <PlaceholderPage title="User Management" />;
+const CampusLocationContext = () => <PlaceholderPage title="CampusLocationcontext"/>
 
 function Router() {
   const [location] = useLocation();
@@ -51,60 +52,62 @@ function Router() {
 
         {/* Protected Routes */}
         <Route path="*">
-          <div className="flex h-screen">
-            {!isAuthPage && <Sidebar />}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {!isAuthPage && <Header />}
-              <main className="flex-1 overflow-auto p-6">
-                <Switch>
-                  <Route path="/">
-                    <ProtectedRoute 
-                      path="/" 
-                      component={DashboardPage} 
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']} 
-                    />
-                  </Route>
-                  
-                   <Route path="/user-management">
-                     <ProtectedRoute 
+          <CampusLocationProvider>
+            <div className="flex h-screen">
+              {!isAuthPage && <Sidebar />}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {!isAuthPage && <Header />}
+                <main className="flex-1 overflow-auto p-6">
+                  <Switch>
+                    <Route path="/">
+                      <ProtectedRoute 
+                        path="/" 
+                        component={DashboardPage} 
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'lease_manager', 'data_analyst']} 
+                      />
+                    </Route>
+
+                    <Route path="/user-management">
+                      <ProtectedRoute 
                         path="/user-management" 
                         component={usermanagement}
                         allowedRoles={['admin']} 
                       />
                     </Route>
-                  <Route path="/locations">
-                    <ProtectedRoute 
-                      path="/locations" 
-                      component={LocationsPage}
-                      allowedRoles={['admin', 'lease_manager']} 
-                    />
-                  </Route>
 
-                  <Route path="/campuses">
-                    <ProtectedRoute 
-                      path="/campuses" 
-                      component={CampusesPage}
-                      allowedRoles={['admin', 'system_analyst', 'lease_manager']} 
-                    />
-                  </Route>
+                    <Route path="/locations">
+                      <ProtectedRoute 
+                        path="/locations" 
+                        component={LocationsPage}
+                        allowedRoles={['admin', 'lease_manager']} 
+                      />
+                    </Route>
 
-                  <Route path="/reports">
-                    <ProtectedRoute 
-                      path="/reports" 
-                      component={ReportsPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
-                    />
-                  </Route>
+                    <Route path="/campuses">
+                      <ProtectedRoute 
+                        path="/campuses" 
+                        component={CampusesPage}
+                        allowedRoles={['admin', 'system_analyst', 'lease_manager']} 
+                      />
+                    </Route>
 
-                  <Route path="/machines">
-                    <ProtectedRoute 
-                      path="/machines" 
-                      component={MachinesPage}
-                      allowedRoles={['admin', 'lease_manager', 'system_analyst', 'technician', 'manager']} 
-                    />
-                  </Route>
+                    <Route path="/reports">
+                      <ProtectedRoute 
+                        path="/reports" 
+                        component={ReportsPage}
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
+                      />
+                    </Route>
 
-                  <Route path="/machine-maintenance">
+                    <Route path="/machines">
+                      <ProtectedRoute 
+                        path="/machines" 
+                        component={MachinesPage}
+                        allowedRoles={['admin', 'lease_manager', 'system_analyst', 'technician', 'manager']} 
+                      />
+                    </Route>
+
+                    <Route path="/machine-maintenance">
                     <ProtectedRoute 
                       path="/machine-maintenance" 
                       component={MachineMaintenancePage}
@@ -112,110 +115,111 @@ function Router() {
                     />
                   </Route>
 
-                  <Route path="/admin">
-                    <ProtectedRoute 
-                      path="/admin" 
-                      component={AdminPage}
-                      allowedRoles={['admin']} 
-                    />
-                  </Route>
-                  
-                  <Route path="/sync-logs">
-                    <ProtectedRoute 
-                      path="/sync-logs" 
-                      component={SyncLogsPage}
-                      allowedRoles={['admin']} 
-                    />
-                  </Route>
+                    <Route path="/admin">
+                      <ProtectedRoute 
+                        path="/admin" 
+                        component={AdminPage}
+                        allowedRoles={['admin']} 
+                      />
+                    </Route>
 
-                  {/* New routes for enhanced sidebar navigation */}
-                  <Route path="/alerts">
-                    <ProtectedRoute 
-                      path="/alerts" 
-                      component={AlertsPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'technician', 'manager']} 
-                    />
-                  </Route>
+                    <Route path="/sync-logs">
+                      <ProtectedRoute 
+                        path="/sync-logs" 
+                        component={SyncLogsPage}
+                        allowedRoles={['admin']} 
+                      />
+                    </Route>
 
-                  <Route path="/predictive">
-                    <ProtectedRoute 
-                      path="/predictive" 
-                      component={PredictivePage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst']} 
-                    />
-                  </Route>
+                    <Route path="/alerts">
+                      <ProtectedRoute 
+                        path="/alerts" 
+                        component={AlertsPage}
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'technician', 'manager']} 
+                      />
+                    </Route>
 
-                  <Route path="/analytics-dashboard">
-                    <ProtectedRoute 
-                      path="/analytics-dashboard" 
-                      component={AnalyticsDashboardPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
-                    />
-                  </Route>
-                  
-                  <Route path="/visualizations">
-                    <ProtectedRoute 
-                      path="/visualizations" 
-                      component={AnalyticsDashboardPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
-                    />
-                  </Route>
+                    <Route path="/predictive">
+                      <ProtectedRoute 
+                        path="/predictive" 
+                        component={PredictivePage}
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst']} 
+                      />
+                    </Route>
 
-                  <Route path="/custom-reports">
-                    <ProtectedRoute 
-                      path="/custom-reports" 
-                      component={CustomReportsPage}
-                      allowedRoles={['admin', 'data_analyst']} 
-                    />
-                  </Route>
+                    <Route path="/analytics-dashboard">
+                      <ProtectedRoute 
+                        path="/analytics-dashboard" 
+                        component={AnalyticsDashboardPage}
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
+                      />
+                    </Route>
 
-                  <Route path="/usage-patterns">
-                    <ProtectedRoute 
-                      path="/usage-patterns" 
-                      component={UsagePatternsPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'technician', 'manager', 'lease_manager']} 
-                    />
-                  </Route>
+                    <Route path="/visualizations">
+                      <ProtectedRoute 
+                        path="/visualizations" 
+                        component={AnalyticsDashboardPage}
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'data_analyst']} 
+                      />
+                    </Route>
 
-                  <Route path="/machine-comparison">
-                    <ProtectedRoute 
-                      path="/machine-comparison" 
-                      component={MachineComparisonPage}
-                      allowedRoles={['admin', 'system_analyst', 'performance_analyst']} 
-                    />
-                  </Route>
+                    <Route path="/custom-reports">
+                      <ProtectedRoute 
+                        path="/custom-reports" 
+                        component={CustomReportsPage}
+                        allowedRoles={['admin', 'data_analyst']} 
+                      />
+                    </Route>
 
-                  <Route path="/energy">
-                    <ProtectedRoute 
-                      path="/energy" 
-                      component={EnergyOptimizerPage}
-                      allowedRoles={['admin', 'system_analyst']} 
-                    />
-                  </Route>
+                    <Route path="/usage-patterns">
+                      <ProtectedRoute 
+                        path="/usage-patterns" 
+                        component={UsagePatternsPage}
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst', 'technician', 'manager', 'lease_manager']} 
+                      />
+                    </Route>
 
-                  <Route path="/location-admin">
-                    <ProtectedRoute 
-                      path="/location-admin" 
-                      component={LocationAdminPage}
-                      allowedRoles={['admin']} 
-                    />
-                  </Route>
+                    <Route path="/machine-comparison">
+                      <ProtectedRoute 
+                        path="/machine-comparison" 
+                        component={MachineComparisonPage}
+                        allowedRoles={['admin', 'system_analyst', 'performance_analyst']} 
+                      />
+                    </Route>
 
-                  <Route path="/users">
-                    <ProtectedRoute 
-                      path="/users" 
-                      component={UserManagementPage}
-                      allowedRoles={['admin']} 
-                    />
-                  </Route>
+                    <Route path="/energy">
+                      <ProtectedRoute 
+                        path="/energy" 
+                        component={EnergyOptimizerPage}
+                        allowedRoles={['admin', 'system_analyst']} 
+                      />
+                    </Route>
 
-                  <Route>
-                    <NotFound />
-                  </Route>
-                </Switch>
-              </main>
+                    <Route path="/location-admin">
+                      <ProtectedRoute 
+                        path="/location-admin" 
+                        component={LocationAdminPage}
+                        allowedRoles={['admin']} 
+                      />
+                    </Route>
+
+                    <Route path="/users">
+                      <ProtectedRoute 
+                        path="/users" 
+                        component={UserManagementPage}
+                        allowedRoles={['admin']} 
+                      />
+                    </Route>
+
+                    {/* Catch-all fallback */}
+                    <Route>
+                      <NotFound />
+                    </Route>
+                  </Switch>
+                </main>
+              </div>
             </div>
-          </div>
+          </CampusLocationProvider>
         </Route>
       </Switch>
       <Toaster />
