@@ -16,6 +16,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 import usermanagement from "@/pages/user-management";
+import MachineMaintenancePage from "@/pages/machine-maintenance";
 
 // Placeholder Components for new routes
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -100,6 +101,14 @@ function Router() {
                       path="/machines" 
                       component={MachinesPage}
                       allowedRoles={['admin', 'lease_manager', 'system_analyst', 'technician', 'manager']} 
+                    />
+                  </Route>
+
+                  <Route path="/machine-maintenance">
+                    <ProtectedRoute 
+                      path="/machine-maintenance" 
+                      component={MachineMaintenancePage}
+                      allowedRoles={['admin', 'technician', 'manager', 'system_analyst']} 
                     />
                   </Route>
 

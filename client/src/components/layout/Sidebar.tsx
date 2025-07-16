@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, WashingMachine, MapPin, FileBarChart, Settings, History, 
   AlertTriangle, BarChart2, LineChart, BrainCircuit, Users, FileText, 
-  TrendingUp, BarChart, Building
+  TrendingUp, BarChart, Building, Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ const navigationCategories = [
     name: 'Machine Operations',
     items: [
       { name: 'Machine Management', href: '/machines', icon: WashingMachine },
+      { name: 'Machine Maintenance', href: '/machine-maintenance', icon: Wrench },
       { name: 'Alert Issues', href: '/alerts', icon: AlertTriangle },
     ]
   },

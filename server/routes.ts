@@ -162,6 +162,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
+    // Fix machine error endpoint
+    apiRouter.post('/machines/:id/fix-error', isOperatorOrAbove, async (req, res) => {
+      try {
+        const machineId = parseInt(req.params.id);
+        if (isNaN(machineId)) {
+          return res.status(400).json({ message: 'Invalid machine ID' });
+        }
+
+        // Get the machine to check if it exists and has errors
+        const machine = await storage.getMachine(machineId);
+        if (!machine) {
+          return res.status(404).json({ message: 'Machine not found' });
+        }
+
+        // Update machine status to clear error state
+        const updatedMachine = await storage.updateMachineStatus(machineId, {
+          status: 'IDLE',
+          errorMessage: null,
+          lastError: null
+        });
+
+        // Log the fix action
+        log(`Machine ${machineId} error fixed by user ${req.session.userId}`, 'maintenance');
+
+        res.json({ 
+          message: 'Machine error fixed successfully', 
+          machine: updatedMachine 
+        });
+      } catch (error) {
+        log(`Error fixing machine error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'api');
+        res.status(500).json({ message: 'Failed to fix machine error' });
+      }
+    });
+
 
     // Current user endpoint for authentication check
     apiRouter.get('/auth/me', async (req, res) => {
