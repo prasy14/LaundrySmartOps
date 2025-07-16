@@ -3,7 +3,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format, isAfter, isBefore, addMonths, differenceInDays } from "date-fns";
-import type { Machine, MachineError } from "@shared/schema";
+import type {Location, Machine, MachineError } from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import {useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -37,13 +37,17 @@ import { useRef } from "react";
 import { writeFile, utils } from 'xlsx';
 import SearchableDropdown from "./SearchableDropdown";
 import PaginationControls from "@/pages/paginationcontrol";
+import { CampusLocationFilters } from "@/components/CampusLocationFilters";
+import { useCampusLocation } from "@/components/CampusLocationcontext";
+import { extractCampusAndLocation } from "@/utils/helpers";
 
 export default function Machines() {
    
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  // const [selectedLocation, setSelectedLocation] = useState<string>("all");
+   const {selectedCampus,setSelectedCampus,selectedLocation,setSelectedLocation, } = useCampusLocation();
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [activeTab2, setActiveTab2] = useState<string>("inventory");
@@ -55,9 +59,9 @@ export default function Machines() {
     queryKey: ['/api/machines'],
   });
 
-  const { data: locationsData } = useQuery<{ locations: { id: number; name: string }[] }>({
-    queryKey: ['/api/locations'],
-  });
+  const { data: locationsData } = useQuery<{ locations: Location[] }>({
+  queryKey: ['/api/locations'],
+});
 
   const { data: errorsData } = useQuery<{ errors: MachineError[] }>({
     queryKey: ['/api/machine-errors', selectedMachine?.id],
@@ -71,6 +75,33 @@ export default function Machines() {
       </div>
     );
   }
+
+  const locations = locationsData?.locations ?? [];
+const machines = machinesData?.machines ?? [];
+
+useEffect(() => {
+  try {
+    let filtered = [...machines];
+
+    if (selectedCampus !== "all") {
+      const locationIds = locations
+        .filter((loc) => extractCampusAndLocation(loc.name).campus === selectedCampus)
+        .map((loc) => loc.id);
+      filtered = filtered.filter((m) => m.locationId != null && locationIds.includes(m.locationId));
+    }
+
+    if (selectedLocation !== "all") {
+      const locationId = parseInt(selectedLocation, 10);
+      filtered = filtered.filter((m) => m.locationId === locationId);
+    }
+
+    setFilteredMachines(filtered); 
+
+  } catch (err) {
+    console.error("Error filtering machines:", err);
+  }
+}, [selectedCampus, selectedLocation, machines, locations]);
+
 
   const getLocationName = (locationId: number | null) => {
     if (!locationId) return 'Unknown Location';
@@ -179,10 +210,11 @@ export default function Machines() {
       cycleRef.current?.exportData();
     } 
   };
-  const filteredMachines = machinesData?.machines.filter(machine =>
-    selectedLocation === "all" ||
-    (machine.locationId && machine.locationId.toString() === selectedLocation)
-  );
+  // const filteredMachines = machinesData?.machines.filter(machine =>
+  //   selectedLocation === "all" ||
+  //   (machine.locationId && machine.locationId.toString() === selectedLocation)
+  // );
+const [filteredMachines, setFilteredMachines] = useState<Machine[]>([]);
 
     const totalPages = Math.ceil((filteredMachines?.length || 0) / itemsPerPage);
   const paginatedMachines = filteredMachines?.slice(
@@ -219,12 +251,10 @@ export default function Machines() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Machine Management</h1>
         <div className="flex items-center space-x-4">
-        <SearchableDropdown
-           className="w-[300px]" 
-           value={selectedLocation}
-           onChange={setSelectedLocation}
-           options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
-        />
+       {locations && locations.length > 0 && (
+  <CampusLocationFilters locations={locations} />
+)}
+
 <Button
   variant="outline"
   onClick={() => {
