@@ -56,7 +56,7 @@ export default function MachineMaintenance() {
     queryKey: ['/api/locations']
   });
 
-  const { data: machinesData, isLoading: machinesLoading } = useQuery<Machine[]>({
+  const { data: machinesData, isLoading: machinesLoading } = useQuery<{ machines: Machine[] }>({
     queryKey: ['/api/machines']
   });
 
@@ -72,10 +72,10 @@ export default function MachineMaintenance() {
 
   // Filter machines based on selected location
   const filteredMachines = useMemo(() => {
-    if (!machinesData || selectedLocation === "all") {
-      return machinesData || [];
+    if (!machinesData?.machines || selectedLocation === "all") {
+      return machinesData?.machines || [];
     }
-    return machinesData.filter(machine => 
+    return machinesData.machines.filter(machine => 
       machine.locationId === parseInt(selectedLocation)
     );
   }, [machinesData, selectedLocation]);
