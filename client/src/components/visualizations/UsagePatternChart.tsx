@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ResponsiveHeatMap } from "@nivo/heatmap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import SearchableDropdown from "@/pages/SearchableDropdown";
+import { useCampusLocation } from "@/components/CampusLocationcontext";
+import { CampusLocationFilters } from "@/components/CampusLocationFilters";
+import { extractCampusAndLocation } from "@/utils/helpers";
+import {Location, Machine } from "@shared/schema";
 
 const DAYS_OF_WEEK = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
@@ -36,7 +40,8 @@ interface UsageApiResponse {
 }
 
 export function UsagePatternChart() {
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  
+const { selectedCampus, selectedLocation } = useCampusLocation();
   
   // Fetch the usage data from API
   const { data, isLoading, error } = useQuery<UsageApiResponse>({
@@ -44,6 +49,42 @@ export function UsagePatternChart() {
   });
   console.log("API Data:", data);
 
+  
+  // Fetch locations data
+    const { data: locationsData, isLoading: locationsLoading } = useQuery<{ locations: Location[] }>({
+      queryKey: ['/api/locations'],
+    });
+
+    const { data: machinesData, isLoading: machinesLoading } = useQuery<{ machines: Machine[] }>({
+  queryKey: ['/api/machines'],
+});
+   const [filteredMachines, setFilteredMachines] = useState<Machine[]>([]);
+    const locations = locationsData?.locations ?? [];
+    const machines = machinesData?.machines ?? [];
+    
+    useEffect(() => {
+      try {
+        let filtered = [...machines];
+    
+        if (selectedCampus !== "all") {
+          const locationIds = locations
+            .filter((loc) => extractCampusAndLocation(loc.name).campus === selectedCampus)
+            .map((loc) => loc.id);
+          filtered = filtered.filter((m) => m.locationId != null && locationIds.includes(m.locationId));
+        }
+    
+        if (selectedLocation !== "all") {
+          const locationId = parseInt(selectedLocation, 10);
+          filtered = filtered.filter((m) => m.locationId === locationId);
+        }
+    
+        setFilteredMachines(filtered); 
+    
+      } catch (err) {
+        console.error("Error filtering machines:", err);
+      }
+    }, [selectedCampus, selectedLocation, machines, locations]);
+  
   // Process the data for visualization
   const getChartData = () => {
     if (!data || !data.usageData || !data.usageData.length) {
@@ -184,18 +225,8 @@ export function UsagePatternChart() {
             <CardTitle className="text-xl">Machine Usage Patterns by Time</CardTitle>
             <p className="text-white/80 text-sm">Machine usage patterns by day of week and time</p>
           </div>
-          {data?.locations && data.locations.length > 0 && (
-      <SearchableDropdown
-        value={selectedLocation}
-        onChange={setSelectedLocation}
-        options={[
-        { id: "all", name: "All Locations" },
-        ...data.locations.map(location => ({
-        id: location,
-        name: location
-        }))
-       ]}
-     />
+           {locations && locations.length > 0 && (
+  <CampusLocationFilters locations={locations} />
   )}
 </div>
       </CardHeader>
