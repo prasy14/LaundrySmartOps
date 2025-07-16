@@ -48,7 +48,9 @@ import SearchableDropdown from "@/pages/SearchableDropdown";
 import { cn } from "@/lib/utils";
 import { machine } from "os";
 import PaginationControls from "@/pages/paginationcontrol";
-
+import { CampusLocationFilters } from "@/components/CampusLocationFilters";
+import { useCampusLocation } from "@/components/CampusLocationcontext";
+import { extractCampusAndLocation } from "@/utils/helpers";
 
 
 interface EnhancedAlert extends Alert {
@@ -67,7 +69,8 @@ interface EnhancedAlert extends Alert {
 
 export default function AlertsPage() {
   // State management
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+ // const [selectedLocation, setSelectedLocation] = useState<string>("all");
+ const {selectedCampus,setSelectedCampus,selectedLocation,setSelectedLocation, } = useCampusLocation();
   const [selectedServiceType, setSelectedServiceType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -154,22 +157,53 @@ export default function AlertsPage() {
   priority: 'High' | 'Medium' | 'Low';
 };
 
-type HistoricalAlert = {
-   machineId: number;
-  locationId: number;
-  errorName: string;
-  errorType: string;
-  createdAt: Date;
-  timestamp: Date;
-  machineName?: string;
-  locationName?: string;
-  count: number;
-  recurring: boolean;
-  priority: 'High' | 'Medium' | 'Low';
-};
-
   //const getMachineName =  machinesData?.machines.find((m) => m.id === machineId)?.name || `#${machineId}`;
  
+
+  //const getMachineName =  machinesData?.machines.find((m) => m.id === machineId)?.name || `#${machineId}`;
+  const [filteredMachines, setFilteredMachines] = useState<Machine[]>([]);
+  const locations = locationsData?.locations ?? [];
+  const machines = machinesData?.machines ?? [];
+
+const getLocationIdsByCampus = () => {
+  if (selectedCampus === "all") {
+    return locations.map((loc) => loc.id);
+  }
+  return locations
+    .filter((loc) => extractCampusAndLocation(loc.name).campus === selectedCampus)
+    .map((loc) => loc.id);
+};
+
+useEffect(() => {
+  try {
+    let filtered = [...machines];
+
+    // 🌟 Use the location IDs derived from selectedCampus
+    const locationIds = locations
+  .filter((loc) =>
+    selectedCampus === "all" ||
+    extractCampusAndLocation(loc.name).campus === selectedCampus
+  )
+  .map((loc) => loc.id);
+
+    if (selectedCampus !== "all") {
+      filtered = filtered.filter(
+        (m) => m.locationId != null && locationIds.includes(m.locationId)
+      );
+    }
+
+    if (selectedLocation !== "all") {
+      const locationId = parseInt(selectedLocation, 10);
+      filtered = filtered.filter((m) => m.locationId === locationId);
+    }
+
+    setFilteredMachines(filtered);
+
+  } catch (err) {
+    console.error("Error filtering machines:", err);
+  }
+}, [selectedCampus, selectedLocation, machines, locations]);
+
 
 const getLocationName = (locationId: number) => {
   return locationsData?.locations.find((l) => l.id === locationId)?.name || `#${locationId}`;
@@ -273,7 +307,15 @@ const handleRefresh = async () => {
 const filteredActiveAlerts = persistentErrorsData?.persistentErrors?.filter(error => {
   const created = new Date(error.createdAt);
   const isOlderThanOneHour = new Date().getTime() - created.getTime() > 60 * 60 * 1000;
-  const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+   const locationIds = selectedCampus === "all"
+  ? locations.map((loc) => loc.id)
+  : locations
+      .filter((loc) => extractCampusAndLocation(loc.name).campus === selectedCampus)
+      .map((loc) => loc.id);
+
+const isMatchingLocation =
+  (selectedLocation === "all" && locationIds.includes(error.locationId)) ||
+  error.locationId === parseInt(selectedLocation);
   const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
   return isOlderThanOneHour && isMatchingLocation && isMatchingErrorType;
 }) || [];
@@ -287,7 +329,15 @@ const filteredHistoricalAlerts = persistentErrorsData?.persistentErrors?.filter(
 
   const ts = new Date(error.timestamp);
   const isInDateRange = ts >= twoYearsAgo && ts < yesterday;
-  const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+  const locationIds = selectedCampus === "all"
+  ? locations.map((loc) => loc.id)
+  : locations
+      .filter((loc) => extractCampusAndLocation(loc.name).campus === selectedCampus)
+      .map((loc) => loc.id);
+
+const isMatchingLocation =
+  (selectedLocation === "all" && locationIds.includes(error.locationId)) ||
+  error.locationId === parseInt(selectedLocation);
   const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
   return isInDateRange && isMatchingLocation && isMatchingErrorType;
 }) || [];
@@ -297,7 +347,15 @@ const filteredPersistentErrors = persistentErrorsData?.persistentErrors?.filter(
   persistentErrorsData.persistentErrors.forEach(e => {
     counts[e.errorName] = (counts[e.errorName] || 0) + 1;
   });
-  const isMatchingLocation = selectedLocation === "all" || error.locationId === parseInt(selectedLocation);
+   const locationIds = selectedCampus === "all"
+  ? locations.map((loc) => loc.id)
+  : locations
+      .filter((loc) => extractCampusAndLocation(loc.name).campus === selectedCampus)
+      .map((loc) => loc.id);
+
+const isMatchingLocation =
+  (selectedLocation === "all" && locationIds.includes(error.locationId)) ||
+  error.locationId === parseInt(selectedLocation);
   const isMatchingErrorType = selectedServiceType === "all" || error.errorType === selectedServiceType;
   return isMatchingLocation && isMatchingErrorType && counts[error.errorName] > 3;
 }) || [];
@@ -530,6 +588,7 @@ const getStatusBadgeColor = (statusId: string) => {
                               setSearchTerm('');
                               setFilterRecurring(false);
                               setSelectedLocation('all');
+                              setSelectedCampus('all');
                               setSelectedServiceType('all');
                             }}>
             
@@ -576,13 +635,9 @@ const getStatusBadgeColor = (statusId: string) => {
                     />
                   </div>
                 </div>
-                
-                 <SearchableDropdown
-                      className="w-[300px]" 
-                      value={selectedLocation}
-                      onChange={setSelectedLocation}
-                       options={[{ id: "all", name: "All Locations" }, ...(locationsData?.locations || [])]}
-                  />
+                {locations && locations.length > 0 && (
+  <CampusLocationFilters locations={locations} />
+)}       
                 
                <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
   <SelectTrigger className="w-[200px]">
