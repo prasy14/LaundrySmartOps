@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/select";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import SearchableDropdown from "@/pages/SearchableDropdown";
+import { CampusLocationFilters } from "@/components/CampusLocationFilters";
+import { useCampusLocation } from "@/components/CampusLocationcontext";
+import { extractCampusAndLocation } from "@/utils/helpers";
 
 interface MachineStatusChartProps {
   machines: Machine[] | null | undefined;
@@ -37,9 +40,11 @@ export function MachineStatusChart({
   error = '',
   selectedMachineId = 'all'
 }: MachineStatusChartProps) {
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+ // const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [filteredMachines, setFilteredMachines] = useState<Machine[]>([]);
   const [chartData, setChartData] = useState<Array<{id: string, label: string, value: number, color: string}>>([]);
+  const {selectedCampus,selectedLocation,} = useCampusLocation();
+
   
   // Ensure machines is an array
   const safetyMachines = Array.isArray(machines) ? machines : [];
@@ -49,16 +54,26 @@ export function MachineStatusChart({
     try {
       let filtered = [...safetyMachines];
       
-      // Filter by location if needed
+      
+    // Filter by selected campus (based on location name)
+    if (selectedCampus !== "all") {
+      const locationIds = locations
+        .filter(loc => extractCampusAndLocation(loc.name).campus === selectedCampus)
+        .map(loc => loc.id);
+      filtered = filtered.filter(m => m.locationId != null && locationIds.includes(m.locationId));
+
+    }
+
+    // Filter by selected location
       if (selectedLocation !== "all") {
         const locationId = parseInt(selectedLocation, 10);
-        filtered = filtered.filter(machine => machine.locationId === locationId);
+       filtered = filtered.filter(m => m.locationId === locationId);
       }
       
-      // Filter by specific machine if needed
-      if (selectedMachineId !== 'all') {
+       // Filter by specific machine
+    if (selectedMachineId !== "all") {
         const machineId = parseInt(selectedMachineId, 10);
-        filtered = filtered.filter(machine => machine.id === machineId);
+        filtered = filtered.filter(m => m.id === machineId);
       }
       
       setFilteredMachines(filtered);
@@ -66,7 +81,7 @@ export function MachineStatusChart({
       console.error("Error filtering machines:", err);
       setFilteredMachines([]);
     }
-  }, [selectedLocation, selectedMachineId, safetyMachines]);
+}, [selectedCampus, selectedLocation, selectedMachineId, safetyMachines]);
   
   // Calculate status distribution
   useEffect(() => {
@@ -157,18 +172,8 @@ export function MachineStatusChart({
             <CardTitle className="text-xl">Machine Status Distribution</CardTitle>
             <p className="text-white/80 text-sm">Current machine operational states</p>
           </div>
-          {locations && locations.length > 0 && (
-  <SearchableDropdown
-    value={selectedLocation}
-    onChange={setSelectedLocation}
-    options={[
-      { id: "all", name: "All Locations" },
-      ...locations.map((location) => ({
-        id: location.id.toString(), 
-        name: location.name,
-      })),
-    ]}
-  />
+           {locations && locations.length > 0 && (
+  <CampusLocationFilters locations={locations} />
 )}
 </div>
       </CardHeader>
